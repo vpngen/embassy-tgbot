@@ -5,6 +5,9 @@ import (
 	"strconv"
 )
 
+// DefaultUpdateTimeout - default messages updates timeout
+const DefaultUpdateTimeout = 3
+
 // Config - config
 type Config struct {
 	Token      string
@@ -17,9 +20,9 @@ type Config struct {
 func configFromEnv() Config {
 	var debug bool
 
-	token := os.Getenv("EMBASSY_TOKEN")
-	updateTout := os.Getenv("UPDATE_TIMEOUT")
-	debugLevel := os.Getenv("EMBASSY_DEBUG")
+	token := os.Getenv("EMBASSY_TOKEN")       // Telegram token
+	updateTout := os.Getenv("UPDATE_TIMEOUT") // DefaultUpdateTimeout = 3
+	debugLevel := os.Getenv("EMBASSY_DEBUG")  // number now, 0 is silent
 
 	dt, _ := strconv.Atoi(updateTout)
 	if dt <= 0 {
