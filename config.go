@@ -5,10 +5,10 @@ import (
 	"strconv"
 )
 
-// DefaultUpdateTimeout - default messages updates timeout
+// DefaultUpdateTimeout - default messages updates timeout.
 const DefaultUpdateTimeout = 3
 
-// Config - config
+// Config - config.
 type Config struct {
 	Token      string
 	UpdateTout int
@@ -16,7 +16,7 @@ type Config struct {
 	Debug      bool
 }
 
-// configFromEnv - fill config from environment vars
+// configFromEnv - fill config from environment vars.
 func configFromEnv() Config {
 	var debug bool
 

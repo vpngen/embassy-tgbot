@@ -8,16 +8,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var (
-	wannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "wannabe"),
-		),
-	)
-)
-
 func createBot(token string, debug bool) (*tgbotapi.BotAPI, error) {
-
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, fmt.Errorf("create bot: %w", err)
@@ -44,41 +35,51 @@ L1:
 	for {
 		select {
 		case update := <-updates:
-			if update.Message != nil { // If we got a message
+			switch {
+			case update.Message != nil: // If we got a message
 				if update.Message.Chat.Type == "private" {
 					if bot.Debug {
-						fmt.Fprintf(os.Stderr, "[%s] %s", update.Message.From.UserName, update.Message.Text)
+						fmt.Fprintf(os.Stderr, "[i] User: %s Message: %s", update.Message.From.UserName, update.Message.Text)
 					}
 
 					// !!! implement handling return vars
-					//					sendReply(bot, update, update.Message.Text)
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, MsgWelcome)
 					msg.ReplyToMessageID = update.Message.MessageID
 					msg.ReplyMarkup = wannabeKeyboard
 
-					bot.Send(msg)
+					if _, err := bot.Send(msg); err != nil {
+						fmt.Fprintf(os.Stderr, "[!] send: %s", err)
+					}
 
 					break
 				}
 
-				sendReply(bot, update, WarnGroupsNotAllowed)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, WarnGroupsNotAllowed)
+				msg.ReplyToMessageID = update.Message.MessageID
+
+				if _, err := bot.Send(msg); err != nil {
+					fmt.Fprintf(os.Stderr, "[!] send: %s", err)
+				}
+			case update.CallbackQuery != nil:
+				// Respond to the callback query, telling Telegram to show the user
+				// a message with the data received.
+				callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+				if _, err := bot.Request(callback); err != nil {
+					fmt.Fprintf(os.Stderr, "[!] callback: %s", err)
+				}
+
+				if update.CallbackQuery.Data == "wannabe" {
+					// And finally, send a message containing the data received.
+					msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, MsgQuiz)
+					if _, err := bot.Send(msg); err != nil {
+						fmt.Fprintf(os.Stderr, "[!] send: %s", err)
+					}
+				}
 			}
 		case <-stop:
 			fmt.Fprintln(os.Stdout, "[-] Run: Stop signal was received")
 
-			bot.StopReceivingUpdates()
-
 			break L1
 		}
 	}
-}
-
-// sendReply - send text
-func sendReply(bot *tgbotapi.BotAPI, update tgbotapi.Update, text string) (tgbotapi.Message, error) {
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
-	msg.ReplyToMessageID = update.Message.MessageID
-
-	message, err := bot.Send(msg)
-
-	return message, fmt.Errorf("send msg: %w", err)
 }
