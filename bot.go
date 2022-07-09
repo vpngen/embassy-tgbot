@@ -42,14 +42,9 @@ L1:
 						fmt.Fprintf(os.Stderr, "[i] User: %s Message: %s", update.Message.From.UserName, update.Message.Text)
 					}
 
-					// !!! implement handling return vars
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, MsgWelcome)
-					msg.ReplyToMessageID = update.Message.MessageID
-					msg.ReplyMarkup = wannabeKeyboard
+					wg.Add(1)
 
-					if _, err := bot.Send(msg); err != nil {
-						fmt.Fprintf(os.Stderr, "[!] send: %s", err)
-					}
+					go msgDialog(wg, bot, update)
 
 					break
 				}
@@ -68,13 +63,10 @@ L1:
 					fmt.Fprintf(os.Stderr, "[!] callback: %s", err)
 				}
 
-				if update.CallbackQuery.Data == "wannabe" {
-					// And finally, send a message containing the data received.
-					msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, MsgQuiz)
-					if _, err := bot.Send(msg); err != nil {
-						fmt.Fprintf(os.Stderr, "[!] send: %s", err)
-					}
-				}
+				wg.Add(1)
+
+				go buttonHandling(wg, bot, update)
+
 			}
 		case <-stop:
 			fmt.Fprintln(os.Stdout, "[-] Run: Stop signal was received")

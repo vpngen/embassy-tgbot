@@ -8,7 +8,11 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	badger "github.com/dgraph-io/badger/v3"
 )
+
+const dataKeyRotationDuration = 10 * 24 * time.Hour // 10 days
 
 func main() {
 	cfg := configFromEnv()
@@ -18,6 +22,18 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	dbopts := badger.DefaultOptions(cfg.DbDir).
+		WithIndexCacheSize(100 << 20).
+		WithEncryptionKey(cfg.DbKey).
+		WithEncryptionKeyRotationDuration(dataKeyRotationDuration) // 10 days
+
+	db, err := badger.Open(dbopts)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer db.Close()
 
 	wg := &sync.WaitGroup{}
 	stop := make(chan struct{})
