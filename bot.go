@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -23,7 +24,7 @@ func createBot(token string, debug bool) (*tgbotapi.BotAPI, error) {
 	return bot, nil
 }
 
-func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, bot *tgbotapi.BotAPI, updateTout, debugLevel int) {
+func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, bot *tgbotapi.BotAPI, updateTout, debugLevel int) {
 	defer waitGroup.Done()
 
 	u := tgbotapi.NewUpdate(0)
@@ -43,7 +44,7 @@ func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, bot *tgbotapi.BotAP
 
 					waitGroup.Add(1)
 
-					go msgDialog(waitGroup, bot, update)
+					go msgDialog(waitGroup, dbase, bot, update)
 
 					break
 				}

@@ -31,12 +31,12 @@ func main() {
 		WithEncryptionKey(cfg.DBKey).
 		WithEncryptionKeyRotationDuration(dataKeyRotationDuration) // 10 days
 
-	db, err := badger.Open(dbopts)
+	dbase, err := badger.Open(dbopts)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer db.Close()
+	defer dbase.Close()
 
 	waitGroup := &sync.WaitGroup{}
 	stop := make(chan struct{})
@@ -44,7 +44,7 @@ func main() {
 	// run the bot
 	waitGroup.Add(1)
 
-	go runBot(waitGroup, stop, bot, cfg.UpdateTout, cfg.DebugLevel)
+	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel)
 
 	// catch exit signals
 	kill := make(chan os.Signal, 1)
