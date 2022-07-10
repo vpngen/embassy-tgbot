@@ -17,7 +17,7 @@ const (
 	DefaultSalt = "we4;6prSfm_k+Gn"
 	// DefaultIterations - KDF iters.
 	DefaultIterations = 4096
-	// DefaultKeyLen - default key len
+	// DefaultKeyLen - default key len.
 	DefaultKeyLen = 32
 )
 
@@ -27,8 +27,8 @@ type Config struct {
 	UpdateTout int
 	DebugLevel int
 	Debug      bool
-	DbDir      string
-	DbKey      []byte
+	DBDir      string
+	DBKey      []byte
 }
 
 // configFromEnv - fill config from environment vars.
@@ -48,9 +48,9 @@ func configFromEnv() Config {
 		log.Panic("NO ENCRYPTION KEY")
 	}
 
-	dt, _ := strconv.Atoi(updateTout)
-	if dt <= 0 {
-		dt = DefaultUpdateTimeout
+	tout, _ := strconv.Atoi(updateTout)
+	if tout <= 0 {
+		tout = DefaultUpdateTimeout
 	}
 
 	dbg, _ := strconv.Atoi(debugLevel)
@@ -70,10 +70,10 @@ func configFromEnv() Config {
 
 	return Config{
 		Token:      token,
-		UpdateTout: dt,
+		UpdateTout: tout,
 		DebugLevel: dbg,
 		Debug:      debug,
-		DbDir:      dbDir,
-		DbKey:      key,
+		DBDir:      dbDir,
+		DBKey:      key,
 	}
 }

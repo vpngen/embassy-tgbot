@@ -23,15 +23,14 @@ func createBot(token string, debug bool) (*tgbotapi.BotAPI, error) {
 	return bot, nil
 }
 
-func runBot(wg *sync.WaitGroup, stop <-chan struct{}, bot *tgbotapi.BotAPI, updateTout, debugLevel int) {
-	defer wg.Done()
+func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, bot *tgbotapi.BotAPI, updateTout, debugLevel int) {
+	defer waitGroup.Done()
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = updateTout
 
 	updates := bot.GetUpdatesChan(u)
 
-L1:
 	for {
 		select {
 		case update := <-updates:
@@ -42,9 +41,9 @@ L1:
 						fmt.Fprintf(os.Stderr, "[i] User: %s Message: %s", update.Message.From.UserName, update.Message.Text)
 					}
 
-					wg.Add(1)
+					waitGroup.Add(1)
 
-					go msgDialog(wg, bot, update)
+					go msgDialog(waitGroup, bot, update)
 
 					break
 				}
@@ -63,15 +62,14 @@ L1:
 					fmt.Fprintf(os.Stderr, "[!] callback: %s", err)
 				}
 
-				wg.Add(1)
+				waitGroup.Add(1)
 
-				go buttonHandling(wg, bot, update)
-
+				go buttonHandling(waitGroup, bot, update)
 			}
 		case <-stop:
 			fmt.Fprintln(os.Stdout, "[-] Run: Stop signal was received")
 
-			break L1
+			return
 		}
 	}
 }

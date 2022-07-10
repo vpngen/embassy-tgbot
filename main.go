@@ -12,7 +12,10 @@ import (
 	badger "github.com/dgraph-io/badger/v3"
 )
 
-const dataKeyRotationDuration = 10 * 24 * time.Hour // 10 days
+const (
+	dataKeyRotationDuration = 10 * 24 * time.Hour // 10 days
+	defaultIndexCacheSize   = 100 << 20           // 100 Mb
+)
 
 func main() {
 	cfg := configFromEnv()
@@ -23,9 +26,9 @@ func main() {
 		log.Panic(err)
 	}
 
-	dbopts := badger.DefaultOptions(cfg.DbDir).
-		WithIndexCacheSize(100 << 20).
-		WithEncryptionKey(cfg.DbKey).
+	dbopts := badger.DefaultOptions(cfg.DBDir).
+		WithIndexCacheSize(defaultIndexCacheSize).
+		WithEncryptionKey(cfg.DBKey).
 		WithEncryptionKeyRotationDuration(dataKeyRotationDuration) // 10 days
 
 	db, err := badger.Open(dbopts)
@@ -35,19 +38,18 @@ func main() {
 
 	defer db.Close()
 
-	wg := &sync.WaitGroup{}
+	waitGroup := &sync.WaitGroup{}
 	stop := make(chan struct{})
 
 	// run the bot
-	wg.Add(1)
+	waitGroup.Add(1)
 
-	go runBot(wg, stop, bot, cfg.UpdateTout, cfg.DebugLevel)
+	go runBot(waitGroup, stop, bot, cfg.UpdateTout, cfg.DebugLevel)
 
 	// catch exit signals
 	kill := make(chan os.Signal, 1)
 	signal.Notify(kill, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
-MainLoop:
 	for range kill {
 		fmt.Fprintln(os.Stdout, "[-] Main: Stop signal was received")
 		// avoid message loosing
@@ -56,10 +58,10 @@ MainLoop:
 		// stop!
 		close(stop)
 		// bye bye!
-		break MainLoop
+		break
 	}
 
 	// stop app
-	wg.Wait()
+	waitGroup.Wait()
 	fmt.Fprintln(os.Stdout, "[-] Main routine was finished")
 }
