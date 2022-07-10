@@ -23,6 +23,9 @@ const (
 
 Ждем фоточку чека!`
 
+	// MsgAttestationAssigned - receipt have accepted
+	MsgAttestationAssigned = `Чек принят к рассмотрению`
+
 	// WarnGroupsNotAllowed - this bot is only private.
 	WarnGroupsNotAllowed = `Извините, в группах бот не работает`
 	// FatalUnwellSecurity - if autodelete not set

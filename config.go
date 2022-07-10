@@ -41,8 +41,8 @@ func configFromEnv() Config {
 	token := os.Getenv("EMBASSY_TOKEN")               // Telegram token
 	updateTout := os.Getenv("EMBASSY_UPDATE_TIMEOUT") // DefaultUpdateTimeout = 3
 	debugLevel := os.Getenv("EMBASSY_DEBUG")          // number now, 0 is silent
-	dbDir := os.Getenv("EMBASSY_BUDGER_DIR")          // Database dir, default db
-	dbKey := os.Getenv("EMBASSY_BUDGER_KEY")
+	dbDir := os.Getenv("EMBASSY_BADGER_DIR")          // Database dir, default db
+	dbKey := os.Getenv("EMBASSY_BADGER_KEY")
 
 	if dbKey == "" {
 		log.Panic("NO ENCRYPTION KEY")

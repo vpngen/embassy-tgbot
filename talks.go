@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -29,18 +30,20 @@ type Session struct {
 func msgDialog(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	defer waitGroup.Done()
 
-	ecode := rand.Int31() // unique error code
+	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique error code
 
 	defer func() {
 		if err := removeMsg(bot, update.Message.Chat.ID, update.Message.MessageID); err != nil {
-			fmt.Fprintf(os.Stderr, "[!:%04x] remove: %s\n", ecode, err)
+			fmt.Fprintf(os.Stderr, "[!:%s] remove: %s\n", ecode, err)
+			somethingWrong(bot, update.Message.Chat.ID, ecode)
 		}
 	}()
 
 	/// check delete timeout and protect
-	okAutoDelete, err := checkChatAutoDeleteTimer(bot, update)
+	okAutoDelete, err := checkChatAutoDeleteTimer(bot, update.Message.Chat.ID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[!:%04x] check auto delete: %s\n", ecode, err)
+		fmt.Fprintf(os.Stderr, "[!:%s] check auto delete: %s\n", ecode, err)
+		somethingWrong(bot, update.Message.Chat.ID, ecode)
 
 		return
 	}
@@ -50,37 +53,78 @@ func msgDialog(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI
 	}
 
 	/// check session
-	_, err = checkSession(dbase, bot, update)
+	session, err := checkSession(dbase, update.Message.Chat.ID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[!:%04x] check session: %s\n", ecode, err)
+		fmt.Fprintf(os.Stderr, "[!:%s] check session: %s\n", ecode, err)
+		somethingWrong(bot, update.Message.Chat.ID, ecode)
 
 		return
 	}
 
-	/// check previos dialog
-	/// overvise greeting
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, MsgWelcome)
-	msg.ReplyMarkup = wannabeKeyboard
-	msg.ParseMode = tgbotapi.ModeMarkdown
-
-	if _, err := bot.Send(msg); err != nil {
-		fmt.Fprintf(os.Stderr, "[!:%04x] send: %s\n", ecode, err)
-
+	switch session.Stage {
+	case stageZero:
 		return
-	}
+	case stageQuiz:
+		err := sendAttestationAssignedMessage(bot, dbase, update.Message.Chat.ID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "[!:%s] bill recv: %s\n", ecode, err)
+			somethingWrong(bot, update.Message.Chat.ID, ecode)
+		}
 
+		defer func() {
+			if err := removeMsg(bot, update.Message.Chat.ID, session.OurMsgID); err != nil {
+				fmt.Fprintf(os.Stderr, "[!:%s] remove old: %s\n", ecode, err)
+				somethingWrong(bot, update.Message.Chat.ID, ecode)
+			}
+		}()
+	default:
+		err := sendWelcomeMessage(bot, dbase, update.Message.Chat.ID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "[!:%s] welcome: %s\n", ecode, err)
+			somethingWrong(bot, update.Message.Chat.ID, ecode)
+		}
+	}
 }
 
-func buttonHandling(waitGroup *sync.WaitGroup, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func buttonHandling(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	defer waitGroup.Done()
 
-	if update.CallbackQuery.Data == "wannabe" {
-		// And finally, send a message containing the data received.
-		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, MsgQuiz)
-		msg.ParseMode = tgbotapi.ModeMarkdown
+	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique error code
 
-		if _, err := bot.Send(msg); err != nil {
-			fmt.Fprintf(os.Stderr, "[!] send: %s\n", err)
+	defer func() {
+		if err := removeMsg(bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
+			fmt.Fprintf(os.Stderr, "[!:%s] remove: %s\n", ecode, err)
+			somethingWrong(bot, update.Message.Chat.ID, ecode)
+		}
+	}()
+
+	/// check delete timeout and protect
+	okAutoDelete, err := checkChatAutoDeleteTimer(bot, update.CallbackQuery.Message.Chat.ID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[!:%s] check auto delete: %s\n", ecode, err)
+		somethingWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode)
+
+		return
+	}
+
+	if !okAutoDelete {
+		return
+	}
+
+	/// check session
+	session, err := checkSession(dbase, update.CallbackQuery.Message.Chat.ID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[!:%s] check session: %s\n", ecode, err)
+		somethingWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode)
+
+		return
+	}
+
+	switch {
+	case update.CallbackQuery.Data == "wannabe" && session.Stage == stageWelcome:
+		if err := sendQuizMessage(bot, dbase, update.CallbackQuery.Message.Chat.ID); err != nil {
+			fmt.Fprintf(os.Stderr, "[!:%s] wannabe: %s\n", ecode, err)
+			somethingWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode)
 		}
 	}
 }
@@ -95,21 +139,73 @@ func removeMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 	return nil
 }
 
-func somethingWrong(bot *tgbotapi.BotAPI, update tgbotapi.Update, ecode string) {
+func somethingWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string) {
 	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrong, ecode)
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 
 	if _, err := bot.Send(msg); err != nil {
-		fmt.Fprintf(os.Stderr, "[!:%04x] SOMETHING WRONG: %s\n", ecode, err)
+		fmt.Fprintf(os.Stderr, "[!:%s] SOMETHING WRONG: %s\n", ecode, err)
 	}
 }
 
-func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, update tgbotapi.Update) (bool, error) {
+func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
+	msg := tgbotapi.NewMessage(chatID, MsgWelcome)
+	msg.ReplyMarkup = wannabeKeyboard
+	msg.ParseMode = tgbotapi.ModeMarkdown
+
+	newMsg, err := bot.Send(msg)
+	if err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWelcome)
+	if err != nil {
+		return fmt.Errorf("session: %w", err)
+	}
+
+	return nil
+}
+
+func sendQuizMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
+	msg := tgbotapi.NewMessage(chatID, MsgQuiz)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+
+	newMsg, err := bot.Send(msg)
+	if err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageQuiz)
+	if err != nil {
+		return fmt.Errorf("session: %w", err)
+	}
+
+	return nil
+}
+
+func sendAttestationAssignedMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
+	msg := tgbotapi.NewMessage(chatID, MsgAttestationAssigned)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+
+	newMsg, err := bot.Send(msg)
+	if err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWait)
+	if err != nil {
+		return fmt.Errorf("session: %w", err)
+	}
+
+	return nil
+}
+
+func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) {
 	chat, err := bot.GetChat(
 		tgbotapi.ChatInfoConfig{
 			ChatConfig: tgbotapi.ChatConfig{
-				ChatID: update.Message.Chat.ID},
+				ChatID: chatID},
 		},
 	)
 	if err != nil {
@@ -117,7 +213,7 @@ func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, update tgbotapi.Update) (boo
 	}
 
 	if chat.MessageAutoDeleteTime < minSecondsToLive || chat.MessageAutoDeleteTime > maxSecondsToLive {
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, FatalUnwellSecurity)
+		msg := tgbotapi.NewMessage(chatID, FatalUnwellSecurity)
 		msg.ParseMode = tgbotapi.ModeMarkdown
 
 		if _, err := bot.Send(msg); err != nil {
@@ -134,22 +230,63 @@ const (
 	stageZero int = iota
 	stageWelcome
 	stageQuiz
+	stageWait
+	stageCleanup
 	stageNone = -1
+
+	sessionSalt = "$Rit5"
 )
 
-func checkSession(dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) (int, error) {
+func sessionID(chatID int64) []byte {
+	var int64bytes [8]byte
+
+	binary.BigEndian.PutUint64(int64bytes[:], uint64(chatID))
+
+	digest := sha256.Sum256(int64bytes[:])
+	id := append([]byte{'s'}, append([]byte(sessionSalt), digest[:]...)...)
+
+	return id
+}
+
+func setSession(dbase *badger.DB, chatID int64, msgID int, stage int) error {
+	session := &Session{
+		OurMsgID:   msgID,
+		Stage:      stage,
+		UpdateTime: time.Now().Unix(),
+	}
+
+	data, err := json.Marshal(session)
+	if err != nil {
+		return fmt.Errorf("parse: %w", err)
+	}
+
+	key := sessionID(chatID)
+	err = dbase.Update(func(txn *badger.Txn) error {
+		err := txn.Set(key, data)
+		if err != nil {
+			return fmt.Errorf("set: %w", err)
+		}
+
+		return nil
+	})
+
+	return nil
+}
+
+func checkSession(dbase *badger.DB, chatID int64) (*Session, error) {
 	var (
-		data       []byte
-		session    *Session = &Session{}
-		int64bytes [8]byte
+		data    []byte
+		session *Session = &Session{Stage: stageNone}
 	)
 
-	binary.BigEndian.PutUint64(int64bytes[:], uint64(update.Message.Chat.ID))
-	digest := sha256.Sum256(int64bytes[:])
-	key := append([]byte{'s'}, digest[:]...)
+	key := sessionID(chatID)
 	err := dbase.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(key[:])
+		item, err := txn.Get(key)
 		if err != nil {
+			if err == badger.ErrKeyNotFound {
+				return nil
+			}
+
 			return fmt.Errorf("get: %w", err)
 		}
 
@@ -158,23 +295,24 @@ func checkSession(dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update
 
 			return nil
 		})
-		if err != nil || err != badger.ErrKeyNotFound {
+		if err != nil {
 			return fmt.Errorf("value: %w", err)
 		}
 
 		return nil
 	})
 	if err != nil {
-		return stageNone, fmt.Errorf("db: %w", err)
+		return session, fmt.Errorf("db: %w", err)
 	}
 
 	if data != nil {
 		err := json.Unmarshal(data, session)
 		if err != nil {
-
-			return stageNone, fmt.Errorf("parse: %w", err)
+			return session, fmt.Errorf("parse: %w", err)
 		}
+
+		return session, nil
 	}
 
-	return stageNone, nil
+	return session, nil
 }

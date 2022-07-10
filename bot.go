@@ -65,7 +65,7 @@ func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, b
 
 				waitGroup.Add(1)
 
-				go buttonHandling(waitGroup, bot, update)
+				go buttonHandling(waitGroup, dbase, bot, update)
 			}
 		case <-stop:
 			fmt.Fprintln(os.Stdout, "[-] Run: Stop signal was received")
