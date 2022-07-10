@@ -29,6 +29,9 @@ const (
 	FatalUnwellSecurity = `Привет!
 
 Установи автоудаление сообщений в этом чате *через 1 день* и продолжи.`
+
+	// FatalSomeThingWrong - something wrong happened
+	FatalSomeThingWrong = `Что-то пошло не так`
 )
 
 var wannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
