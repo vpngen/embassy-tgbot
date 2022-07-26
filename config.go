@@ -59,7 +59,7 @@ func configFromEnv() Config {
 		dbg = int(logs.LevelDebug)
 	}
 
-	if dbg == int(logs.LogLevel()) {
+	if dbg == int(logs.LevelDebug) {
 		debug = true
 	}
 
