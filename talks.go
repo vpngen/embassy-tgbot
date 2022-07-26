@@ -38,23 +38,14 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	}()
 
 	/// check delete timeout and protect
-	okAutoDelete, err := checkChatAutoDeleteTimer(bot, update.Message.Chat.ID)
-	if err != nil {
-		logs.Debugf("[!:%s] check auto delete: %s\n", ecode, err)
-		somethingWrong(bot, update.Message.Chat.ID, ecode)
-
-		return
-	}
-
-	if !okAutoDelete {
+	if ok := checkAbilityToTalk(bot, update.Message.Chat.ID, ecode); !ok {
 		return
 	}
 
 	/// check session
 	session, err := checkSession(dbase, update.Message.Chat.ID)
 	if err != nil {
-		logs.Errorf("[!:%s] check session: %s\n", ecode, err)
-		somethingWrong(bot, update.Message.Chat.ID, ecode)
+		stWrong(bot, update.Message.Chat.ID, ecode, fmt.Errorf("check session: %w", err))
 
 		return
 	}
@@ -66,8 +57,7 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	case stageWait4Bill:
 		err := sendAttestationAssignedMessage(bot, dbase, update.Message.Chat.ID)
 		if err != nil {
-			logs.Errorf("[!:%s] bill recv: %s\n", ecode, err)
-			somethingWrong(bot, update.Message.Chat.ID, ecode)
+			stWrong(bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
 
 		defer func() {
@@ -80,8 +70,7 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	default:
 		err := sendWelcomeMessage(bot, dbase, update.Message.Chat.ID)
 		if err != nil {
-			logs.Errorf("[!:%s] welcome: %s\n", ecode, err)
-			somethingWrong(bot, update.Message.Chat.ID, ecode)
+			stWrong(bot, update.Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
 		}
 	}
 }
@@ -92,23 +81,14 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique error code
 
 	/// check delete timeout and protect
-	okAutoDelete, err := checkChatAutoDeleteTimer(bot, update.CallbackQuery.Message.Chat.ID)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "[!:%s] check auto delete: %s\n", ecode, err)
-		somethingWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode)
-
-		return
-	}
-
-	if !okAutoDelete {
+	if ok := checkAbilityToTalk(bot, update.CallbackQuery.Message.Chat.ID, ecode); !ok {
 		return
 	}
 
 	/// check session
 	session, err := checkSession(dbase, update.CallbackQuery.Message.Chat.ID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[!:%s] check session: %s\n", ecode, err)
-		somethingWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode)
+		stWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("check session: %w", err))
 
 		return
 	}
@@ -116,8 +96,7 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 	switch {
 	case update.CallbackQuery.Data == "wannabe" && session.Stage == stageWait4Choice:
 		if err := sendQuizMessage(bot, dbase, update.CallbackQuery.Message.Chat.ID); err != nil {
-			fmt.Fprintf(os.Stderr, "[!:%s] wannabe: %s\n", ecode, err)
-			somethingWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode)
+			stWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 		}
 
 		defer func() {
@@ -139,14 +118,16 @@ func removeMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 	return nil
 }
 
-func somethingWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string) {
+func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
+	logs.Errorf("[!:%s] %s", ecode, err)
+
 	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrong, ecode)
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ProtectContent = true
 
 	if _, err := bot.Send(msg); err != nil {
-		fmt.Fprintf(os.Stderr, "[!:%s] SOMETHING WRONG: %s\n", ecode, err)
+		logs.Errorf("[!:%s] send message: %s\n", ecode, err)
 	}
 }
 
@@ -217,15 +198,31 @@ func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) 
 	}
 
 	if chat.MessageAutoDeleteTime < minSecondsToLive || chat.MessageAutoDeleteTime > maxSecondsToLive {
-		msg := tgbotapi.NewMessage(chatID, FatalUnwellSecurity)
-		msg.ParseMode = tgbotapi.ModeMarkdown
-
-		if _, err := bot.Send(msg); err != nil {
-			return false, fmt.Errorf("send: %w", err)
-		}
-
 		return false, nil
 	}
 
 	return true, nil
+}
+
+func checkAbilityToTalk(bot *tgbotapi.BotAPI, chatID int64, ecode string) bool {
+	ok, err := checkChatAutoDeleteTimer(bot, chatID)
+	if err != nil {
+		stWrong(bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
+
+		return false
+	}
+
+	if !ok {
+		msg := tgbotapi.NewMessage(chatID, FatalUnwellSecurity)
+		msg.ParseMode = tgbotapi.ModeMarkdown
+		msg.ProtectContent = true
+
+		if _, err := bot.Send(msg); err != nil {
+			logs.Errorf("[!:%s] send: %w", ecode, err)
+
+			return false
+		}
+	}
+
+	return true
 }
