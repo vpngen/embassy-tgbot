@@ -8,12 +8,13 @@ import (
 
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vpngen/embassy-tgbot/logs"
 )
 
 const (
 	secondsInTheDay  = 24 * 3600
 	minSecondsToLive = secondsInTheDay
-	maxSecondsToLive = secondsInTheDay
+	maxSecondsToLive = 2 * secondsInTheDay
 )
 
 const (
@@ -31,7 +32,7 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 
 	defer func() {
 		if err := removeMsg(bot, update.Message.Chat.ID, update.Message.MessageID); err != nil {
-			fmt.Fprintf(os.Stderr, "[!:%s] remove: %s\n", ecode, err)
+			logs.Debugf("[!:%s] remove: %s\n", ecode, err)
 			// we don't want to handle this
 		}
 	}()
@@ -39,7 +40,7 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	/// check delete timeout and protect
 	okAutoDelete, err := checkChatAutoDeleteTimer(bot, update.Message.Chat.ID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[!:%s] check auto delete: %s\n", ecode, err)
+		logs.Debugf("[!:%s] check auto delete: %s\n", ecode, err)
 		somethingWrong(bot, update.Message.Chat.ID, ecode)
 
 		return
@@ -52,7 +53,7 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	/// check session
 	session, err := checkSession(dbase, update.Message.Chat.ID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[!:%s] check session: %s\n", ecode, err)
+		logs.Errorf("[!:%s] check session: %s\n", ecode, err)
 		somethingWrong(bot, update.Message.Chat.ID, ecode)
 
 		return
@@ -65,13 +66,13 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	case stageWait4Bill:
 		err := sendAttestationAssignedMessage(bot, dbase, update.Message.Chat.ID)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "[!:%s] bill recv: %s\n", ecode, err)
+			logs.Errorf("[!:%s] bill recv: %s\n", ecode, err)
 			somethingWrong(bot, update.Message.Chat.ID, ecode)
 		}
 
 		defer func() {
 			if err := removeMsg(bot, update.Message.Chat.ID, session.OurMsgID); err != nil {
-				fmt.Fprintf(os.Stderr, "[!:%s] remove old: %s\n", ecode, err)
+				logs.Debugf("[!:%s] remove old: %s\n", ecode, err)
 				// we don't want to handle this
 			}
 		}()
@@ -79,7 +80,7 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	default:
 		err := sendWelcomeMessage(bot, dbase, update.Message.Chat.ID)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "[!:%s] welcome: %s\n", ecode, err)
+			logs.Errorf("[!:%s] welcome: %s\n", ecode, err)
 			somethingWrong(bot, update.Message.Chat.ID, ecode)
 		}
 	}

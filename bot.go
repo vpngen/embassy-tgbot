@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/dgraph-io/badger/v3"
@@ -37,9 +36,7 @@ func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, b
 			switch {
 			case update.Message != nil: // If we got a message
 				if update.Message.Chat.Type == "private" {
-					if bot.Debug {
-						fmt.Fprintf(os.Stderr, "[i] User: %s Message: %s", update.Message.From.UserName, update.Message.Text)
-					}
+					logs.Debugf("[i] User: %s Message: %s", update.Message.From.UserName, update.Message.Text)
 
 					waitGroup.Add(1)
 
@@ -52,14 +49,14 @@ func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, b
 				msg.ReplyToMessageID = update.Message.MessageID
 
 				if _, err := bot.Send(msg); err != nil {
-					fmt.Fprintf(os.Stderr, "[!] send: %s", err)
+					logs.Debugf("[!] send: %s", err)
 				}
 			case update.CallbackQuery != nil:
 				// Respond to the callback query, telling Telegram to show the user
 				// a message with the data received.
 				callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
 				if _, err := bot.Request(callback); err != nil {
-					fmt.Fprintf(os.Stderr, "[!] callback: %s", err)
+					logs.Debugf("[!] callback: %s", err)
 				}
 
 				waitGroup.Add(1)
@@ -67,7 +64,7 @@ func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, b
 				go buttonHandler(waitGroup, dbase, bot, update)
 			}
 		case <-stop:
-			fmt.Fprintln(os.Stdout, "[-] Run: Stop signal was received")
+			logs.Info("[-] Run: Stop signal was received")
 
 			return
 		}
