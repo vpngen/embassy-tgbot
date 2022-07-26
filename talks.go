@@ -241,6 +241,8 @@ func checkAbilityToTalk(bot *tgbotapi.BotAPI, chatID int64, ecode string) bool {
 
 			return false
 		}
+
+		return false
 	}
 
 	return true
