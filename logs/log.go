@@ -109,8 +109,8 @@ func Warningf(format string, a ...any) (int, error) {
 	return 0, nil
 }
 
-// Error - print debug message.
-func Error(a ...any) (int, error) {
+// Err - print debug message.
+func Err(a ...any) (int, error) {
 	if LogLevel() >= LevelError {
 		return fmt.Fprint(os.Stderr, a...)
 	}
@@ -118,8 +118,8 @@ func Error(a ...any) (int, error) {
 	return 0, nil
 }
 
-// Errorln - print debug message.
-func Errorln(a ...any) (int, error) {
+// Errln - print debug message.
+func Errln(a ...any) (int, error) {
 	if LogLevel() >= LevelError {
 		return fmt.Fprintln(os.Stderr, a...)
 	}
@@ -127,8 +127,8 @@ func Errorln(a ...any) (int, error) {
 	return 0, nil
 }
 
-// Errorf - print debug message.
-func Errorf(format string, a ...any) (int, error) {
+// Errf - print debug message.
+func Errf(format string, a ...any) (int, error) {
 	if LogLevel() >= LevelError {
 		return fmt.Fprintf(os.Stderr, format, a...)
 	}

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"os"
 	"sync"
 	"time"
 
@@ -57,7 +56,7 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	// show something in status
 	ca := tgbotapi.NewChatAction(update.Message.Chat.ID, StandartChatAction)
 	if _, err := bot.Request(ca); err != nil {
-		logs.Debugf("[!:%s] chat: %s", ecode, err)
+		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
 	}
 
 	time.Sleep(SlowAnswerTimeout)
@@ -108,7 +107,7 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 	// show something is status
 	ca := tgbotapi.NewChatAction(update.CallbackQuery.Message.Chat.ID, StandartChatAction)
 	if _, err := bot.Request(ca); err != nil {
-		logs.Debugf("[!:%s] chat: %s", ecode, err)
+		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
 	}
 
 	switch {
@@ -119,7 +118,7 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 
 		defer func() {
 			if err := removeMsg(bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
-				fmt.Fprintf(os.Stderr, "[!:%s] remove: %s\n", ecode, err)
+				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 				// we don't want to handle this
 			}
 		}()
@@ -137,7 +136,7 @@ func removeMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 }
 
 func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
-	logs.Errorf("[!:%s] %s", ecode, err)
+	logs.Errf("[!:%s] %s\n", ecode, err)
 
 	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrong, ecode)
 	msg := tgbotapi.NewMessage(chatID, text)
@@ -145,7 +144,7 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 	msg.ProtectContent = true
 
 	if _, err := bot.Send(msg); err != nil {
-		logs.Errorf("[!:%s] send message: %s\n", ecode, err)
+		logs.Errf("[!:%s] send message: %s\n", ecode, err)
 	}
 }
 
@@ -236,7 +235,7 @@ func checkAbilityToTalk(bot *tgbotapi.BotAPI, chatID int64, ecode string) bool {
 		msg.ProtectContent = true
 
 		if _, err := bot.Send(msg); err != nil {
-			logs.Errorf("[!:%s] send: %w", ecode, err)
+			logs.Errf("[!:%s] send: %s\n", ecode, err)
 
 			return false
 		}
