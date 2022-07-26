@@ -38,7 +38,7 @@ const (
 	FatalSomeThingWrong = `Что-то пошло не так`
 
 	// StandartChatAction - something in status
-	StandartChatAction = `мы размышляем...`
+	StandartChatAction = "choose_sticker for stickers"
 )
 
 var wannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
