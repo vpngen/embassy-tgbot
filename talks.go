@@ -26,7 +26,7 @@ const (
 )
 
 // SlowAnswerTimeout - timeout befor each our answer.
-const SlowAnswerTimeout = 5 * time.Second
+const SlowAnswerTimeout = 3 * time.Second
 
 func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	defer waitGroup.Done()
@@ -109,6 +109,8 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 	if _, err := bot.Request(ca); err != nil {
 		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
 	}
+
+	time.Sleep(SlowAnswerTimeout)
 
 	switch {
 	case update.CallbackQuery.Data == "wannabe" && session.Stage == stageWait4Choice:
