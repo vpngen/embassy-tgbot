@@ -7,6 +7,7 @@ import (
 
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vpngen/embassy-tgbot/logs"
 )
 
 func createBot(token string, debug bool) (*tgbotapi.BotAPI, error) {
@@ -17,9 +18,7 @@ func createBot(token string, debug bool) (*tgbotapi.BotAPI, error) {
 
 	bot.Debug = debug
 
-	if debug {
-		fmt.Fprintf(os.Stderr, "[i] Authorized on account %s\n", bot.Self.UserName)
-	}
+	logs.Criticf("[i] Authorized on account %s\n", bot.Self.UserName)
 
 	return bot, nil
 }
@@ -44,7 +43,7 @@ func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, b
 
 					waitGroup.Add(1)
 
-					go msgDialog(waitGroup, dbase, bot, update)
+					go messageHandler(waitGroup, dbase, bot, update)
 
 					break
 				}
@@ -65,7 +64,7 @@ func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, b
 
 				waitGroup.Add(1)
 
-				go buttonHandling(waitGroup, dbase, bot, update)
+				go buttonHandler(waitGroup, dbase, bot, update)
 			}
 		case <-stop:
 			fmt.Fprintln(os.Stdout, "[-] Run: Stop signal was received")

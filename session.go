@@ -63,7 +63,7 @@ func setSession(dbase *badger.DB, chatID int64, msgID int, stage int) error {
 func checkSession(dbase *badger.DB, chatID int64) (*Session, error) {
 	var (
 		data    []byte
-		session *Session = &Session{Stage: stageNone}
+		session *Session = &Session{}
 	)
 
 	key := sessionID(chatID)

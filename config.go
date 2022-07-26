@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/vpngen/embassy-tgbot/logs"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -54,7 +55,11 @@ func configFromEnv() Config {
 	}
 
 	dbg, _ := strconv.Atoi(debugLevel)
-	if dbg > 0 {
+	if dbg > int(logs.LevelDebug) {
+		dbg = int(logs.LevelDebug)
+	}
+
+	if dbg == int(logs.LogLevel()) {
 		debug = true
 	}
 

@@ -17,23 +17,22 @@ const (
 )
 
 const (
-	stageZero int = iota
-	stageWelcome
-	stageQuiz
-	stageWait
+	stageStart int = iota
+	stageWait4Choice
+	stageWait4Bill
+	stageWait4Decision
 	stageCleanup
-	stageNone = -1
 )
 
-func msgDialog(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	defer waitGroup.Done()
 
-	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique error code
+	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique e-code
 
 	defer func() {
 		if err := removeMsg(bot, update.Message.Chat.ID, update.Message.MessageID); err != nil {
 			fmt.Fprintf(os.Stderr, "[!:%s] remove: %s\n", ecode, err)
-			somethingWrong(bot, update.Message.Chat.ID, ecode)
+			// we don't want to handle this
 		}
 	}()
 
@@ -60,10 +59,10 @@ func msgDialog(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI
 	}
 
 	switch session.Stage {
-	case stageZero, stageWelcome, stageWait, stageCleanup:
+	case stageWait4Choice, stageWait4Decision, stageCleanup:
 		return
 
-	case stageQuiz:
+	case stageWait4Bill:
 		err := sendAttestationAssignedMessage(bot, dbase, update.Message.Chat.ID)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "[!:%s] bill recv: %s\n", ecode, err)
@@ -73,7 +72,7 @@ func msgDialog(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI
 		defer func() {
 			if err := removeMsg(bot, update.Message.Chat.ID, session.OurMsgID); err != nil {
 				fmt.Fprintf(os.Stderr, "[!:%s] remove old: %s\n", ecode, err)
-				somethingWrong(bot, update.Message.Chat.ID, ecode)
+				// we don't want to handle this
 			}
 		}()
 
@@ -86,7 +85,7 @@ func msgDialog(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI
 	}
 }
 
-func buttonHandling(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	defer waitGroup.Done()
 
 	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique error code
@@ -114,7 +113,7 @@ func buttonHandling(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	}
 
 	switch {
-	case update.CallbackQuery.Data == "wannabe" && session.Stage == stageWelcome:
+	case update.CallbackQuery.Data == "wannabe" && session.Stage == stageWait4Choice:
 		if err := sendQuizMessage(bot, dbase, update.CallbackQuery.Message.Chat.ID); err != nil {
 			fmt.Fprintf(os.Stderr, "[!:%s] wannabe: %s\n", ecode, err)
 			somethingWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode)
@@ -123,7 +122,7 @@ func buttonHandling(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 		defer func() {
 			if err := removeMsg(bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
 				fmt.Fprintf(os.Stderr, "[!:%s] remove: %s\n", ecode, err)
-				somethingWrong(bot, update.Message.Chat.ID, ecode)
+				// we don't want to handle this
 			}
 		}()
 	}
@@ -143,6 +142,7 @@ func somethingWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string) {
 	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrong, ecode)
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ProtectContent = true
 
 	if _, err := bot.Send(msg); err != nil {
 		fmt.Fprintf(os.Stderr, "[!:%s] SOMETHING WRONG: %s\n", ecode, err)
@@ -153,13 +153,14 @@ func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) er
 	msg := tgbotapi.NewMessage(chatID, MsgWelcome)
 	msg.ReplyMarkup = wannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ProtectContent = true
 
 	newMsg, err := bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWelcome)
+	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWait4Choice)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -170,13 +171,14 @@ func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) er
 func sendQuizMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgQuiz)
 	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ProtectContent = true
 
 	newMsg, err := bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageQuiz)
+	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWait4Bill)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -187,13 +189,14 @@ func sendQuizMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error
 func sendAttestationAssignedMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgAttestationAssigned)
 	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ProtectContent = true
 
 	newMsg, err := bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWait)
+	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWait4Decision)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}

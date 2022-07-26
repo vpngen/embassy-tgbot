@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	badger "github.com/dgraph-io/badger/v3"
+	"github.com/vpngen/embassy-tgbot/logs"
 )
 
 const (
@@ -19,6 +19,9 @@ const (
 
 func main() {
 	cfg := configFromEnv()
+
+	// set logs
+	logs.SetLogLevel(int32(cfg.DebugLevel))
 
 	// create a bot
 	bot, err := createBot(cfg.Token, cfg.Debug)
@@ -51,7 +54,7 @@ func main() {
 	signal.Notify(kill, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
 	for range kill {
-		fmt.Fprintln(os.Stdout, "[-] Main: Stop signal was received")
+		logs.Criticln("[-] Main: Stop signal was received")
 		// avoid message loosing
 		bot.StopReceivingUpdates()
 		time.Sleep(time.Second * time.Duration(cfg.UpdateTout))
@@ -63,5 +66,5 @@ func main() {
 
 	// stop app
 	waitGroup.Wait()
-	fmt.Fprintln(os.Stdout, "[-] Main routine was finished")
+	logs.Criticln("[-] Main routine was finished")
 }

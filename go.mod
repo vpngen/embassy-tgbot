@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
-	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.2-0.20220419141443-537c005643ad
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 )
 
