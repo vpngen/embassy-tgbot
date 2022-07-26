@@ -24,7 +24,7 @@ func main() {
 	logs.SetLogLevel(int32(cfg.DebugLevel))
 
 	// create a bot
-	bot, err := createBot(cfg.Token, cfg.Debug)
+	bot, err := createBot(cfg.Token, cfg.BotDebug)
 	if err != nil {
 		log.Panic(err)
 	}

@@ -27,7 +27,7 @@ type Config struct {
 	Token      string
 	UpdateTout int
 	DebugLevel int
-	Debug      bool
+	BotDebug   bool
 	DBDir      string
 	DBKey      []byte
 }
@@ -42,6 +42,7 @@ func configFromEnv() Config {
 	token := os.Getenv("EMBASSY_TOKEN")               // Telegram token
 	updateTout := os.Getenv("EMBASSY_UPDATE_TIMEOUT") // DefaultUpdateTimeout = 3
 	debugLevel := os.Getenv("EMBASSY_DEBUG")          // number now, 0 is silent
+	botDebug := os.Getenv("BOT_DEBUG")                // st now, is debug
 	dbDir := os.Getenv("EMBASSY_BADGER_DIR")          // Database dir, default db
 	dbKey := os.Getenv("EMBASSY_BADGER_KEY")
 
@@ -59,7 +60,7 @@ func configFromEnv() Config {
 		dbg = int(logs.LevelDebug)
 	}
 
-	if dbg == int(logs.LevelDebug) {
+	if botDebug != "0" && botDebug != "" {
 		debug = true
 	}
 
@@ -77,7 +78,7 @@ func configFromEnv() Config {
 		Token:      token,
 		UpdateTout: tout,
 		DebugLevel: dbg,
-		Debug:      debug,
+		BotDebug:   debug,
 		DBDir:      dbDir,
 		DBKey:      key,
 	}
