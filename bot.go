@@ -15,7 +15,7 @@ func createBot(token string, debug bool) (*tgbotapi.BotAPI, error) {
 		return nil, fmt.Errorf("create bot: %w", err)
 	}
 
-	bot.Debug = debug
+	// bot.Debug = debug
 
 	logs.Criticf("[i] Authorized on account %s\n", bot.Self.UserName)
 
