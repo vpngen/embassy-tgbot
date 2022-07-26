@@ -28,13 +28,17 @@ const (
 
 	// WarnGroupsNotAllowed - this bot is only private.
 	WarnGroupsNotAllowed = `Извините, в группах бот не работает`
+
 	// FatalUnwellSecurity - if autodelete not set
 	FatalUnwellSecurity = `Привет!
 
-Установи автоудаление сообщений в этом чате *через 1 день* и продолжи.`
+Установи автоудаление сообщений в этом чате *через 1 или 2 дня* и продолжи.`
 
 	// FatalSomeThingWrong - something wrong happened
 	FatalSomeThingWrong = `Что-то пошло не так`
+
+	// StandartChatAction - something in status
+	StandartChatAction = `мы размышляем...`
 )
 
 var wannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(

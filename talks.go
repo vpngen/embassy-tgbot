@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -24,6 +25,9 @@ const (
 	stageWait4Decision
 	stageCleanup
 )
+
+// SlowAnswerTimeout - timeout befor each our answer.
+const SlowAnswerTimeout = 5 * time.Second
 
 func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	defer waitGroup.Done()
@@ -49,6 +53,14 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 
 		return
 	}
+
+	// show something in status
+	ca := tgbotapi.NewChatAction(update.Message.Chat.ID, StandartChatAction)
+	if _, err := bot.Request(ca); err != nil {
+		logs.Debugf("[!:%s] chat: %s", ecode, err)
+	}
+
+	time.Sleep(SlowAnswerTimeout)
 
 	switch session.Stage {
 	case stageWait4Choice, stageWait4Decision, stageCleanup:
@@ -91,6 +103,12 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 		stWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("check session: %w", err))
 
 		return
+	}
+
+	// show something is status
+	ca := tgbotapi.NewChatAction(update.CallbackQuery.Message.Chat.ID, StandartChatAction)
+	if _, err := bot.Request(ca); err != nil {
+		logs.Debugf("[!:%s] chat: %s", ecode, err)
 	}
 
 	switch {
