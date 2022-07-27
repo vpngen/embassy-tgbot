@@ -54,7 +54,7 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	}
 
 	// show something in status
-	ca := tgbotapi.NewChatAction(update.Message.Chat.ID, StandartChatAction)
+	ca := tgbotapi.NewChatAction(update.Message.Chat.ID, getAction())
 	if _, err := bot.Request(ca); err != nil {
 		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
 	}
@@ -105,7 +105,7 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 	}
 
 	// show something is status
-	ca := tgbotapi.NewChatAction(update.CallbackQuery.Message.Chat.ID, StandartChatAction)
+	ca := tgbotapi.NewChatAction(update.CallbackQuery.Message.Chat.ID, getAction())
 	if _, err := bot.Request(ca); err != nil {
 		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
 	}
@@ -246,4 +246,8 @@ func checkAbilityToTalk(bot *tgbotapi.BotAPI, chatID int64, ecode string) bool {
 	}
 
 	return true
+}
+
+func getAction() string {
+	return StandartChatActions[int(rand.Int31n(int32(len(StandartChatActions))))]
 }

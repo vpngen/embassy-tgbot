@@ -36,14 +36,22 @@ const (
 
 	// FatalSomeThingWrong - something wrong happened
 	FatalSomeThingWrong = `Что-то пошло не так`
-
-	// StandartChatAction - something in status
-	StandartChatAction = "choose_sticker"
 )
 
-var wannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "wannabe"),
-		tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", "https://t.me/durov"),
-	),
+var (
+	wannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "wannabe"),
+			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", "https://t.me/durov"),
+		),
+	)
+
+	// StandartChatActions - something in status
+	StandartChatActions = [...]string{
+		"typing",
+		"choose_sticker",
+		"upload_photo",
+		"record_video",
+		"record_voice",
+	}
 )
