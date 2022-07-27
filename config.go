@@ -30,6 +30,7 @@ type Config struct {
 	BotDebug   bool
 	DBDir      string
 	DBKey      []byte
+	SupportURL string
 }
 
 // configFromEnv - fill config from environment vars.
@@ -45,9 +46,14 @@ func configFromEnv() Config {
 	botDebug := os.Getenv("BOT_DEBUG")                // st now, is debug
 	dbDir := os.Getenv("EMBASSY_BADGER_DIR")          // Database dir, default db
 	dbKey := os.Getenv("EMBASSY_BADGER_KEY")
+	supportURL := os.Getenv("SUPPORT_URL")
 
 	if dbKey == "" {
 		log.Panic("NO ENCRYPTION KEY")
+	}
+
+	if supportURL == "" {
+		supportURL = DefaultSupportURL
 	}
 
 	tout, _ := strconv.Atoi(updateTout)
@@ -81,5 +87,6 @@ func configFromEnv() Config {
 		BotDebug:   debug,
 		DBDir:      dbDir,
 		DBKey:      key,
+		SupportURL: supportURL,
 	}
 }

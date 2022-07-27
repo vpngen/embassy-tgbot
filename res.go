@@ -36,15 +36,14 @@ const (
 
 	// FatalSomeThingWrong - something wrong happened
 	FatalSomeThingWrong = `Что-то пошло не так`
+
+	// DefaultSupportURL -
+	DefaultSupportURL = "https://t.me/"
 )
 
 var (
-	wannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "wannabe"),
-			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", "https://t.me/durov"),
-		),
-	)
+	// WannabeKeyboard -
+	WannabeKeyboard tgbotapi.InlineKeyboardMarkup
 
 	// StandartChatActions - something in status
 	StandartChatActions = [...]string{
@@ -55,3 +54,13 @@ var (
 		"record_voice",
 	}
 )
+
+// SetWannaKeyboard -
+func SetWannaKeyboard(url string) {
+	WannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "wannabe"),
+			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
+		),
+	)
+}

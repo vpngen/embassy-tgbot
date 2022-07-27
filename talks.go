@@ -126,7 +126,7 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 
 func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgWelcome)
-	msg.ReplyMarkup = wannabeKeyboard
+	msg.ReplyMarkup = WannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ProtectContent = true
 
