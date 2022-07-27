@@ -41,22 +41,9 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	}()
 
 	/// check delete timeout and protect
-	if ok := checkAbilityToTalk(bot, update.Message.Chat.ID, ecode); !ok {
+	session, ok := checkAuth(dbase, bot, update.Message.Chat.ID, ecode)
+	if !ok {
 		return
-	}
-
-	/// check session
-	session, err := checkSession(dbase, update.Message.Chat.ID)
-	if err != nil {
-		stWrong(bot, update.Message.Chat.ID, ecode, fmt.Errorf("check session: %w", err))
-
-		return
-	}
-
-	// show something in status
-	ca := tgbotapi.NewChatAction(update.Message.Chat.ID, getAction())
-	if _, err := bot.Request(ca); err != nil {
-		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
 	}
 
 	time.Sleep(SlowAnswerTimeout)
@@ -92,22 +79,9 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique error code
 
 	/// check delete timeout and protect
-	if ok := checkAbilityToTalk(bot, update.CallbackQuery.Message.Chat.ID, ecode); !ok {
+	session, ok := checkAuth(dbase, bot, update.CallbackQuery.Message.Chat.ID, ecode)
+	if !ok {
 		return
-	}
-
-	/// check session
-	session, err := checkSession(dbase, update.CallbackQuery.Message.Chat.ID)
-	if err != nil {
-		stWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("check session: %w", err))
-
-		return
-	}
-
-	// show something is status
-	ca := tgbotapi.NewChatAction(update.CallbackQuery.Message.Chat.ID, getAction())
-	if _, err := bot.Request(ca); err != nil {
-		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
 	}
 
 	time.Sleep(SlowAnswerTimeout)
@@ -223,12 +197,12 @@ func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) 
 	return true, nil
 }
 
-func checkAbilityToTalk(bot *tgbotapi.BotAPI, chatID int64, ecode string) bool {
+func checkAuth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*Session, bool) {
 	ok, err := checkChatAutoDeleteTimer(bot, chatID)
 	if err != nil {
 		stWrong(bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
 
-		return false
+		return nil, false
 	}
 
 	if !ok {
@@ -239,13 +213,27 @@ func checkAbilityToTalk(bot *tgbotapi.BotAPI, chatID int64, ecode string) bool {
 		if _, err := bot.Send(msg); err != nil {
 			logs.Errf("[!:%s] send: %s\n", ecode, err)
 
-			return false
+			return nil, false
 		}
 
-		return false
+		return nil, false
 	}
 
-	return true
+	/// check session
+	session, err := checkSession(dbase, chatID)
+	if err != nil {
+		stWrong(bot, chatID, ecode, fmt.Errorf("check session: %w", err))
+
+		return nil, false
+	}
+
+	// show something in status
+	ca := tgbotapi.NewChatAction(chatID, getAction())
+	if _, err := bot.Request(ca); err != nil {
+		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
+	}
+
+	return session, true
 }
 
 func getAction() string {
