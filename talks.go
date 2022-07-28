@@ -53,10 +53,12 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 	}()
 
 	/// check all dialog conditions.
-	session, ok := auth(opts.db, opts.bot, update.Message.Chat.ID, ecode)
+	session, ok := auth(opts, update.Message.Chat.ID, ecode)
 	if !ok {
 		return
 	}
+
+	defer opts.cw.Release(update.Message.Chat.ID)
 
 	// don't be in a harry.
 	time.Sleep(SlowAnswerTimeout)
@@ -66,7 +68,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 		return
 
 	case stageWait4Bill:
-		err := sendAttestationAssignedMessage(opts.bot, opts.db, update.Message.Chat.ID)
+		err := sendAttestationAssignedMessage(opts, update.Message.Chat.ID)
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
@@ -80,7 +82,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 		}()
 
 	default:
-		err := sendWelcomeMessage(opts.bot, opts.db, update.Message.Chat.ID)
+		err := sendWelcomeMessage(opts, update.Message.Chat.ID)
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
 		}
@@ -94,17 +96,19 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 	ecode := genEcode() // unique error code
 
 	/// check delete timeout and protect.
-	session, ok := auth(opts.db, opts.bot, update.CallbackQuery.Message.Chat.ID, ecode)
+	session, ok := auth(opts, update.CallbackQuery.Message.Chat.ID, ecode)
 	if !ok {
 		return
 	}
+
+	defer opts.cw.Release(update.CallbackQuery.Message.Chat.ID)
 
 	// don't be in a harry.
 	time.Sleep(SlowAnswerTimeout)
 
 	switch {
 	case update.CallbackQuery.Data == "wannabe" && session.Stage == stageWait4Choice:
-		if err := sendQuizMessage(opts.bot, opts.db, update.CallbackQuery.Message.Chat.ID); err != nil {
+		if err := sendQuizMessage(opts, update.CallbackQuery.Message.Chat.ID); err != nil {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 		}
 
@@ -115,6 +119,8 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 			}
 		}()
+	default:
+		opts.cw.Release(update.CallbackQuery.Message.Chat.ID)
 	}
 }
 
@@ -148,18 +154,18 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 }
 
 // Send Welcome message.
-func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
+func sendWelcomeMessage(opts hOpts, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgWelcome)
 	msg.ReplyMarkup = WannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ProtectContent = true
 
-	newMsg, err := bot.Send(msg)
+	newMsg, err := opts.bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWait4Choice)
+	err = setSession(opts.db, newMsg.Chat.ID, newMsg.MessageID, stageWait4Choice)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -168,17 +174,17 @@ func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) er
 }
 
 // Send Quiz message.
-func sendQuizMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
+func sendQuizMessage(opts hOpts, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgQuiz)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ProtectContent = true
 
-	newMsg, err := bot.Send(msg)
+	newMsg, err := opts.bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWait4Bill)
+	err = setSession(opts.db, newMsg.Chat.ID, newMsg.MessageID, stageWait4Bill)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -187,17 +193,17 @@ func sendQuizMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error
 }
 
 // Send attestation message.
-func sendAttestationAssignedMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
+func sendAttestationAssignedMessage(opts hOpts, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgAttestationAssigned)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ProtectContent = true
 
-	newMsg, err := bot.Send(msg)
+	newMsg, err := opts.bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(dbase, newMsg.Chat.ID, newMsg.MessageID, stageWait4Decision)
+	err = setSession(opts.db, newMsg.Chat.ID, newMsg.MessageID, stageWait4Decision)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -226,10 +232,10 @@ func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) 
 }
 
 // authentificate for dilog.
-func auth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*Session, bool) {
-	adSet, err := checkChatAutoDeleteTimer(bot, chatID)
+func auth(opts hOpts, chatID int64, ecode string) (*Session, bool) {
+	adSet, err := checkChatAutoDeleteTimer(opts.bot, chatID)
 	if err != nil {
-		stWrong(bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
+		stWrong(opts.bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
 
 		return nil, false
 	}
@@ -239,7 +245,7 @@ func auth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.ProtectContent = true
 
-		if _, err := bot.Send(msg); err != nil {
+		if _, err := opts.bot.Send(msg); err != nil {
 			logs.Errf("[!:%s] send: %s\n", ecode, err)
 
 			return nil, false
@@ -248,17 +254,21 @@ func auth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*
 		return nil, false
 	}
 
+	if opts.cw.Get(chatID) > 0 {
+		return nil, false
+	}
+
 	/// check session.
-	session, err := checkSession(dbase, chatID)
+	session, err := checkSession(opts.db, chatID)
 	if err != nil {
-		stWrong(bot, chatID, ecode, fmt.Errorf("check session: %w", err))
+		stWrong(opts.bot, chatID, ecode, fmt.Errorf("check session: %w", err))
 
 		return nil, false
 	}
 
 	// show something in status.
 	ca := tgbotapi.NewChatAction(chatID, getAction())
-	if _, err := bot.Request(ca); err != nil {
+	if _, err := opts.bot.Request(ca); err != nil {
 		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
 	}
 
