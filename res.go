@@ -23,30 +23,30 @@ const (
 
 Ждем фоточку чека!`
 
-	// MsgAttestationAssigned - receipt have accepted
+	// MsgAttestationAssigned - receipt have accepted.
 	MsgAttestationAssigned = `Чек принят к рассмотрению`
 
 	// WarnGroupsNotAllowed - this bot is only private.
 	WarnGroupsNotAllowed = `Извините, в группах бот не работает`
 
-	// FatalUnwellSecurity - if autodelete not set
+	// FatalUnwellSecurity - if autodelete not set.
 	FatalUnwellSecurity = `Привет!
 
 Установи автоудаление сообщений в этом чате *через 1 или 2 дня* и продолжи.`
 
-	// FatalSomeThingWrong - something wrong happened
+	// FatalSomeThingWrong - something wrong happened.
 	FatalSomeThingWrong = `Что-то пошло не так`
 
-	// DefaultSupportURL -
+	// DefaultSupportURL - support URL if isn't set.
 	DefaultSupportURL = "https://t.me/"
 )
 
 var (
-	// WannabeKeyboard -
-	WannabeKeyboard tgbotapi.InlineKeyboardMarkup
+	// WannabeKeyboard - wanna keyboard.
+	WannabeKeyboard tgbotapi.InlineKeyboardMarkup //nolint
 
-	// StandartChatActions - something in status
-	StandartChatActions = [...]string{
+	// StandartChatActions - something in status.
+	StandartChatActions = [...]string{ //nolint
 		"typing",
 		"choose_sticker",
 		"upload_photo",
@@ -55,7 +55,7 @@ var (
 	}
 )
 
-// SetWannaKeyboard -
+// SetWannaKeyboard - set wanna keyboard.
 func SetWannaKeyboard(url string) {
 	WannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(

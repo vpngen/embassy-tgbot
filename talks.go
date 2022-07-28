@@ -11,16 +11,16 @@ import (
 	"github.com/vpngen/embassy-tgbot/logs"
 )
 
-// Security chat settings - autodelete ranges
+// Security chat settings - autodelete ranges.
 const (
 	secondsInTheDay  = 24 * 3600
 	minSecondsToLive = secondsInTheDay
 	maxSecondsToLive = 2 * secondsInTheDay
 )
 
-// Dialog stages
+// Dialog stages.
 const (
-	stageStart int = iota
+	stageStart int = iota //nolint
 	stageWait4Choice
 	stageWait4Bill
 	stageWait4Decision
@@ -30,7 +30,7 @@ const (
 // SlowAnswerTimeout - timeout befor each our answer.
 const SlowAnswerTimeout = 3 * time.Second
 
-// handlers options
+// handlers options.
 type hOpts struct {
 	wg  *sync.WaitGroup
 	db  *badger.DB
@@ -38,27 +38,27 @@ type hOpts struct {
 	cw  *ChatsWins
 }
 
-// Handling messages (opposed callback)
+// Handling messages (opposed callback).
 func messageHandler(opts hOpts, update tgbotapi.Update) {
 	defer opts.wg.Done()
 
-	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique e-code
+	ecode := genEcode() // unique e-code
 
-	// delete incoming message after a answer
+	// delete incoming message after a answer.
 	defer func() {
 		if err := removeMsg(opts.bot, update.Message.Chat.ID, update.Message.MessageID); err != nil {
-			logs.Debugf("[!:%s] remove: %s\n", ecode, err)
 			// we don't want to handle this
+			logs.Debugf("[!:%s] remove: %s\n", ecode, err)
 		}
 	}()
 
-	/// check all dialog conditions
+	/// check all dialog conditions.
 	session, ok := auth(opts.db, opts.bot, update.Message.Chat.ID, ecode)
 	if !ok {
 		return
 	}
 
-	// don't be in a harry
+	// don't be in a harry.
 	time.Sleep(SlowAnswerTimeout)
 
 	switch session.Stage {
@@ -71,11 +71,11 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
 
-		// delete our previous message
+		// delete our previous message.
 		defer func() {
 			if err := removeMsg(opts.bot, update.Message.Chat.ID, session.OurMsgID); err != nil {
-				logs.Debugf("[!:%s] remove old: %s\n", ecode, err)
 				// we don't want to handle this
+				logs.Debugf("[!:%s] remove old: %s\n", ecode, err)
 			}
 		}()
 
@@ -87,19 +87,19 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 	}
 }
 
-// Handling callbacks  (opposed messages)
+// Handling callbacks  (opposed messages).
 func buttonHandler(opts hOpts, update tgbotapi.Update) {
 	defer opts.wg.Done()
 
-	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique error code
+	ecode := genEcode() // unique error code
 
-	/// check delete timeout and protect
+	/// check delete timeout and protect.
 	session, ok := auth(opts.db, opts.bot, update.CallbackQuery.Message.Chat.ID, ecode)
 	if !ok {
 		return
 	}
 
-	// don't be in a harry
+	// don't be in a harry.
 	time.Sleep(SlowAnswerTimeout)
 
 	switch {
@@ -108,17 +108,22 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 		}
 
-		// delete our previous message
+		// delete our previous message.
 		defer func() {
 			if err := removeMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
-				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 				// we don't want to handle this
+				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 			}
 		}()
 	}
 }
 
-// Removing message
+// genEcode - generate some uniq e-code.
+func genEcode() string {
+	return fmt.Sprintf("%04x", rand.Int31()) //nolint
+}
+
+// Removing message.
 func removeMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 	remove := tgbotapi.NewDeleteMessage(chatID, msgID)
 	if _, err := bot.Request(remove); err != nil {
@@ -128,7 +133,7 @@ func removeMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 	return nil
 }
 
-// Something wrong handling
+// Something wrong handling.
 func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 	logs.Errf("[!:%s] %s\n", ecode, err)
 
@@ -142,7 +147,7 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 	}
 }
 
-// Send Welcome message
+// Send Welcome message.
 func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgWelcome)
 	msg.ReplyMarkup = WannabeKeyboard
@@ -162,7 +167,7 @@ func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) er
 	return nil
 }
 
-// Send Quiz message
+// Send Quiz message.
 func sendQuizMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgQuiz)
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -181,7 +186,7 @@ func sendQuizMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error
 	return nil
 }
 
-// Send attestation message
+// Send attestation message.
 func sendAttestationAssignedMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgAttestationAssigned)
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -200,12 +205,13 @@ func sendAttestationAssignedMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chat
 	return nil
 }
 
-// Check autodelete chat option
+// Check autodelete chat option.
 func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) {
 	chat, err := bot.GetChat(
 		tgbotapi.ChatInfoConfig{
 			ChatConfig: tgbotapi.ChatConfig{
-				ChatID: chatID},
+				ChatID: chatID,
+			},
 		},
 	)
 	if err != nil {
@@ -219,16 +225,16 @@ func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) 
 	return true, nil
 }
 
-// authentificate for dilog
+// authentificate for dilog.
 func auth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*Session, bool) {
-	ok, err := checkChatAutoDeleteTimer(bot, chatID)
+	adSet, err := checkChatAutoDeleteTimer(bot, chatID)
 	if err != nil {
 		stWrong(bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
 
 		return nil, false
 	}
 
-	if !ok {
+	if !adSet {
 		msg := tgbotapi.NewMessage(chatID, FatalUnwellSecurity)
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.ProtectContent = true
@@ -242,7 +248,7 @@ func auth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*
 		return nil, false
 	}
 
-	/// check session
+	/// check session.
 	session, err := checkSession(dbase, chatID)
 	if err != nil {
 		stWrong(bot, chatID, ecode, fmt.Errorf("check session: %w", err))
@@ -250,7 +256,7 @@ func auth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*
 		return nil, false
 	}
 
-	// show something in status
+	// show something in status.
 	ca := tgbotapi.NewChatAction(chatID, getAction())
 	if _, err := bot.Request(ca); err != nil {
 		logs.Debugf("[!:%s] chat: %s\n", ecode, err)
@@ -260,5 +266,7 @@ func auth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*
 }
 
 func getAction() string {
-	return StandartChatActions[int(rand.Int31n(int32(len(StandartChatActions))))]
+	ix := int(rand.Int31n(int32(len(StandartChatActions)))) //nolint
+
+	return StandartChatActions[ix]
 }

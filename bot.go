@@ -22,7 +22,14 @@ func createBot(token string, debug bool) (*tgbotapi.BotAPI, error) {
 	return bot, nil
 }
 
-func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, bot *tgbotapi.BotAPI, updateTout, debugLevel int) {
+func runBot(
+	waitGroup *sync.WaitGroup,
+	stop <-chan struct{},
+	dbase *badger.DB,
+	bot *tgbotapi.BotAPI,
+	updateTout,
+	debugLevel int,
+) {
 	defer waitGroup.Done()
 
 	opts := hOpts{

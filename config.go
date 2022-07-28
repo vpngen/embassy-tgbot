@@ -73,11 +73,29 @@ func configFromEnv() Config {
 	parts := strings.Split(dbKey, ":")
 	switch len(parts) {
 	case 1:
-		key = pbkdf2.Key([]byte(dbKey), []byte(DefaultSalt), DefaultIterations, DefaultKeyLen, sha256.New)
+		key = pbkdf2.Key(
+			[]byte(dbKey),
+			[]byte(DefaultSalt),
+			DefaultIterations,
+			DefaultKeyLen,
+			sha256.New,
+		)
 	case 2:
-		key = pbkdf2.Key([]byte(parts[1]), []byte(parts[0]), DefaultIterations, DefaultKeyLen, sha256.New)
+		key = pbkdf2.Key(
+			[]byte(parts[1]),
+			[]byte(parts[0]),
+			DefaultIterations,
+			DefaultKeyLen,
+			sha256.New,
+		)
 	default:
-		key = pbkdf2.Key([]byte(strings.TrimPrefix(dbKey, parts[0]+":")), []byte(parts[0]), DefaultIterations, DefaultKeyLen, sha256.New)
+		key = pbkdf2.Key(
+			[]byte(strings.TrimPrefix(dbKey, parts[0]+":")),
+			[]byte(parts[0]),
+			DefaultIterations,
+			DefaultKeyLen,
+			sha256.New,
+		)
 	}
 
 	return Config{

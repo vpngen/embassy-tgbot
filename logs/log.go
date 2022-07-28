@@ -16,7 +16,7 @@ const (
 )
 
 // logLevel - global logging level.
-var logLevel int32 = LevelCritical
+var logLevel = LevelCritical //nolint
 
 // SetLogLevel - set global logging level.
 func SetLogLevel(n int32) {
@@ -29,124 +29,100 @@ func LogLevel() int32 {
 }
 
 // Debug - print debug message.
-func Debug(a ...any) (int, error) {
+func Debug(a ...any) {
 	if LogLevel() == LevelDebug {
-		return fmt.Fprint(os.Stdout, a...)
+		fmt.Fprint(os.Stdout, a...)
 	}
-
-	return 0, nil
 }
 
 // Debugln - print debug message.
-func Debugln(a ...any) (int, error) {
+func Debugln(a ...any) {
 	if LogLevel() == LevelDebug {
-		return fmt.Fprintln(os.Stdout, a...)
+		fmt.Fprintln(os.Stdout, a...)
 	}
-
-	return 0, nil
 }
 
 // Debugf - print debug message.
-func Debugf(format string, a ...any) (int, error) {
+func Debugf(format string, a ...any) {
 	if LogLevel() == LevelDebug {
-		return fmt.Fprintf(os.Stdout, format, a...)
+		fmt.Fprintf(os.Stdout, format, a...)
 	}
-
-	return 0, nil
 }
 
 // Info - print debug message.
-func Info(a ...any) (int, error) {
+func Info(a ...any) {
 	if LogLevel() >= LevelInfo {
-		return fmt.Fprint(os.Stdout, a...)
+		fmt.Fprint(os.Stdout, a...)
 	}
-
-	return 0, nil
 }
 
 // Infoln - print debug message.
-func Infoln(a ...any) (int, error) {
+func Infoln(a ...any) {
 	if LogLevel() >= LevelInfo {
-		return fmt.Fprintln(os.Stdout, a...)
+		fmt.Fprintln(os.Stdout, a...)
 	}
-
-	return 0, nil
 }
 
 // Infof - print debug message.
-func Infof(format string, a ...any) (int, error) {
+func Infof(format string, a ...any) {
 	if LogLevel() >= LevelInfo {
-		return fmt.Fprintf(os.Stdout, format, a...)
+		fmt.Fprintf(os.Stdout, format, a...)
 	}
-
-	return 0, nil
 }
 
 // Warning - print debug message.
-func Warning(a ...any) (int, error) {
+func Warning(a ...any) {
 	if LogLevel() >= LevelWarning {
-		return fmt.Fprint(os.Stderr, a...)
+		fmt.Fprint(os.Stderr, a...)
 	}
-
-	return 0, nil
 }
 
 // Warningln - print debug message.
-func Warningln(a ...any) (int, error) {
+func Warningln(a ...any) {
 	if LogLevel() >= LevelWarning {
-		return fmt.Fprintln(os.Stderr, a...)
+		fmt.Fprintln(os.Stderr, a...)
 	}
-
-	return 0, nil
 }
 
 // Warningf - print debug message.
-func Warningf(format string, a ...any) (int, error) {
+func Warningf(format string, a ...any) {
 	if LogLevel() >= LevelWarning {
-		return fmt.Fprintf(os.Stderr, format, a...)
+		fmt.Fprintf(os.Stderr, format, a...)
 	}
-
-	return 0, nil
 }
 
 // Err - print debug message.
-func Err(a ...any) (int, error) {
+func Err(a ...any) {
 	if LogLevel() >= LevelError {
-		return fmt.Fprint(os.Stderr, a...)
+		fmt.Fprint(os.Stderr, a...)
 	}
-
-	return 0, nil
 }
 
 // Errln - print debug message.
-func Errln(a ...any) (int, error) {
+func Errln(a ...any) {
 	if LogLevel() >= LevelError {
-		return fmt.Fprintln(os.Stderr, a...)
+		fmt.Fprintln(os.Stderr, a...)
 	}
-
-	return 0, nil
 }
 
 // Errf - print debug message.
-func Errf(format string, a ...any) (int, error) {
+func Errf(format string, a ...any) {
 	if LogLevel() >= LevelError {
-		return fmt.Fprintf(os.Stderr, format, a...)
+		fmt.Fprintf(os.Stderr, format, a...)
 	}
-
-	return 0, nil
 }
 
 // Critic - print debug message.
-func Critic(a ...any) (int, error) {
-	return fmt.Fprint(os.Stderr, a...)
+func Critic(a ...any) {
+	fmt.Fprint(os.Stderr, a...)
 }
 
 // Criticln - print debug message.
-func Criticln(a ...any) (int, error) {
-	return fmt.Fprintln(os.Stderr, a...)
+func Criticln(a ...any) {
+	fmt.Fprintln(os.Stderr, a...)
 }
 
 // Criticf - print debug message.
-func Criticf(format string, a ...any) (int, error) {
-	return fmt.Fprintf(os.Stderr, format, a...)
+func Criticf(format string, a ...any) {
+	fmt.Fprintf(os.Stderr, format, a...)
 }

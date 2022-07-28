@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -64,14 +65,14 @@ func setSession(dbase *badger.DB, chatID int64, msgID int, stage int) error {
 func checkSession(dbase *badger.DB, chatID int64) (*Session, error) {
 	var (
 		data    []byte
-		session *Session = &Session{}
+		session = &Session{}
 	)
 
 	key := sessionID(chatID)
 	err := dbase.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(key)
 		if err != nil {
-			if err == badger.ErrKeyNotFound {
+			if errors.Is(err, badger.ErrKeyNotFound) {
 				return nil
 			}
 
@@ -89,6 +90,7 @@ func checkSession(dbase *badger.DB, chatID int64) (*Session, error) {
 
 		return nil
 	})
+
 	if err != nil {
 		return session, fmt.Errorf("db: %w", err)
 	}
