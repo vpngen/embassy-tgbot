@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	sessionSalt = "$Rit5"
+	sessionSalt   = "$Rit5"
+	sessionPrefix = "session"
 )
 
 // Session - session.
@@ -27,7 +28,7 @@ func sessionID(chatID int64) []byte {
 	binary.BigEndian.PutUint64(int64bytes[:], uint64(chatID))
 
 	digest := sha256.Sum256(int64bytes[:])
-	id := append([]byte{'s'}, append([]byte(sessionSalt), digest[:]...)...)
+	id := append([]byte(sessionPrefix), append([]byte(sessionSalt), digest[:]...)...)
 
 	return id
 }
