@@ -30,22 +30,30 @@ const (
 // SlowAnswerTimeout - timeout befor each our answer.
 const SlowAnswerTimeout = 3 * time.Second
 
+// handlers options
+type hOpts struct {
+	wg  *sync.WaitGroup
+	db  *badger.DB
+	bot *tgbotapi.BotAPI
+	cw  *ChatsWins
+}
+
 // Handling messages (opposed callback)
-func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	defer waitGroup.Done()
+func messageHandler(opts hOpts, update tgbotapi.Update) {
+	defer opts.wg.Done()
 
 	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique e-code
 
 	// delete incoming message after a answer
 	defer func() {
-		if err := removeMsg(bot, update.Message.Chat.ID, update.Message.MessageID); err != nil {
+		if err := removeMsg(opts.bot, update.Message.Chat.ID, update.Message.MessageID); err != nil {
 			logs.Debugf("[!:%s] remove: %s\n", ecode, err)
 			// we don't want to handle this
 		}
 	}()
 
 	/// check all dialog conditions
-	session, ok := auth(dbase, bot, update.Message.Chat.ID, ecode)
+	session, ok := auth(opts.db, opts.bot, update.Message.Chat.ID, ecode)
 	if !ok {
 		return
 	}
@@ -58,35 +66,35 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 		return
 
 	case stageWait4Bill:
-		err := sendAttestationAssignedMessage(bot, dbase, update.Message.Chat.ID)
+		err := sendAttestationAssignedMessage(opts.bot, opts.db, update.Message.Chat.ID)
 		if err != nil {
-			stWrong(bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
+			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
 
 		// delete our previous message
 		defer func() {
-			if err := removeMsg(bot, update.Message.Chat.ID, session.OurMsgID); err != nil {
+			if err := removeMsg(opts.bot, update.Message.Chat.ID, session.OurMsgID); err != nil {
 				logs.Debugf("[!:%s] remove old: %s\n", ecode, err)
 				// we don't want to handle this
 			}
 		}()
 
 	default:
-		err := sendWelcomeMessage(bot, dbase, update.Message.Chat.ID)
+		err := sendWelcomeMessage(opts.bot, opts.db, update.Message.Chat.ID)
 		if err != nil {
-			stWrong(bot, update.Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
+			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
 		}
 	}
 }
 
 // Handling callbacks  (opposed messages)
-func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	defer waitGroup.Done()
+func buttonHandler(opts hOpts, update tgbotapi.Update) {
+	defer opts.wg.Done()
 
 	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique error code
 
 	/// check delete timeout and protect
-	session, ok := auth(dbase, bot, update.CallbackQuery.Message.Chat.ID, ecode)
+	session, ok := auth(opts.db, opts.bot, update.CallbackQuery.Message.Chat.ID, ecode)
 	if !ok {
 		return
 	}
@@ -96,13 +104,13 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 
 	switch {
 	case update.CallbackQuery.Data == "wannabe" && session.Stage == stageWait4Choice:
-		if err := sendQuizMessage(bot, dbase, update.CallbackQuery.Message.Chat.ID); err != nil {
-			stWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
+		if err := sendQuizMessage(opts.bot, opts.db, update.CallbackQuery.Message.Chat.ID); err != nil {
+			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 		}
 
 		// delete our previous message
 		defer func() {
-			if err := removeMsg(bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
+			if err := removeMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 				// we don't want to handle this
 			}

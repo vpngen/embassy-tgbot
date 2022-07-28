@@ -25,6 +25,13 @@ func createBot(token string, debug bool) (*tgbotapi.BotAPI, error) {
 func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, bot *tgbotapi.BotAPI, updateTout, debugLevel int) {
 	defer waitGroup.Done()
 
+	opts := hOpts{
+		wg:  waitGroup,
+		db:  dbase,
+		bot: bot,
+		cw:  NewChatsWins(),
+	}
+
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = updateTout
 
@@ -40,7 +47,7 @@ func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, b
 
 					waitGroup.Add(1)
 
-					go messageHandler(waitGroup, dbase, bot, update)
+					go messageHandler(opts, update)
 
 					break
 				}
@@ -61,7 +68,7 @@ func runBot(waitGroup *sync.WaitGroup, stop <-chan struct{}, dbase *badger.DB, b
 
 				waitGroup.Add(1)
 
-				go buttonHandler(waitGroup, dbase, bot, update)
+				go buttonHandler(opts, update)
 			}
 		case <-stop:
 			logs.Infoln("[-] Run: Stop signal was received")
