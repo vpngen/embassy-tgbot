@@ -11,12 +11,14 @@ import (
 	"github.com/vpngen/embassy-tgbot/logs"
 )
 
+// Security chat settings - autodelete ranges
 const (
 	secondsInTheDay  = 24 * 3600
 	minSecondsToLive = secondsInTheDay
 	maxSecondsToLive = 2 * secondsInTheDay
 )
 
+// Dialog stages
 const (
 	stageStart int = iota
 	stageWait4Choice
@@ -28,11 +30,13 @@ const (
 // SlowAnswerTimeout - timeout befor each our answer.
 const SlowAnswerTimeout = 3 * time.Second
 
+// Handling messages (opposed callback)
 func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	defer waitGroup.Done()
 
 	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique e-code
 
+	// delete incoming message after a answer
 	defer func() {
 		if err := removeMsg(bot, update.Message.Chat.ID, update.Message.MessageID); err != nil {
 			logs.Debugf("[!:%s] remove: %s\n", ecode, err)
@@ -40,12 +44,13 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 		}
 	}()
 
-	/// check delete timeout and protect
-	session, ok := checkAuth(dbase, bot, update.Message.Chat.ID, ecode)
+	/// check all dialog conditions
+	session, ok := auth(dbase, bot, update.Message.Chat.ID, ecode)
 	if !ok {
 		return
 	}
 
+	// don't be in a harry
 	time.Sleep(SlowAnswerTimeout)
 
 	switch session.Stage {
@@ -58,6 +63,7 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 			stWrong(bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
 
+		// delete our previous message
 		defer func() {
 			if err := removeMsg(bot, update.Message.Chat.ID, session.OurMsgID); err != nil {
 				logs.Debugf("[!:%s] remove old: %s\n", ecode, err)
@@ -73,17 +79,19 @@ func messageHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.B
 	}
 }
 
+// Handling callbacks  (opposed messages)
 func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	defer waitGroup.Done()
 
 	ecode := fmt.Sprintf("%04x", rand.Int31()) // unique error code
 
 	/// check delete timeout and protect
-	session, ok := checkAuth(dbase, bot, update.CallbackQuery.Message.Chat.ID, ecode)
+	session, ok := auth(dbase, bot, update.CallbackQuery.Message.Chat.ID, ecode)
 	if !ok {
 		return
 	}
 
+	// don't be in a harry
 	time.Sleep(SlowAnswerTimeout)
 
 	switch {
@@ -92,6 +100,7 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 			stWrong(bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 		}
 
+		// delete our previous message
 		defer func() {
 			if err := removeMsg(bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
@@ -101,16 +110,17 @@ func buttonHandler(waitGroup *sync.WaitGroup, dbase *badger.DB, bot *tgbotapi.Bo
 	}
 }
 
+// Removing message
 func removeMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 	remove := tgbotapi.NewDeleteMessage(chatID, msgID)
 	if _, err := bot.Request(remove); err != nil {
-
 		return fmt.Errorf("request: %w", err)
 	}
 
 	return nil
 }
 
+// Something wrong handling
 func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 	logs.Errf("[!:%s] %s\n", ecode, err)
 
@@ -124,6 +134,7 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 	}
 }
 
+// Send Welcome message
 func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgWelcome)
 	msg.ReplyMarkup = WannabeKeyboard
@@ -143,6 +154,7 @@ func sendWelcomeMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) er
 	return nil
 }
 
+// Send Quiz message
 func sendQuizMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgQuiz)
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -161,6 +173,7 @@ func sendQuizMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error
 	return nil
 }
 
+// Send attestation message
 func sendAttestationAssignedMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgAttestationAssigned)
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -179,6 +192,7 @@ func sendAttestationAssignedMessage(bot *tgbotapi.BotAPI, dbase *badger.DB, chat
 	return nil
 }
 
+// Check autodelete chat option
 func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) {
 	chat, err := bot.GetChat(
 		tgbotapi.ChatInfoConfig{
@@ -197,7 +211,8 @@ func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) 
 	return true, nil
 }
 
-func checkAuth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*Session, bool) {
+// authentificate for dilog
+func auth(dbase *badger.DB, bot *tgbotapi.BotAPI, chatID int64, ecode string) (*Session, bool) {
 	ok, err := checkChatAutoDeleteTimer(bot, chatID)
 	if err != nil {
 		stWrong(bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
