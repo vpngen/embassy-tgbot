@@ -45,7 +45,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 	ecode := genEcode() // unique e-code
 
 	// check all dialog conditions.
-	session, ok := auth(opts, update.Message.Chat.ID, ecode)
+	session, ok := auth(opts, update.Message.Chat.ID, update.Message.Date, ecode)
 	if !ok {
 		return
 	}
@@ -80,7 +80,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 	ecode := genEcode() // unique error code
 
 	/// check delete timeout and protect.
-	session, ok := auth(opts, update.CallbackQuery.Message.Chat.ID, ecode)
+	session, ok := auth(opts, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.Date, ecode)
 	if !ok {
 		return
 	}
@@ -215,7 +215,7 @@ func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) 
 }
 
 // authentificate for dilog.
-func auth(opts hOpts, chatID int64, ecode string) (*Session, bool) {
+func auth(opts hOpts, chatID int64, ut int, ecode string) (*Session, bool) {
 	adSet, err := checkChatAutoDeleteTimer(opts.bot, chatID)
 	if err != nil {
 		stWrong(opts.bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
@@ -245,6 +245,12 @@ func auth(opts hOpts, chatID int64, ecode string) (*Session, bool) {
 	session, err := checkSession(opts.db, chatID)
 	if err != nil {
 		stWrong(opts.bot, chatID, ecode, fmt.Errorf("check session: %w", err))
+
+		return nil, false
+	}
+
+	if session.UpdateTime > int64(ut) {
+		logs.Debugf("[!:%s] old message: %d < %d\n", ecode, session.UpdateTime, ut)
 
 		return nil, false
 	}
