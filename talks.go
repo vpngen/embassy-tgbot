@@ -44,15 +44,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 
 	ecode := genEcode() // unique e-code
 
-	// delete incoming message after a answer.
-	defer func() {
-		if err := removeMsg(opts.bot, update.Message.Chat.ID, update.Message.MessageID); err != nil {
-			// we don't want to handle this
-			logs.Debugf("[!:%s] remove: %s\n", ecode, err)
-		}
-	}()
-
-	/// check all dialog conditions.
+	// check all dialog conditions.
 	session, ok := auth(opts, update.Message.Chat.ID, ecode)
 	if !ok {
 		return
@@ -72,14 +64,6 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
-
-		// delete our previous message.
-		defer func() {
-			if err := removeMsg(opts.bot, update.Message.Chat.ID, session.OurMsgID); err != nil {
-				// we don't want to handle this
-				logs.Debugf("[!:%s] remove old: %s\n", ecode, err)
-			}
-		}()
 
 	default:
 		err := sendWelcomeMessage(opts, update.Message.Chat.ID)
@@ -114,13 +98,12 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 
 		// delete our previous message.
 		defer func() {
-			if err := removeMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
+			if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
 				// we don't want to handle this
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 			}
 		}()
 	default:
-		opts.cw.Release(update.CallbackQuery.Message.Chat.ID)
 	}
 }
 
@@ -129,8 +112,8 @@ func genEcode() string {
 	return fmt.Sprintf("%04x", rand.Int31()) //nolint
 }
 
-// Removing message.
-func removeMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
+// RemoveMsg - emoving message.
+func RemoveMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 	remove := tgbotapi.NewDeleteMessage(chatID, msgID)
 	if _, err := bot.Request(remove); err != nil {
 		return fmt.Errorf("request: %w", err)
@@ -141,7 +124,7 @@ func removeMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 
 // Something wrong handling.
 func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
-	logs.Errf("[!:%s] %s\n", ecode, err)
+	logs.Debugf("[!:%s] %s\n", ecode, err)
 
 	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrong, ecode)
 	msg := tgbotapi.NewMessage(chatID, text)
