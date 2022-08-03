@@ -58,6 +58,8 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 		return
 	}
 
+	defer opts.cw.Release(update.Message.Chat.ID)
+
 	if update.Message.IsCommand() {
 		err := handleCommands(opts, update.Message, session, ecode)
 		if err != nil {
@@ -66,8 +68,6 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 
 		return
 	}
-
-	defer opts.cw.Release(update.Message.Chat.ID)
 
 	// don't be in a harry.
 	time.Sleep(SlowAnswerTimeout)
