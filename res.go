@@ -32,6 +32,9 @@ const (
 	// WarnForbidForwards - this bot is only private.
 	WarnForbidForwards = `Извини, мы не работаем с пересылками`
 
+	// WarnUnknownCommand - unknown command.
+	WarnUnknownCommand = `Извини, мы не обрабатываем эту команду`
+
 	// FatalUnwellSecurity - if autodelete not set.
 	FatalUnwellSecurity = `Привет!
 
@@ -42,6 +45,9 @@ const (
 
 	// DefaultSupportURL - support URL if isn't set.
 	DefaultSupportURL = "https://t.me/"
+
+	// ResetSuccessfull - Resety session.
+	ResetSuccessfull = `Диалог сброшен`
 )
 
 var (

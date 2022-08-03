@@ -106,3 +106,20 @@ func checkSession(dbase *badger.DB, chatID int64) (*Session, error) {
 
 	return session, nil
 }
+
+func resetSession(dbase *badger.DB, chatID int64) error {
+	key := sessionID(chatID)
+	err := dbase.Update(func(txn *badger.Txn) error {
+		if err := txn.Delete(key); err != nil {
+			return fmt.Errorf("set: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+
+	return nil
+}

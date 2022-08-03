@@ -33,10 +33,11 @@ func runBot(
 	defer waitGroup.Done()
 
 	opts := hOpts{
-		wg:  waitGroup,
-		db:  dbase,
-		bot: bot,
-		cw:  NewChatsWins(),
+		wg:    waitGroup,
+		db:    dbase,
+		bot:   bot,
+		cw:    NewChatsWins(),
+		debug: debugLevel,
 	}
 
 	u := tgbotapi.NewUpdate(0)
