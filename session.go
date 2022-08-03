@@ -48,7 +48,7 @@ func setSession(dbase *badger.DB, chatID int64, msgID int, stage int) error {
 
 	key := sessionID(chatID)
 	err = dbase.Update(func(txn *badger.Txn) error {
-		e := badger.NewEntry(key, data).WithTTL(180 * time.Second)
+		e := badger.NewEntry(key, data).WithTTL(maxSecondsToLive * time.Second)
 		if err := txn.SetEntry(e); err != nil {
 			return fmt.Errorf("set: %w", err)
 		}
