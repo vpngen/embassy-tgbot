@@ -27,7 +27,10 @@ const (
 	MsgAttestationAssigned = `Чек принят к рассмотрению`
 
 	// WarnGroupsNotAllowed - this bot is only private.
-	WarnGroupsNotAllowed = `Извините, в группах бот не работает`
+	WarnGroupsNotAllowed = `Извини, в группах бот не работает`
+
+	// WarnForbidForwards - this bot is only private.
+	WarnForbidForwards = `Извини, мы не работаем с пересылками`
 
 	// FatalUnwellSecurity - if autodelete not set.
 	FatalUnwellSecurity = `Привет!

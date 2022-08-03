@@ -44,6 +44,13 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 
 	ecode := genEcode() // unique e-code
 
+	if update.Message.ForwardFrom != nil ||
+		update.Message.ForwardFromChat != nil {
+		sendForbidForwards(opts, update.Message.Chat.ID, ecode)
+
+		return
+	}
+
 	// check all dialog conditions.
 	session, ok := auth(opts, update.Message.Chat.ID, update.Message.Date, ecode)
 	if !ok {
@@ -60,7 +67,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 		return
 
 	case stageWait4Bill:
-		err := sendAttestationAssignedMessage(opts, update.Message.Chat.ID)
+		err := sendAttestationAssignedMessage(opts, update.Message.Chat.ID, update.Message.MessageID)
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
@@ -176,10 +183,11 @@ func sendQuizMessage(opts hOpts, chatID int64) error {
 }
 
 // Send attestation message.
-func sendAttestationAssignedMessage(opts hOpts, chatID int64) error {
+func sendAttestationAssignedMessage(opts hOpts, chatID int64, MessageID int) error {
 	msg := tgbotapi.NewMessage(chatID, MsgAttestationAssigned)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ProtectContent = true
+	msg.ReplyToMessageID = MessageID
 
 	newMsg, err := opts.bot.Send(msg)
 	if err != nil {
@@ -268,4 +276,17 @@ func getAction() string {
 	ix := int(rand.Int31n(int32(len(StandartChatActions)))) //nolint
 
 	return StandartChatActions[ix]
+}
+
+// Something wrong handling.
+func sendForbidForwards(opts hOpts, chatID int64, ecode string) {
+	logs.Debugf("[!:%s] forbid forwards\n", ecode)
+
+	msg := tgbotapi.NewMessage(chatID, WarnForbidForwards)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ProtectContent = true
+
+	if _, err := opts.bot.Send(msg); err != nil {
+		logs.Errf("[!:%s] send message: %s\n", ecode, err)
+	}
 }
