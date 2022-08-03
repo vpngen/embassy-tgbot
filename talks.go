@@ -60,7 +60,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 
 	defer opts.cw.Release(update.Message.Chat.ID)
 
-	if update.Message.IsCommand() {
+	if session.Stage != stageStart && update.Message.IsCommand() {
 		err := handleCommands(opts, update.Message, session, ecode)
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("command: %s: %w", update.Message.Command(), err))
