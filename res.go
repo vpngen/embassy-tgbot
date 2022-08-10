@@ -62,6 +62,13 @@ var (
 		"record_video",
 		"record_voice",
 	}
+
+	// ContinueKeyboard - continue keyboard.
+	ContinueKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Продолжить", "continue"),
+		),
+	)
 )
 
 // SetWannaKeyboard - set wanna keyboard.

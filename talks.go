@@ -83,9 +83,11 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 		}
 
 	default:
-		err := sendWelcomeMessage(opts, update.Message.Chat.ID)
-		if err != nil {
-			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
+		if warnAutodeleteSettings(opts, update.Message.Chat.ID, update.Message.Date, ecode) {
+			err := sendWelcomeMessage(opts, update.Message.Chat.ID)
+			if err != nil {
+				stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
+			}
 		}
 	}
 }
@@ -120,6 +122,11 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 			}
 		}()
+	case update.CallbackQuery.Data == "continue" && session.Stage == stageStart:
+		err := sendWelcomeMessage(opts, update.CallbackQuery.Message.Chat.ID)
+		if err != nil {
+			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
+		}
 	default:
 	}
 }
@@ -203,7 +210,7 @@ func sendAttestationAssignedMessage(opts hOpts, chatID int64, MessageID int) err
 }
 
 // Check autodelete chat option.
-func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) {
+func checkChatAutodeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) {
 	chat, err := bot.GetChat(
 		tgbotapi.ChatInfoConfig{
 			ChatConfig: tgbotapi.ChatConfig{
@@ -224,19 +231,6 @@ func checkChatAutoDeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) 
 
 // authentificate for dilog.
 func auth(opts hOpts, chatID int64, ut int, ecode string) (*Session, bool) {
-	adSet, err := checkChatAutoDeleteTimer(opts.bot, chatID)
-	if err != nil {
-		stWrong(opts.bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
-
-		return nil, false
-	}
-
-	if !adSet {
-		SendMessage(opts.bot, chatID, FatalUnwellSecurity, ecode)
-
-		return nil, false
-	}
-
 	if opts.cw.Get(chatID) > 0 {
 		return nil, false
 	}
@@ -262,6 +256,32 @@ func auth(opts hOpts, chatID int64, ut int, ecode string) (*Session, bool) {
 	}
 
 	return session, true
+}
+
+// check autodelete.
+func warnAutodeleteSettings(opts hOpts, chatID int64, ut int, ecode string) bool {
+	adSet, err := checkChatAutodeleteTimer(opts.bot, chatID)
+	if err != nil {
+		stWrong(opts.bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
+
+		return false
+	}
+
+	if !adSet {
+		msg := tgbotapi.NewMessage(chatID, FatalUnwellSecurity)
+		msg.ParseMode = tgbotapi.ModeMarkdown
+		msg.ProtectContent = true
+		msg.ReplyMarkup = ContinueKeyboard
+
+		_, err := opts.bot.Send(msg)
+		if err != nil {
+			logs.Errf("[!:%s] send message: %s\n", ecode, err)
+		}
+
+		return false
+	}
+
+	return true
 }
 
 func getAction() string {
