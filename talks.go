@@ -77,7 +77,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 		return
 
 	case stageWait4Bill:
-		err := sendAttestationAssignedMessage(opts, update.Message.Chat.ID, update.Message.MessageID)
+		err := checkBillMessageMessage(opts, update.Message, ecode)
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
@@ -189,12 +189,28 @@ func sendQuizMessage(opts hOpts, chatID int64, ecode string) error {
 	return nil
 }
 
-// Send attestation message.
-func sendAttestationAssignedMessage(opts hOpts, chatID int64, MessageID int) error {
-	msg := tgbotapi.NewMessage(chatID, MsgAttestationAssigned)
+// Check bill message.
+func checkBillMessageMessage(opts hOpts, Message *tgbotapi.Message, ecode string) error {
+	if len(Message.Photo) == 0 {
+		_, err := SendMessage(opts.bot, Message.Chat.ID, WarnRequiredPhoto, ecode)
+
+		return err
+	}
+
+	photoIDX := 0
+	w := 0
+	for i := range Message.Photo {
+		if Message.Photo[i].Width > w {
+			photoIDX = i
+		}
+	}
+
+	logs.Debugf("photo ID: %s\n", Message.Photo[photoIDX].FileUniqueID)
+
+	msg := tgbotapi.NewMessage(Message.Chat.ID, MsgAttestationAssigned)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ProtectContent = true
-	msg.ReplyToMessageID = MessageID
+	msg.ReplyToMessageID = Message.MessageID
 
 	newMsg, err := opts.bot.Send(msg)
 	if err != nil {

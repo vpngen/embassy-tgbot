@@ -40,6 +40,9 @@ const (
 
 Установи автоудаление сообщений в этом чате *через 1 или 2 дня* и продолжи.`
 
+	// WarnRequiredPhoto - warning about photo absents.
+	WarnRequiredPhoto = `Ты забыл прикрепить фотографию чека.`
+
 	// FatalSomeThingWrong - something wrong happened.
 	FatalSomeThingWrong = `Что-то пошло не так`
 
