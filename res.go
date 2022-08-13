@@ -27,13 +27,13 @@ const (
 	MsgAttestationAssigned = `Чек принят к рассмотрению`
 
 	// WarnGroupsNotAllowed - this bot is only private.
-	WarnGroupsNotAllowed = `Извини, в группах бот не работает`
+	WarnGroupsNotAllowed = `Извини, в групповых чатах я не общаюсь`
 
 	// WarnForbidForwards - this bot is only private.
-	WarnForbidForwards = `Извини, мы не работаем с пересылками`
+	WarnForbidForwards = `Извини, я не работаю с пересылками`
 
 	// WarnUnknownCommand - unknown command.
-	WarnUnknownCommand = `Извини, мы не обрабатываем эту команду`
+	WarnUnknownCommand = `Извини, я не знаком с этим указанием`
 
 	// FatalUnwellSecurity - if autodelete not set.
 	FatalUnwellSecurity = `Привет!
@@ -44,7 +44,7 @@ const (
 	WarnRequiredPhoto = `Ты забыл прикрепить фотографию чека.`
 
 	// FatalSomeThingWrong - something wrong happened.
-	FatalSomeThingWrong = `Что-то пошло не так`
+	FatalSomeThingWrong = `Мне жаль, что-то пошло не так`
 
 	// DefaultSupportURL - support URL if isn't set.
 	DefaultSupportURL = "https://t.me/"
