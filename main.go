@@ -46,6 +46,11 @@ func main() {
 	waitGroup := &sync.WaitGroup{}
 	stop := make(chan struct{})
 
+	// run the badger gc
+	waitGroup.Add(1)
+
+	go badgerGC(waitGroup, stop, dbase)
+
 	// run the bot
 	waitGroup.Add(1)
 
@@ -69,4 +74,23 @@ func main() {
 	// stop app
 	waitGroup.Wait()
 	logs.Criticln("[-] Main routine was finished")
+}
+
+func badgerGC(wg *sync.WaitGroup, stop <-chan struct{}, db *badger.DB) {
+	defer wg.Done()
+
+	timer := time.NewTimer(5 * time.Minute)
+
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+	again:
+		err := db.RunValueLogGC(0.5)
+		if err == nil {
+			goto again
+		}
+	case <-stop:
+		return
+	}
 }
