@@ -67,5 +67,5 @@ func queueID(chatID int64) []byte {
 	salt := make([]byte, 8)
 	rand.Reader.Read(salt)
 
-	return pbkdf2.Key(binary.BigEndian.AppendUint64([]byte{}, uint64(chatID)), salt, 4048, 16, sha256.New)
+	return pbkdf2.Key(binary.BigEndian.AppendUint64([]byte{}, uint64(chatID)), salt, 1024, 16, sha256.New)
 }
