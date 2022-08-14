@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -90,7 +91,9 @@ func queueID(chatID int64) []byte {
 	salt := make([]byte, 8)
 	rand.Reader.Read(salt)
 
-	return pbkdf2.Key(binary.BigEndian.AppendUint64([]byte{}, uint64(chatID)), salt, 1024, billqKeyLen, sha256.New)
+	key := pbkdf2.Key(binary.BigEndian.AppendUint64([]byte{}, uint64(chatID)), salt, 1024, billqKeyLen, sha256.New)
+
+	return append([]byte(billqPrefix), key...)
 }
 
 // SetBill - .
@@ -189,4 +192,70 @@ func getBill(txn *badger.Txn, id []byte) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+// QRun - .
+func QRun(db *badger.DB, stop <-chan struct{}, bot1, bot2 *tgbotapi.BotAPI) {
+	timer := time.NewTimer(100 * time.Millisecond)
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-stop:
+			return
+		case <-timer.C:
+			//qrun(db)
+		}
+	}
+}
+
+/*func qrun(db *badger.DB, bot1, bot2 *tgbotapi.BotAPI) {
+	key, bill, err := getNextCkBillQueue(db, CkBillStageNone)
+	if err != nil {
+		return
+	}
+
+	SendMessage(bot2)
+}*/
+
+func getNextCkBillQueue(db *badger.DB, stage int) ([]byte, *CkBillQueue, error) {
+	var key []byte
+
+	bill := &CkBillQueue{}
+
+	err := db.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+
+		defer it.Close()
+
+		prefix := []byte(billqPrefix)
+
+		var data []byte
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			key = item.Key()
+			err := item.Value(func(v []byte) error {
+				data = append([]byte{}, v...)
+
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+
+			break
+		}
+
+		err := json.Unmarshal(data, bill)
+		if err != nil {
+			return fmt.Errorf("unmarhal: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("get next: %w", err)
+	}
+
+	return key, bill, nil
 }

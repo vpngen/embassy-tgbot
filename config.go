@@ -25,6 +25,7 @@ const (
 // Config - config.
 type Config struct {
 	Token      string
+	Token2     string
 	UpdateTout int
 	DebugLevel int
 	BotDebug   bool
@@ -41,6 +42,7 @@ func configFromEnv() Config {
 	)
 
 	token := os.Getenv("EMBASSY_TOKEN")               // Telegram token
+	token2 := os.Getenv("CHECKBOT_TOKEN")             // Telegram token 2
 	updateTout := os.Getenv("EMBASSY_UPDATE_TIMEOUT") // DefaultUpdateTimeout = 3
 	debugLevel := os.Getenv("EMBASSY_DEBUG")          // number now, 0 is silent
 	botDebug := os.Getenv("BOT_DEBUG")                // st now, is debug
@@ -100,6 +102,7 @@ func configFromEnv() Config {
 
 	return Config{
 		Token:      token,
+		Token2:     token2,
 		UpdateTout: tout,
 		DebugLevel: dbg,
 		BotDebug:   debug,

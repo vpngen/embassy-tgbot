@@ -18,7 +18,6 @@ const (
 	maxSecondsToLive = 2 * secondsInTheDay
 )
 
-// Dialog stages.
 const (
 	stageStart int = iota //nolint
 	stageWait4Choice

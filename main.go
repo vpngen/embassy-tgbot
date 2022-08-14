@@ -31,6 +31,12 @@ func main() {
 		log.Panic(err)
 	}
 
+	// create a bot2
+	bot2, err := createBot2(cfg.Token2, cfg.BotDebug)
+	if err != nil {
+		log.Panic(err)
+	}
+
 	dbopts := badger.DefaultOptions(cfg.DBDir).
 		WithIndexCacheSize(defaultIndexCacheSize).
 		WithEncryptionKey(cfg.DBKey).
@@ -55,6 +61,11 @@ func main() {
 	waitGroup.Add(1)
 
 	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel)
+
+	// run the bot2
+	waitGroup.Add(1)
+
+	go runBot2(waitGroup, stop, dbase, bot2, cfg.UpdateTout, cfg.DebugLevel)
 
 	// catch exit signals
 	kill := make(chan os.Signal, 1)

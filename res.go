@@ -29,6 +29,9 @@ const (
 	// WarnGroupsNotAllowed - this bot is only private.
 	WarnGroupsNotAllowed = `Извини, в групповых чатах я не общаюсь`
 
+	// WarnPrivateNotAllowed - this bot is only private.
+	WarnPrivateNotAllowed = `Извини, в личках я не общаюсь`
+
 	// WarnForbidForwards - this bot is only private.
 	WarnForbidForwards = `Извини, я не работаю с пересылками`
 
@@ -38,7 +41,7 @@ const (
 	// FatalUnwellSecurity - if autodelete not set.
 	FatalUnwellSecurity = `Привет!
 
-Установи автоудаление сообщений в этом чате *через 1 или 2 дня* и продолжи.`
+Установи пожалуйста автоудаление сообщений в этом чате *через 1 или 2 дня* или продолжи.`
 
 	// WarnRequiredPhoto - warning about photo absents.
 	WarnRequiredPhoto = `Ты забыл прикрепить фотографию чека.`
