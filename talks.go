@@ -207,6 +207,10 @@ func checkBillMessageMessage(opts hOpts, Message *tgbotapi.Message, ecode string
 
 	logs.Debugf("photo ID: %s\n", Message.Photo[photoIDX].FileUniqueID)
 
+	if err := PutBill(opts.db, Message.Chat.ID, Message.Photo[photoIDX].FileUniqueID); err != nil {
+		return fmt.Errorf("put: %w", err)
+	}
+
 	newMsg, err := SendMessage(opts.bot, Message.Chat.ID, Message.MessageID, MsgAttestationAssigned, ecode)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
