@@ -70,8 +70,8 @@ func main() {
 	// run the QRun(2)
 	waitGroup.Add(2)
 
-	go QRun(dbase, stop, bot)
-	go QRun2(dbase, stop, bot2, cfg.ckChatID)
+	go QRun(waitGroup, dbase, stop, bot)
+	go QRun2(waitGroup, dbase, stop, bot2, cfg.ckChatID)
 
 	// catch exit signals
 	kill := make(chan os.Signal, 1)

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -195,7 +196,9 @@ func getBill(txn *badger.Txn, id []byte) ([]byte, error) {
 }
 
 // QRun - .
-func QRun(db *badger.DB, stop <-chan struct{}, bot *tgbotapi.BotAPI) {
+func QRun(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot *tgbotapi.BotAPI) {
+	defer waitGroup.Done()
+
 	timer := time.NewTimer(100 * time.Millisecond)
 	defer timer.Stop()
 
