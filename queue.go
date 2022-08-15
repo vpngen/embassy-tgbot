@@ -217,7 +217,7 @@ func QRun(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, b
 
 func qrun(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 	key, bill, err := getNextCkBillQueue(db, CkBillStageNone)
-	if err != nil {
+	if err != nil || key == nil {
 		return
 	}
 
