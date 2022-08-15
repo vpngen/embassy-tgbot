@@ -10,6 +10,7 @@ import (
 
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vpngen/embassy-tgbot/logs"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -28,19 +29,19 @@ const (
 const (
 	CkBillStageNone2 = iota
 	CkBillStageSend2
-	CkBillStageAccept2
-	CkBillStageReject2
+	CkBillStageDecision2
 )
 
 // CkBillQueue2 - queue with bills for manual or auto check.
 type CkBillQueue2 struct {
 	Stage       int    `json:"stage"`
 	CkBillQueue []byte `json:"billq_id"`
+	Accept      bool   `json:"accept"`
 }
 
-// PutBill2 - put bill in the queue
-func PutBill2(dbase *badger.DB, billqID []byte) ([]byte, error) {
-	var key []byte
+// NewCkBillQueue2Data - .
+func NewCkBillQueue2Data(billqID []byte) ([]byte, []byte, error) {
+	key := queueID2(billqID)
 
 	bill := &CkBillQueue2{
 		Stage:       CkBillStageNone2,
@@ -49,12 +50,20 @@ func PutBill2(dbase *badger.DB, billqID []byte) ([]byte, error) {
 
 	data, err := json.Marshal(bill)
 	if err != nil {
-		return nil, fmt.Errorf("parse: %w", err)
+		return nil, nil, fmt.Errorf("parse: %w", err)
+	}
+
+	return key, data, nil
+}
+
+// PutBill2 - put bill in the queue
+func PutBill2(dbase *badger.DB, billqID []byte) ([]byte, error) {
+	key, data, err := NewCkBillQueue2Data(billqID)
+	if err != nil {
+		return nil, fmt.Errorf("new data: %w", err)
 	}
 
 	err = dbase.Update(func(txn *badger.Txn) error {
-		key = queueID2(billqID)
-
 		_, err := txn.Get(key)
 		if err == nil {
 			return nil
@@ -80,23 +89,14 @@ func PutBill2(dbase *badger.DB, billqID []byte) ([]byte, error) {
 }
 
 // SetBill2 - .
-func SetBill2(dbase *badger.DB, id []byte, stage int) error {
+func SetBill2(dbase *badger.DB, id []byte, stage int, accept bool) error {
 	err := dbase.Update(func(txn *badger.Txn) error {
-		bill := &CkBillQueue2{}
-
 		data, err := getBill2(txn, id)
 		if err != nil {
 			return fmt.Errorf("get bill: %w", err)
 		}
 
-		err = json.Unmarshal(data, bill)
-		if err != nil {
-			return fmt.Errorf("unmarhal: %w", err)
-		}
-
-		bill.Stage = stage
-
-		data, err = json.Marshal(bill)
+		data, err = updateBill2(data, stage, accept)
 		if err != nil {
 			return fmt.Errorf("marshal: %w", err)
 		}
@@ -113,6 +113,25 @@ func SetBill2(dbase *badger.DB, id []byte, stage int) error {
 	}
 
 	return nil
+}
+
+func updateBill2(data []byte, stage int, accept bool) ([]byte, error) {
+	bill := &CkBillQueue2{}
+
+	err := json.Unmarshal(data, bill)
+	if err != nil {
+		return nil, fmt.Errorf("unmarhal: %w", err)
+	}
+
+	bill.Stage = stage
+	bill.Accept = accept
+
+	data, err = json.Marshal(bill)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+
+	return data, nil
 }
 
 func queueID2(id []byte) []byte {
@@ -135,30 +154,6 @@ func ResetBill2(dbase *badger.DB, id []byte) error {
 	}
 
 	return nil
-}
-
-// GetBill2 - .
-func GetBill2(dbase *badger.DB, id []byte) (*CkBillQueue2, error) {
-	bill := &CkBillQueue2{}
-
-	err := dbase.View(func(txn *badger.Txn) error {
-		data, err := getBill2(txn, id)
-		if err != nil {
-			return fmt.Errorf("get bill: %w", err)
-		}
-
-		err = json.Unmarshal(data, bill)
-		if err != nil {
-			return fmt.Errorf("unmarhal: %w", err)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("get billq: %w", err)
-	}
-
-	return bill, nil
 }
 
 func getBill2(txn *badger.Txn, id []byte) ([]byte, error) {
@@ -199,30 +194,19 @@ func QRun2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, 
 	}
 }
 
-/*func qrun2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
-	key, bill, err := getNextCkBillQueue2(db, CkBillStageNone2)
+func qrun2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
+	key, bill, err := getNextCkBillQueue2(db, CkBillStageDecision2)
 	if err != nil {
 		return
 	}
 
-	msg := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileID(bill.FileID))
-	// msg.ReplyMarkup = WannabeKeyboard
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	msg.ProtectContent = true
-
-	if _, err := bot2.Send(msg); err != nil {
-		logs.Errf("send: %w\n", err)
-
-		return
-	}
-
-	err = SetBill2(db, key, CkBillStageSend2)
+	err = SetBill(db, key, CkBillStageDesicion, bill.Accept)
 	if err != nil {
 		logs.Errf("set billq send2: %w", err)
 
 		return
 	}
-}*/
+}
 
 func getNextCkBillQueue2(db *badger.DB, stage int) ([]byte, *CkBillQueue2, error) {
 	var key []byte
@@ -284,7 +268,7 @@ func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID in
 		return fmt.Errorf("request2: %w", err)
 	}
 
-	err = SetBill2(db, id, CkBillStageSend2)
+	err = SetBill2(db, id, CkBillStageSend2, false)
 	if err != nil {
 		return fmt.Errorf("set billq send2: %w", err)
 	}

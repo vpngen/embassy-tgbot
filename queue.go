@@ -27,8 +27,7 @@ const (
 const (
 	CkBillStageNone = iota
 	CkBillStageSend
-	CkBillStageAccept
-	CkBillStageReject
+	CkBillStageDesicion
 )
 
 // ErrGenUniqQueueID - .
@@ -40,6 +39,7 @@ type CkBillQueue struct {
 	ChatID     int64  `json:"chat_id"` // user
 	FileID     string `json:"file_id"` // photo
 	UpdateTime int64  `json:"updatetime"`
+	Accept     bool   `json:"accept"`
 }
 
 // PutBill - put bill in the queue
@@ -101,7 +101,7 @@ func queueID(chatID int64) []byte {
 }
 
 // SetBill - .
-func SetBill(dbase *badger.DB, id []byte, stage int) error {
+func SetBill(dbase *badger.DB, id []byte, stage int, accept bool) error {
 	err := dbase.Update(func(txn *badger.Txn) error {
 		bill := &CkBillQueue{}
 
@@ -216,38 +216,96 @@ func QRun(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, b
 }
 
 func qrun(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
-	key, bill, err := getNextCkBillQueue(db, CkBillStageNone)
-	if err != nil || key == nil {
+	ok, err := qrunNew(db, bot, bot2, ckChatID)
+	if err != nil {
+		logs.Errf("qrun: %s\n", err)
+
 		return
+	}
+
+	if !ok {
+	}
+}
+
+func qrunNew(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) (bool, error) {
+	key, bill, err := getNextCkBillQueue(db, CkBillStageNone)
+	if err != nil {
+		return false, fmt.Errorf("get next: %w", err)
+	}
+
+	if key == nil {
+		return false, nil
 	}
 
 	url, err := bot.GetFileDirectURL(bill.FileID)
 	if err != nil {
-		logs.Errf("get file: %s\n", err)
-
-		return
+		return false, fmt.Errorf("get file: %w", err)
 	}
 
 	photo, err := downloadPhoto(url)
 	if err != nil {
-		logs.Errf("dl photo: %s\n", err)
-
-		return
+		return false, fmt.Errorf("dl photo: %w", err)
 	}
 
 	err = SendBill2(db, bot2, key, ckChatID, photo)
 	if err != nil {
-		logs.Errf("send bill2: %s\n", err)
-
-		return
+		return false, fmt.Errorf("send bill2: %w", err)
 	}
 
-	err = SetBill(db, key, CkBillStageSend)
+	err = SetBill(db, key, CkBillStageSend, false)
 	if err != nil {
-		logs.Errf("set billq send: %s\n", err)
-
-		return
+		return false, fmt.Errorf("set billq send: %w", err)
 	}
+
+	return true, nil
+}
+
+func qrunSeen(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) (bool, error) {
+	key, bill, err := getNextCkBillQueue(db, CkBillStageDesicion)
+	if err != nil {
+		return false, fmt.Errorf("get next: %w", err)
+	}
+
+	if key == nil {
+		return false, nil
+	}
+
+	ecode := genEcode()
+
+	switch bill.Accept {
+	case true:
+		newMsg, err := SendMessage(bot, bill.ChatID, 0, "", ecode)
+		if err != nil {
+			return false, fmt.Errorf("send grant: %w", err)
+		}
+
+		err = setSession(db, bill.ChatID, newMsg.MessageID, stageCleanup)
+		if err != nil {
+			return false, fmt.Errorf("set session end: %w", err)
+		}
+
+		err = ResetBill(db, key)
+		if err != nil {
+			return false, fmt.Errorf("reset billq: %w", err)
+		}
+	case false:
+		newMsg, err := SendMessage(bot, bill.ChatID, 0, "", ecode)
+		if err != nil {
+			return false, fmt.Errorf("send reject: %w", err)
+		}
+
+		err = setSession(db, bill.ChatID, newMsg.MessageID, stageWait4Bill)
+		if err != nil {
+			return false, fmt.Errorf("set session next: %w", err)
+		}
+
+		err = ResetBill(db, key)
+		if err != nil {
+			return false, fmt.Errorf("reset billq: %w", err)
+		}
+	}
+
+	return true, nil
 }
 
 func getNextCkBillQueue(db *badger.DB, stage int) ([]byte, *CkBillQueue, error) {

@@ -54,6 +54,12 @@ const (
 
 	// ResetSuccessfull - Resety session.
 	ResetSuccessfull = `Диалог сброшен`
+
+	// GrantMessage - you are brigadier.
+	GrantMessage = `Поздравляю! Ты - бригадир!`
+
+	// RejectMessage - we are shame you.
+	RejectMessage = `Мне не понравился чек. Пришли другой пожалуйста.`
 )
 
 var (

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -31,6 +32,8 @@ func messageHandler2(opts hOpts, update tgbotapi.Update) {
 
 // Handling callbacks  (opposed messages).
 func buttonHandler2(opts hOpts, update tgbotapi.Update) {
+	var key []byte
+
 	defer opts.wg.Done()
 
 	ecode := genEcode() // unique error code
@@ -38,7 +41,18 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 	switch {
 	case strings.HasPrefix(update.CallbackQuery.Data, acceptPrefix):
 		id := strings.TrimPrefix(update.CallbackQuery.Data, acceptPrefix)
-		logs.Debugf("accept bill: %s\n", id)
+
+		logs.Debugf("[!:%s]accept bill: %s\n", ecode, id)
+		fmt.Sscanf(id, "%x", &key)
+
+		err := SetBill2(opts.db, key, CkBillStageDecision2, true)
+		if err != nil {
+			logs.Errf("[!:%s] set bill: %s\n", ecode, err)
+
+			return
+		}
+
+		ResetBill2(opts.db, key)
 
 		// delete our previous message.
 		if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
@@ -48,7 +62,18 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 
 	case strings.HasPrefix(update.CallbackQuery.Data, rejectPrefix):
 		id := strings.TrimPrefix(update.CallbackQuery.Data, rejectPrefix)
-		logs.Debugf("reject bill: %s\n", id)
+
+		logs.Debugf("[!:%s]reject bill: %s\n", ecode, id)
+		fmt.Sscanf(id, "%x", &key)
+
+		err := SetBill2(opts.db, key, CkBillStageDecision2, false)
+		if err != nil {
+			logs.Errf("[!:%s] set bill: %s\n", ecode, err)
+
+			return
+		}
+
+		ResetBill2(opts.db, key)
 
 		// delete our previous message.
 		if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
