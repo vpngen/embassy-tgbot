@@ -274,7 +274,7 @@ func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID in
 	msg.ProtectContent = true
 
 	if _, err := bot2.Request(msg); err != nil {
-		return fmt.Errorf("send2: %w", err)
+		return fmt.Errorf("request2: %w", err)
 	}
 
 	err = SetBill2(db, id, CkBillStageSend2)

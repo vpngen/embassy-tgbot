@@ -221,21 +221,21 @@ func qrun(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 
 	url, err := bot.GetFileDirectURL(bill.FileID)
 	if err != nil {
-		logs.Errf("get file: %w", err)
+		logs.Errf("get file: %w\n", err)
 
 		return
 	}
 
 	err = SendBill2(db, bot2, key, ckChatID, url)
 	if err != nil {
-		logs.Errf("put billq2 new: %w", err)
+		logs.Errf("send bill2: %w\n", err)
 
 		return
 	}
 
 	err = SetBill(db, key, CkBillStageSend)
 	if err != nil {
-		logs.Errf("set billq send: %w", err)
+		logs.Errf("set billq send: %w\n", err)
 
 		return
 	}
