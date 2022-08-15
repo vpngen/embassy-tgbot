@@ -47,10 +47,9 @@ func runBot2(
 	for {
 		select {
 		case update := <-updates:
-			logs.Debugf("*** #%v\n", update)
 			switch {
 			case update.Message != nil: // If we got a message
-				logs.Debugf("[i] User: %s Message: %s\n", update.Message.From.UserName, update.Message.Text)
+				logs.Debugf("[i] User: %s ChatID: %d Message: %s\n", update.Message.From.UserName, update.Message.Chat.ID, update.Message.Text)
 
 				if update.Message.Chat.Type == "private" {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, WarnPrivateNotAllowed)
