@@ -47,6 +47,7 @@ func runBot2(
 	for {
 		select {
 		case update := <-updates:
+			logs.Debugf("*** #%v\n", update)
 			switch {
 			case update.Message != nil: // If we got a message
 				logs.Debugf("[i] User: %s Message: %s\n", update.Message.From.UserName, update.Message.Text)
