@@ -13,6 +13,11 @@ import (
 )
 
 const (
+	acceptPrefix = "a-"
+	rejectPrefix = "r-"
+)
+
+const (
 	billqPrefix2 = "bq2"
 	billqKeyLen2 = 16 - len(billqPrefix2)
 	billqSalt2   = "Lewm)Ow6"
@@ -270,7 +275,8 @@ func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID in
 	photo := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileBytes{Name: "фотка", Bytes: data})
 	// msg.ReplyMarkup = WannabeKeyboard
 	// msg.ParseMode = tgbotapi.ModeMarkdown
-	photo.Caption = fmt.Sprintf("%x", id)
+	// photo.Caption =
+	photo.ReplyMarkup = makeCheckBillKeyboard(fmt.Sprintf("%x", id))
 	photo.ProtectContent = true
 
 	if _, err := bot2.Request(photo); err != nil {
@@ -283,4 +289,14 @@ func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID in
 	}
 
 	return nil
+}
+
+// makeCheckBillKeyboard - set wanna keyboard.
+func makeCheckBillKeyboard(id string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Подтвердить", acceptPrefix+id),
+			tgbotapi.NewInlineKeyboardButtonURL("Отвергнуть", rejectPrefix+id),
+		),
+	)
 }

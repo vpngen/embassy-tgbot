@@ -59,6 +59,8 @@ const (
 var (
 	// WannabeKeyboard - wanna keyboard.
 	WannabeKeyboard tgbotapi.InlineKeyboardMarkup //nolint
+	// CheckBillKeyboard - check bill keyboard.
+	CheckBillKeyboard tgbotapi.InlineKeyboardMarkup //nolint
 
 	// StandartChatActions - something in status.
 	StandartChatActions = [...]string{ //nolint
