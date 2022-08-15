@@ -113,6 +113,6 @@ func configFromEnv() Config {
 		DBDir:      dbDir,
 		DBKey:      key,
 		SupportURL: supportURL,
-		ckChatID:   int64(ckChatID),
+		ckChatID:   ckChatID,
 	}
 }
