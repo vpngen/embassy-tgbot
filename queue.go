@@ -76,7 +76,7 @@ func PutBill(dbase *badger.DB, chatID int64, fileID string) error {
 			}
 		}
 
-		e := badger.NewEntry(key, data)
+		e := badger.NewEntry(key, data).WithTTL(maxSecondsToLive * time.Second)
 		if err := txn.SetEntry(e); err != nil {
 			return fmt.Errorf("set: %w", err)
 		}

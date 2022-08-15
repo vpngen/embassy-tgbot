@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -63,7 +64,7 @@ func PutBill2(dbase *badger.DB, billqID []byte) ([]byte, error) {
 			return fmt.Errorf("get: %w", err)
 		}
 
-		e := badger.NewEntry(key, data)
+		e := badger.NewEntry(key, data).WithTTL(maxSecondsToLive * time.Second)
 		if err := txn.SetEntry(e); err != nil {
 			return fmt.Errorf("set: %w", err)
 		}
@@ -100,7 +101,7 @@ func SetBill2(dbase *badger.DB, id []byte, stage int) error {
 			return fmt.Errorf("marshal: %w", err)
 		}
 
-		e := badger.NewEntry(id, data)
+		e := badger.NewEntry(id, data).WithTTL(maxSecondsToLive * time.Second)
 		if err := txn.SetEntry(e); err != nil {
 			return fmt.Errorf("set: %w", err)
 		}
