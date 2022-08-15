@@ -226,6 +226,8 @@ func qrun(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 		return
 	}
 
+	logs.Debugf("URL: %s\n", url)
+
 	err = SendBill2(db, bot2, key, ckChatID, url)
 	if err != nil {
 		logs.Errf("send bill2: %s\n", err)
