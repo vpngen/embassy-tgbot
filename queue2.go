@@ -296,7 +296,7 @@ func makeCheckBillKeyboard(id string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Подтвердить", acceptPrefix+id),
-			tgbotapi.NewInlineKeyboardButtonURL("Отвергнуть", rejectPrefix+id),
+			tgbotapi.NewInlineKeyboardButtonData("Отвергнуть", rejectPrefix+id),
 		),
 	)
 }
