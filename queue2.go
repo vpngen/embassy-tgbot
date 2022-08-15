@@ -267,13 +267,13 @@ func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID in
 		return fmt.Errorf("put billq2: %w", err)
 	}
 
-	msg := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileURL(url))
+	photo := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileURL(url))
 	// msg.ReplyMarkup = WannabeKeyboard
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	msg.Caption = string(id)
-	msg.ProtectContent = true
+	// msg.ParseMode = tgbotapi.ModeMarkdown
+	photo.Caption = fmt.Sprintf("%x", id)
+	photo.ProtectContent = true
 
-	if _, err := bot2.Request(msg); err != nil {
+	if _, err := bot2.Request(photo); err != nil {
 		return fmt.Errorf("request2: %w", err)
 	}
 
