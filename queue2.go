@@ -261,13 +261,13 @@ func getNextCkBillQueue2(db *badger.DB, stage int) ([]byte, *CkBillQueue2, error
 }
 
 // SendBill2 - .
-func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID int64, url string) error {
+func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID int64, data []byte) error {
 	id, err := PutBill2(db, billqID)
 	if err != nil {
 		return fmt.Errorf("put billq2: %w", err)
 	}
 
-	photo := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileURL(url))
+	photo := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileBytes{Name: "фотка", Bytes: data})
 	// msg.ReplyMarkup = WannabeKeyboard
 	// msg.ParseMode = tgbotapi.ModeMarkdown
 	photo.Caption = fmt.Sprintf("%x", id)

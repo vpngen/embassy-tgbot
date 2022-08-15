@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"sync"
 	"time"
 
@@ -226,9 +228,14 @@ func qrun(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 		return
 	}
 
-	logs.Debugf("URL: %s\n", url)
+	photo, err := downloadPhoto(url)
+	if err != nil {
+		logs.Errf("dl photo: %s\n", err)
 
-	err = SendBill2(db, bot2, key, ckChatID, url)
+		return
+	}
+
+	err = SendBill2(db, bot2, key, ckChatID, photo)
 	if err != nil {
 		logs.Errf("send bill2: %s\n", err)
 
@@ -283,4 +290,20 @@ func getNextCkBillQueue(db *badger.DB, stage int) ([]byte, *CkBillQueue, error) 
 	}
 
 	return key, bill, nil
+}
+
+func downloadPhoto(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("url get: %w", err)
+	}
+
+	defer resp.Body.Close()
+
+	photo, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("url body read: %w", err)
+	}
+
+	return photo, nil
 }
