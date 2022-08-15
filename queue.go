@@ -11,6 +11,7 @@ import (
 
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/vpngen/embassy-tgbot/logs"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -142,7 +143,6 @@ func ResetBill(dbase *badger.DB, id []byte) error {
 
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("delete billq: %w", err)
 	}
@@ -195,7 +195,7 @@ func getBill(txn *badger.Txn, id []byte) ([]byte, error) {
 }
 
 // QRun - .
-func QRun(db *badger.DB, stop <-chan struct{}, bot1, bot2 *tgbotapi.BotAPI) {
+func QRun(db *badger.DB, stop <-chan struct{}, bot *tgbotapi.BotAPI) {
 	timer := time.NewTimer(100 * time.Millisecond)
 	defer timer.Stop()
 
@@ -204,19 +204,31 @@ func QRun(db *badger.DB, stop <-chan struct{}, bot1, bot2 *tgbotapi.BotAPI) {
 		case <-stop:
 			return
 		case <-timer.C:
-			//qrun(db)
+			qrun(db, bot)
 		}
 	}
 }
 
-/*func qrun(db *badger.DB, bot1, bot2 *tgbotapi.BotAPI) {
+func qrun(db *badger.DB, bot *tgbotapi.BotAPI) {
 	key, bill, err := getNextCkBillQueue(db, CkBillStageNone)
 	if err != nil {
 		return
 	}
 
-	SendMessage(bot2)
-}*/
+	err = PutBill2(db, key, bill.FileUniqueID)
+	if err != nil {
+		logs.Errf("put billq2 new: %w", err)
+
+		return
+	}
+
+	err = SetBill(db, key, CkBillStageSend)
+	if err != nil {
+		logs.Errf("set billq send: %w", err)
+
+		return
+	}
+}
 
 func getNextCkBillQueue(db *badger.DB, stage int) ([]byte, *CkBillQueue, error) {
 	var key []byte

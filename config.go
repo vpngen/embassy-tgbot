@@ -32,6 +32,7 @@ type Config struct {
 	DBDir      string
 	DBKey      []byte
 	SupportURL string
+	ckChatID   int64
 }
 
 // configFromEnv - fill config from environment vars.
@@ -49,6 +50,7 @@ func configFromEnv() Config {
 	dbDir := os.Getenv("EMBASSY_BADGER_DIR")          // Database dir, default db
 	dbKey := os.Getenv("EMBASSY_BADGER_KEY")
 	supportURL := os.Getenv("SUPPORT_URL")
+	ckChat := os.Getenv("CHECK_BILL_CHAT")
 
 	if dbKey == "" {
 		log.Panic("NO ENCRYPTION KEY")
@@ -71,6 +73,8 @@ func configFromEnv() Config {
 	if botDebug != "0" && botDebug != "" {
 		debug = true
 	}
+
+	ckChatID, _ := strconv.ParseInt(ckChat, 10, 64)
 
 	parts := strings.Split(dbKey, ":")
 	switch len(parts) {
@@ -109,5 +113,6 @@ func configFromEnv() Config {
 		DBDir:      dbDir,
 		DBKey:      key,
 		SupportURL: supportURL,
+		ckChatID:   int64(ckChatID),
 	}
 }

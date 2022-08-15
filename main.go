@@ -67,6 +67,12 @@ func main() {
 
 	go runBot2(waitGroup, stop, dbase, bot2, cfg.UpdateTout, cfg.DebugLevel)
 
+	// run the QRun(2)
+	waitGroup.Add(2)
+
+	go QRun(dbase, stop, bot)
+	go QRun2(dbase, stop, bot2, cfg.ckChatID)
+
 	// catch exit signals
 	kill := make(chan os.Signal, 1)
 	signal.Notify(kill, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
