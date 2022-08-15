@@ -34,19 +34,19 @@ var ErrGenUniqQueueID = errors.New("gen uniq id")
 
 // CkBillQueue - queue with bills for manual or auto check.
 type CkBillQueue struct {
-	Stage        int    `json:"stage"`
-	ChatID       int64  `json:"chat_id"`        // user
-	FileUniqueID string `json:"file_unique_id"` // photo
-	UpdateTime   int64  `json:"updatetime"`
+	Stage      int    `json:"stage"`
+	ChatID     int64  `json:"chat_id"` // user
+	FileID     string `json:"file_id"` // photo
+	UpdateTime int64  `json:"updatetime"`
 }
 
 // PutBill - put bill in the queue
 func PutBill(dbase *badger.DB, chatID int64, fileID string) error {
 	bill := &CkBillQueue{
-		ChatID:       chatID,
-		FileUniqueID: fileID,
-		Stage:        CkBillStageNone,
-		UpdateTime:   time.Now().Unix(),
+		ChatID:     chatID,
+		FileID:     fileID,
+		Stage:      CkBillStageNone,
+		UpdateTime: time.Now().Unix(),
 	}
 
 	data, err := json.Marshal(bill)
@@ -196,7 +196,7 @@ func getBill(txn *badger.Txn, id []byte) ([]byte, error) {
 }
 
 // QRun - .
-func QRun(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot *tgbotapi.BotAPI) {
+func QRun(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 	defer waitGroup.Done()
 
 	timer := time.NewTimer(100 * time.Millisecond)
@@ -207,19 +207,26 @@ func QRun(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot *t
 		case <-stop:
 			return
 		case <-timer.C:
-			qrun(db, bot)
+			qrun(db, bot, bot2, ckChatID)
 			timer.Reset(100 * time.Millisecond)
 		}
 	}
 }
 
-func qrun(db *badger.DB, bot *tgbotapi.BotAPI) {
+func qrun(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 	key, bill, err := getNextCkBillQueue(db, CkBillStageNone)
 	if err != nil {
 		return
 	}
 
-	err = PutBill2(db, key, bill.FileUniqueID)
+	url, err := bot.GetFileDirectURL(bill.FileID)
+	if err != nil {
+		logs.Errf("get file: %w", err)
+
+		return
+	}
+
+	err = SendBill2(db, bot2, key, ckChatID, url)
 	if err != nil {
 		logs.Errf("put billq2 new: %w", err)
 

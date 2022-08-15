@@ -6,11 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/vpngen/embassy-tgbot/logs"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -30,28 +28,26 @@ const (
 
 // CkBillQueue2 - queue with bills for manual or auto check.
 type CkBillQueue2 struct {
-	Stage        int
-	CkBillQueue  []byte
-	FileUniqueID string `json:"file_unique_id"` // photo
+	Stage       int    `json:"stage"`
+	CkBillQueue []byte `json:"billq_id"`
 }
 
 // PutBill2 - put bill in the queue
-func PutBill2(dbase *badger.DB, billqID []byte, fileID string) error {
+func PutBill2(dbase *badger.DB, billqID []byte) ([]byte, error) {
+	var key []byte
+
 	bill := &CkBillQueue2{
-		Stage:        CkBillStageNone2,
-		FileUniqueID: fileID,
-		CkBillQueue:  billqID,
+		Stage:       CkBillStageNone2,
+		CkBillQueue: billqID,
 	}
 
 	data, err := json.Marshal(bill)
 	if err != nil {
-		return fmt.Errorf("parse: %w", err)
+		return nil, fmt.Errorf("parse: %w", err)
 	}
 
 	err = dbase.Update(func(txn *badger.Txn) error {
-		var key []byte
-
-		key = queueID2(billqID, []byte(bill.FileUniqueID))
+		key = queueID2(billqID)
 
 		_, err := txn.Get(key)
 		if err == nil {
@@ -71,10 +67,10 @@ func PutBill2(dbase *badger.DB, billqID []byte, fileID string) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("update: %w", err)
+		return nil, fmt.Errorf("update: %w", err)
 	}
 
-	return nil
+	return key, nil
 }
 
 // SetBill2 - .
@@ -113,9 +109,8 @@ func SetBill2(dbase *badger.DB, id []byte, stage int) error {
 	return nil
 }
 
-func queueID2(id, fid []byte) []byte {
-	passwd := append(id, fid...)
-	key := pbkdf2.Key(passwd, []byte(billqSalt2), 2048, billqKeyLen2, sha256.New)
+func queueID2(id []byte) []byte {
+	key := pbkdf2.Key(id, []byte(billqSalt2), 2048, billqKeyLen2, sha256.New)
 
 	return append([]byte(billqPrefix2), key...)
 }
@@ -181,30 +176,30 @@ func getBill2(txn *badger.Txn, id []byte) ([]byte, error) {
 }
 
 // QRun2 - .
-func QRun2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot2 *tgbotapi.BotAPI, ckChatID int64) {
+func QRun2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 	defer waitGroup.Done()
 
-	timer := time.NewTimer(100 * time.Millisecond)
-	defer timer.Stop()
+	/*timer := time.NewTimer(100 * time.Millisecond)
+	defer timer.Stop()*/
 
 	for {
 		select {
 		case <-stop:
 			return
-		case <-timer.C:
+			/*case <-timer.C:
 			qrun2(db, bot2, ckChatID)
-			timer.Reset(100 * time.Millisecond)
+			timer.Reset(100 * time.Millisecond)*/
 		}
 	}
 }
 
-func qrun2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
+/*func qrun2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 	key, bill, err := getNextCkBillQueue2(db, CkBillStageNone2)
 	if err != nil {
 		return
 	}
 
-	msg := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileID(bill.FileUniqueID))
+	msg := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileID(bill.FileID))
 	// msg.ReplyMarkup = WannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.ProtectContent = true
@@ -221,7 +216,7 @@ func qrun2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 
 		return
 	}
-}
+}*/
 
 func getNextCkBillQueue2(db *badger.DB, stage int) ([]byte, *CkBillQueue2, error) {
 	var key []byte
@@ -263,4 +258,29 @@ func getNextCkBillQueue2(db *badger.DB, stage int) ([]byte, *CkBillQueue2, error
 	}
 
 	return key, bill, nil
+}
+
+// SendBill2 - .
+func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID int64, url string) error {
+	id, err := PutBill2(db, billqID)
+	if err != nil {
+		return fmt.Errorf("put billq2: %w", err)
+	}
+
+	msg := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileURL(url))
+	// msg.ReplyMarkup = WannabeKeyboard
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.Caption = string(id)
+	msg.ProtectContent = true
+
+	if _, err := bot2.Send(msg); err != nil {
+		return fmt.Errorf("send2: %w", err)
+	}
+
+	err = SetBill2(db, id, CkBillStageSend2)
+	if err != nil {
+		return fmt.Errorf("set billq send2: %w", err)
+	}
+
+	return nil
 }
