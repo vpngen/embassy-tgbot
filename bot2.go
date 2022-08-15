@@ -44,13 +44,13 @@ func runBot2(
 
 	updates := bot2.GetUpdatesChan(u)
 
-	logs.Debugf("BOT2: #%v\n", bot2)
-
 	for {
 		select {
 		case update := <-updates:
 			switch {
 			case update.Message != nil: // If we got a message
+				logs.Debugf("[i] User: %s Message: %s\n", update.Message.From.UserName, update.Message.Text)
+
 				if update.Message.Chat.Type == "private" {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, WarnPrivateNotAllowed)
 					msg.ReplyToMessageID = update.Message.MessageID
@@ -61,8 +61,6 @@ func runBot2(
 
 					break
 				}
-
-				logs.Debugf("[i] User: %s Message: %s\n", update.Message.From.UserName, update.Message.Text)
 
 				waitGroup.Add(1)
 
