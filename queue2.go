@@ -193,6 +193,7 @@ func QRun2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot2 
 			return
 		case <-timer.C:
 			qrun2(db, bot2, ckChatID)
+			timer.Reset(100 * time.Millisecond)
 		}
 	}
 }

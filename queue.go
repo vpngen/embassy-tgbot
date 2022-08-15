@@ -208,6 +208,7 @@ func QRun(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot *t
 			return
 		case <-timer.C:
 			qrun(db, bot)
+			timer.Reset(100 * time.Millisecond)
 		}
 	}
 }
