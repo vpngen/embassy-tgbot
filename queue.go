@@ -275,12 +275,19 @@ func getNextCkBillQueue(db *badger.DB, stage int) ([]byte, *CkBillQueue, error) 
 				return err
 			}
 
-			break
-		}
+			err = json.Unmarshal(data, bill)
+			if err != nil {
+				return fmt.Errorf("unmarhal: %w", err)
+			}
 
-		err := json.Unmarshal(data, bill)
-		if err != nil {
-			return fmt.Errorf("unmarhal: %w", err)
+			if bill.Stage != stage {
+				key = nil
+				data = nil
+
+				continue
+			}
+
+			break
 		}
 
 		return nil
