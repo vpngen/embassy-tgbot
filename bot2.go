@@ -10,23 +10,23 @@ import (
 )
 
 func createBot2(token string, debug bool) (*tgbotapi.BotAPI, error) {
-	bot, err := tgbotapi.NewBotAPI(token)
+	bot2, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, fmt.Errorf("create bot2: %w", err)
 	}
 
 	// bot.Debug = debug
 
-	logs.Criticf("[i] Authorized on account %s\n", bot.Self.UserName)
+	logs.Criticf("[i] Authorized on account %s\n", bot2.Self.UserName)
 
-	return bot, nil
+	return bot2, nil
 }
 
 func runBot2(
 	waitGroup *sync.WaitGroup,
 	stop <-chan struct{},
 	dbase *badger.DB,
-	bot *tgbotapi.BotAPI,
+	bot2 *tgbotapi.BotAPI,
 	updateTout,
 	debugLevel int,
 ) {
@@ -35,14 +35,16 @@ func runBot2(
 	opts := hOpts{
 		wg:    waitGroup,
 		db:    dbase,
-		bot:   bot,
+		bot:   bot2,
 		debug: debugLevel,
 	}
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = updateTout
 
-	updates := bot.GetUpdatesChan(u)
+	updates := bot2.GetUpdatesChan(u)
+
+	logs.Debugf("BOT2: #%v\n", bot2)
 
 	for {
 		select {
@@ -53,7 +55,7 @@ func runBot2(
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, WarnPrivateNotAllowed)
 					msg.ReplyToMessageID = update.Message.MessageID
 
-					if _, err := bot.Send(msg); err != nil {
+					if _, err := bot2.Send(msg); err != nil {
 						logs.Debugf("[!] send: %s\n", err)
 					}
 
@@ -70,7 +72,7 @@ func runBot2(
 				// Respond to the callback query, telling Telegram to show the user
 				// a message with the data received.
 				callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
-				if _, err := bot.Request(callback); err != nil {
+				if _, err := bot2.Request(callback); err != nil {
 					logs.Debugf("[!] callback: %s\n", err)
 				}
 

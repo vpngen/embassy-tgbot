@@ -45,6 +45,8 @@ func runBot(
 
 	updates := bot.GetUpdatesChan(u)
 
+	logs.Debugf("BOT: #%v\n", bot)
+
 	for {
 		select {
 		case update := <-updates:
