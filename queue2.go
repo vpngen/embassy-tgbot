@@ -200,7 +200,7 @@ func qrun2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 		return
 	}
 
-	err = SetBill(db, key, CkBillStageDesicion, bill.Accept)
+	err = UpdateReceipt(db, key, CkReceiptStageReceived, bill.Accept)
 	if err != nil {
 		logs.Errf("set billq send2: %w", err)
 
