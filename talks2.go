@@ -42,17 +42,17 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 	case strings.HasPrefix(update.CallbackQuery.Data, acceptReceiptPrefix):
 		id := strings.TrimPrefix(update.CallbackQuery.Data, acceptReceiptPrefix)
 
-		logs.Debugf("[!:%s]accept bill: %s\n", ecode, id)
+		logs.Debugf("[!:%s]accept receipt: %s\n", ecode, id)
 		fmt.Sscanf(id, "%x", &key)
 
 		err := UpdateReceipt2(opts.db, key, CkReceiptStageDecision2, true)
 		if err != nil {
-			logs.Errf("[!:%s] set bill: %s\n", ecode, err)
+			logs.Errf("[!:%s] set receipt: %s\n", ecode, err)
 
 			return
 		}
 
-		ResetReceipt2(opts.db, key)
+		//ResetReceipt2(opts.db, key)
 
 		// delete our previous message.
 		if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
@@ -63,17 +63,17 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 	case strings.HasPrefix(update.CallbackQuery.Data, rejectReceiptPrefix):
 		id := strings.TrimPrefix(update.CallbackQuery.Data, rejectReceiptPrefix)
 
-		logs.Debugf("[!:%s]reject bill: %s\n", ecode, id)
+		logs.Debugf("[!:%s]reject receipt: %s\n", ecode, id)
 		fmt.Sscanf(id, "%x", &key)
 
 		err := UpdateReceipt2(opts.db, key, CkReceiptStageDecision2, false)
 		if err != nil {
-			logs.Errf("[!:%s] set bill: %s\n", ecode, err)
+			logs.Errf("[!:%s] set receipt: %s\n", ecode, err)
 
 			return
 		}
 
-		ResetReceipt2(opts.db, key)
+		//ResetReceipt2(opts.db, key)
 
 		// delete our previous message.
 		if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {

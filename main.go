@@ -72,7 +72,7 @@ func main() {
 	waitGroup.Add(2)
 
 	go ReceiptQueueLoop(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID)
-	go QRun2(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID)
+	go ReceiptQueueLoop2(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID)
 
 	// catch exit signals
 	kill := make(chan os.Signal, 1)

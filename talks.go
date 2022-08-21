@@ -245,10 +245,6 @@ func checkChatAutodeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) 
 
 // authentificate for dilog.
 func auth(opts hOpts, chatID int64, ut int, ecode string) (*Session, bool) {
-	if opts.cw.Get(chatID) > 0 {
-		return nil, false
-	}
-
 	/// check session.
 	session, err := checkSession(opts.db, chatID)
 	if err != nil {
@@ -260,6 +256,10 @@ func auth(opts hOpts, chatID int64, ut int, ecode string) (*Session, bool) {
 	if session.UpdateTime > int64(ut) {
 		logs.Debugf("[!:%s] old message: %d < %d\n", ecode, session.UpdateTime, ut)
 
+		return nil, false
+	}
+
+	if opts.cw.Get(chatID) > 0 {
 		return nil, false
 	}
 

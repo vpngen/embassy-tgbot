@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	receiptqPrefix = "rcptq"
+	receiptqPrefix = "rcpt1q"
 	receiptqKeyLen = 16 - len(receiptqPrefix)
 	receiptSalt    = "$WrojOb4"
 	receiptTTL     = 48 * time.Hour
@@ -49,13 +49,13 @@ type CkReceipt struct {
 
 // PutReceipt - put receipt in the queue.
 func PutReceipt(dbase *badger.DB, chatID int64, fileID string) error {
-	bill := &CkReceipt{
+	receipt := &CkReceipt{
 		ChatID: chatID,
 		FileID: fileID,
 		Stage:  CkReceiptStageNone,
 	}
 
-	data, err := json.Marshal(bill)
+	data, err := json.Marshal(receipt)
 	if err != nil {
 		return fmt.Errorf("parse: %w", err)
 	}
@@ -72,14 +72,16 @@ func PutReceipt(dbase *badger.DB, chatID int64, fileID string) error {
 			}
 		}
 
-		if err == nil {
+		/*if err == nil {
 			return ErrKeyConflict
-		}
+		}*/
 
 		e := badger.NewEntry(key, data).WithTTL(receiptTTL)
 		if err := txn.SetEntry(e); err != nil {
 			return fmt.Errorf("set: %w", err)
 		}
+
+		//fmt.Printf("*** q1 id: %x\n", key)
 
 		return nil
 	})
@@ -105,6 +107,8 @@ func queueID(chatID int64) []byte {
 
 // UpdateReceipt - update receipt review status and stage.
 func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool) error {
+	//fmt.Printf("*** update q1: %x stage=%d\n", id, stage)
+
 	err := dbase.Update(func(txn *badger.Txn) error {
 		receipt := &CkReceipt{}
 
@@ -119,6 +123,7 @@ func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool) error {
 		}
 
 		receipt.Stage = stage
+		receipt.Accepted = accept
 
 		data, err = json.Marshal(receipt)
 		if err != nil {
@@ -157,7 +162,7 @@ func DeleteReceipt(dbase *badger.DB, id []byte) error {
 
 // GetReceipt - .
 func GetReceipt(dbase *badger.DB, id []byte) (*CkReceipt, error) {
-	bill := &CkReceipt{}
+	receipt := &CkReceipt{}
 
 	err := dbase.View(func(txn *badger.Txn) error {
 		data, err := getReceipt(txn, id)
@@ -165,7 +170,7 @@ func GetReceipt(dbase *badger.DB, id []byte) (*CkReceipt, error) {
 			return fmt.Errorf("get: %w", err)
 		}
 
-		err = json.Unmarshal(data, bill)
+		err = json.Unmarshal(data, receipt)
 		if err != nil {
 			return fmt.Errorf("unmarhal: %w", err)
 		}
@@ -176,12 +181,13 @@ func GetReceipt(dbase *badger.DB, id []byte) (*CkReceipt, error) {
 		return nil, fmt.Errorf("get receipt: %w", err)
 	}
 
-	return bill, nil
+	return receipt, nil
 }
 
 // help get data from badgerBD.
 func getReceipt(txn *badger.Txn, id []byte) ([]byte, error) {
 	var data []byte
+	//fmt.Printf("*** get q1: %x\n", id)
 
 	item, err := txn.Get(id)
 	if err != nil {
@@ -273,7 +279,7 @@ func catchNewReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) 
 
 // catch reviewed receipt
 func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) (bool, error) {
-	key, bill, err := catchFirstReceipt(db, CkReceiptStageReceived)
+	key, receipt, err := catchFirstReceipt(db, CkReceiptStageReceived)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
 	}
@@ -284,28 +290,28 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 	ecode := genEcode()
 
-	switch bill.Accepted {
+	switch receipt.Accepted {
 	case true:
 		fullname, person, mnemo, _, err := fetchGrants()
 		if err != nil {
 			return false, fmt.Errorf("fetch grant message: %w", err)
 		}
 
-		msg := fmt.Sprintf("%s\nИмя: %s\nСправка:\n%s\nПрисуждение премии мира: %s\n%s\n\nЗапомните кодовую фразу: %s",
+		msg := fmt.Sprintf("%s\nИмя: *%s*\n\nЗапомните кодовую фразу:\n```%s```\n\n*СПРАВКА*\n\n_%s_\nПрисуждение премии мира: %s\n%s",
 			GrantMessage,
 			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, fullname),
+			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, mnemo),
 			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, person.Name),
 			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, person.Desc),
 			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, person.URL),
-			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, mnemo),
 		)
 
-		newMsg, err := SendMessage(bot, bill.ChatID, 0, msg, ecode)
+		newMsg, err := SendMessage(bot, receipt.ChatID, 0, msg, ecode)
 		if err != nil {
 			return false, fmt.Errorf("send grant message: %w", err)
 		}
 
-		err = setSession(db, bill.ChatID, newMsg.MessageID, stageCleanup)
+		err = setSession(db, receipt.ChatID, newMsg.MessageID, stageCleanup)
 		if err != nil {
 			return false, fmt.Errorf("update session: %w", err)
 		}
@@ -315,12 +321,12 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 			return false, fmt.Errorf("cleanup: %w", err)
 		}
 	case false:
-		newMsg, err := SendMessage(bot, bill.ChatID, 0, RejectMessage, ecode)
+		newMsg, err := SendMessage(bot, receipt.ChatID, 0, RejectMessage, ecode)
 		if err != nil {
 			return false, fmt.Errorf("send reject message: %w", err)
 		}
 
-		err = setSession(db, bill.ChatID, newMsg.MessageID, stageWait4Bill)
+		err = setSession(db, receipt.ChatID, newMsg.MessageID, stageWait4Bill)
 		if err != nil {
 			return false, fmt.Errorf("update session: %w", err)
 		}
@@ -337,7 +343,7 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
 	var key []byte
 
-	bill := &CkReceipt{}
+	receipt := &CkReceipt{}
 
 	err := db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
@@ -359,12 +365,12 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
 				return err
 			}
 
-			err = json.Unmarshal(data, bill)
+			err = json.Unmarshal(data, receipt)
 			if err != nil {
 				return fmt.Errorf("unmarhal: %w", err)
 			}
 
-			if bill.Stage != stage {
+			if receipt.Stage != stage {
 				key = nil
 				data = nil
 
@@ -380,7 +386,7 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
 		return nil, nil, fmt.Errorf("get next: %w", err)
 	}
 
-	return key, bill, nil
+	return key, receipt, nil
 }
 
 func downloadPhoto(url string) ([]byte, error) {
