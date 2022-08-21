@@ -17,40 +17,41 @@ import (
 )
 
 const (
-	acceptPrefix = "a-"
-	rejectPrefix = "r-"
+	acceptReceiptPrefix = "a-"
+	rejectReceiptPrefix = "r-"
 )
 
 const (
-	billqPrefix2 = "bq2"
-	billqKeyLen2 = 16 - len(billqPrefix2)
-	billqSalt2   = "Lewm)Ow6"
+	receiptqPrefix2 = "rcptq2"
+	receiptqKeyLen2 = 16 - len(receiptqPrefix2)
+	receiptSalt2    = "Lewm)Ow6"
+	receiptTTL2     = 48 * time.Hour
 )
 
 // Check bill stages
 const (
-	CkBillStageNone2 = iota
-	CkBillStageSend2
-	CkBillStageDecision2
+	CkReceiptStageNone2 = iota
+	CkReceiptStageSend2
+	CkReceiptStageDecision2
 )
 
-// CkBillQueue2 - queue with bills for manual or auto check.
-type CkBillQueue2 struct {
-	Stage       int    `json:"stage"`
-	CkBillQueue []byte `json:"billq_id"`
-	Accept      bool   `json:"accept"`
+// CkReceiptQueue2 - queue with receipts for manual or auto check.
+type CkReceiptQueue2 struct {
+	Stage          int    `json:"stage"`
+	ReceiptQueueID []byte `json:"receiptq_id"`
+	Accept         bool   `json:"accept"`
 }
 
-// NewCkBillQueue2Data - .
-func NewCkBillQueue2Data(billqID []byte) ([]byte, []byte, error) {
-	key := queueID2(billqID)
+// NewCkReceiptQueueData2 - .
+func NewCkReceiptQueueData2(receiptQID []byte) ([]byte, []byte, error) {
+	key := queueID2(receiptQID)
 
-	bill := &CkBillQueue2{
-		Stage:       CkBillStageNone2,
-		CkBillQueue: billqID,
+	receipt := &CkReceiptQueue2{
+		Stage:          CkReceiptStageNone2,
+		ReceiptQueueID: receiptQID,
 	}
 
-	data, err := json.Marshal(bill)
+	data, err := json.Marshal(receipt)
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse: %w", err)
 	}
@@ -58,9 +59,9 @@ func NewCkBillQueue2Data(billqID []byte) ([]byte, []byte, error) {
 	return key, data, nil
 }
 
-// PutBill2 - put bill in the queue
-func PutBill2(dbase *badger.DB, billqID []byte) ([]byte, error) {
-	key, data, err := NewCkBillQueue2Data(billqID)
+// PutReceipt2 - put receipt in the queue
+func PutReceipt2(dbase *badger.DB, receiptQID []byte) ([]byte, error) {
+	key, data, err := NewCkReceiptQueueData2(receiptQID)
 	if err != nil {
 		return nil, fmt.Errorf("new data: %w", err)
 	}
@@ -90,15 +91,15 @@ func PutBill2(dbase *badger.DB, billqID []byte) ([]byte, error) {
 	return key, nil
 }
 
-// SetBill2 - .
-func SetBill2(dbase *badger.DB, id []byte, stage int, accept bool) error {
+// UpdateReceipt2 - .
+func UpdateReceipt2(dbase *badger.DB, id []byte, stage int, accept bool) error {
 	err := dbase.Update(func(txn *badger.Txn) error {
-		data, err := getBill2(txn, id)
+		data, err := getReceipt2(txn, id)
 		if err != nil {
-			return fmt.Errorf("get bill: %w", err)
+			return fmt.Errorf("get receipt: %w", err)
 		}
 
-		data, err = updateBill2(data, stage, accept)
+		data, err = updateReceipt2(data, stage, accept)
 		if err != nil {
 			return fmt.Errorf("marshal: %w", err)
 		}
@@ -111,14 +112,14 @@ func SetBill2(dbase *badger.DB, id []byte, stage int, accept bool) error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("set billq: %w", err)
+		return fmt.Errorf("set receipt: %w", err)
 	}
 
 	return nil
 }
 
-func updateBill2(data []byte, stage int, accept bool) ([]byte, error) {
-	bill := &CkBillQueue2{}
+func updateReceipt2(data []byte, stage int, accept bool) ([]byte, error) {
+	bill := &CkReceiptQueue2{}
 
 	err := json.Unmarshal(data, bill)
 	if err != nil {
@@ -137,13 +138,13 @@ func updateBill2(data []byte, stage int, accept bool) ([]byte, error) {
 }
 
 func queueID2(id []byte) []byte {
-	key := pbkdf2.Key(id, []byte(billqSalt2), 2048, billqKeyLen2, sha256.New)
+	key := pbkdf2.Key(id, []byte(receiptSalt2), 2048, receiptqKeyLen2, sha256.New)
 
-	return append([]byte(billqPrefix2), key...)
+	return append([]byte(receiptqPrefix2), key...)
 }
 
-// ResetBill2 - .
-func ResetBill2(dbase *badger.DB, id []byte) error {
+// ResetReceipt2 - .
+func ResetReceipt2(dbase *badger.DB, id []byte) error {
 	err := dbase.Update(func(txn *badger.Txn) error {
 		if err := txn.Delete(id); err != nil {
 			return fmt.Errorf("delete: %w", err)
@@ -152,13 +153,13 @@ func ResetBill2(dbase *badger.DB, id []byte) error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("delete billq: %w", err)
+		return fmt.Errorf("delete receipt: %w", err)
 	}
 
 	return nil
 }
 
-func getBill2(txn *badger.Txn, id []byte) ([]byte, error) {
+func getReceipt2(txn *badger.Txn, id []byte) ([]byte, error) {
 	var data []byte
 
 	item, err := txn.Get(id)
@@ -197,7 +198,7 @@ func QRun2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, 
 }
 
 func qrun2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
-	key, bill, err := getNextCkBillQueue2(db, CkBillStageDecision2)
+	key, bill, err := getNextCkReceiptQueue2(db, CkReceiptStageDecision2)
 	if err != nil {
 		return
 	}
@@ -210,17 +211,17 @@ func qrun2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 	}
 }
 
-func getNextCkBillQueue2(db *badger.DB, stage int) ([]byte, *CkBillQueue2, error) {
+func getNextCkReceiptQueue2(db *badger.DB, stage int) ([]byte, *CkReceiptQueue2, error) {
 	var key []byte
 
-	bill := &CkBillQueue2{}
+	bill := &CkReceiptQueue2{}
 
 	err := db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
 
 		defer it.Close()
 
-		prefix := []byte(billqPrefix2)
+		prefix := []byte(receiptqPrefix2)
 
 		var data []byte
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
@@ -252,9 +253,9 @@ func getNextCkBillQueue2(db *badger.DB, stage int) ([]byte, *CkBillQueue2, error
 	return key, bill, nil
 }
 
-// SendBill2 - .
-func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID int64, data []byte) error {
-	id, err := PutBill2(db, billqID)
+// SendReceipt2 - .
+func SendReceipt2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID int64, data []byte) error {
+	id, err := PutReceipt2(db, billqID)
 	if err != nil {
 		return fmt.Errorf("put billq2: %w", err)
 	}
@@ -263,27 +264,27 @@ func SendBill2(db *badger.DB, bot2 *tgbotapi.BotAPI, billqID []byte, ckChatID in
 	// msg.ReplyMarkup = WannabeKeyboard
 	// msg.ParseMode = tgbotapi.ModeMarkdown
 	// photo.Caption =
-	photo.ReplyMarkup = makeCheckBillKeyboard(fmt.Sprintf("%x", id))
+	photo.ReplyMarkup = makeCheckReceiptKeyboard(fmt.Sprintf("%x", id))
 	photo.ProtectContent = true
 
 	if _, err := bot2.Request(photo); err != nil {
 		return fmt.Errorf("request2: %w", err)
 	}
 
-	err = SetBill2(db, id, CkBillStageSend2, false)
+	err = UpdateReceipt2(db, id, CkReceiptStageSend2, false)
 	if err != nil {
-		return fmt.Errorf("set billq send2: %w", err)
+		return fmt.Errorf("set receipt send2: %w", err)
 	}
 
 	return nil
 }
 
-// makeCheckBillKeyboard - set wanna keyboard.
-func makeCheckBillKeyboard(id string) tgbotapi.InlineKeyboardMarkup {
+// makeCheckReceiptKeyboard - set wanna keyboard.
+func makeCheckReceiptKeyboard(id string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Подтвердить", acceptPrefix+id),
-			tgbotapi.NewInlineKeyboardButtonData("Отвергнуть", rejectPrefix+id),
+			tgbotapi.NewInlineKeyboardButtonData("Подтвердить", acceptReceiptPrefix+id),
+			tgbotapi.NewInlineKeyboardButtonData("Отвергнуть", rejectReceiptPrefix+id),
 		),
 	)
 }

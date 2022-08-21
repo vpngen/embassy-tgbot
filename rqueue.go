@@ -258,7 +258,7 @@ func catchNewReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) 
 		return false, fmt.Errorf("download photo: %w", err)
 	}
 
-	err = SendBill2(db, bot2, key, ckChatID, photo)
+	err = SendReceipt2(db, bot2, key, ckChatID, photo)
 	if err != nil {
 		return false, fmt.Errorf("send receipt2: %w", err)
 	}
@@ -399,6 +399,7 @@ func downloadPhoto(url string) ([]byte, error) {
 	return photo, nil
 }
 
+// fetchGrants - create and send brigadier grants.
 func fetchGrants() (string, *namesgenerator.Person, string, []byte, error) {
 	fullname, person, err := namesgenerator.PeaceAwardee()
 	if err != nil {

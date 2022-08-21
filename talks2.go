@@ -39,20 +39,20 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 	ecode := genEcode() // unique error code
 
 	switch {
-	case strings.HasPrefix(update.CallbackQuery.Data, acceptPrefix):
-		id := strings.TrimPrefix(update.CallbackQuery.Data, acceptPrefix)
+	case strings.HasPrefix(update.CallbackQuery.Data, acceptReceiptPrefix):
+		id := strings.TrimPrefix(update.CallbackQuery.Data, acceptReceiptPrefix)
 
 		logs.Debugf("[!:%s]accept bill: %s\n", ecode, id)
 		fmt.Sscanf(id, "%x", &key)
 
-		err := SetBill2(opts.db, key, CkBillStageDecision2, true)
+		err := UpdateReceipt2(opts.db, key, CkReceiptStageDecision2, true)
 		if err != nil {
 			logs.Errf("[!:%s] set bill: %s\n", ecode, err)
 
 			return
 		}
 
-		ResetBill2(opts.db, key)
+		ResetReceipt2(opts.db, key)
 
 		// delete our previous message.
 		if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
@@ -60,20 +60,20 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 			logs.Errf("[!:%s] remove: %s\n", ecode, err)
 		}
 
-	case strings.HasPrefix(update.CallbackQuery.Data, rejectPrefix):
-		id := strings.TrimPrefix(update.CallbackQuery.Data, rejectPrefix)
+	case strings.HasPrefix(update.CallbackQuery.Data, rejectReceiptPrefix):
+		id := strings.TrimPrefix(update.CallbackQuery.Data, rejectReceiptPrefix)
 
 		logs.Debugf("[!:%s]reject bill: %s\n", ecode, id)
 		fmt.Sscanf(id, "%x", &key)
 
-		err := SetBill2(opts.db, key, CkBillStageDecision2, false)
+		err := UpdateReceipt2(opts.db, key, CkReceiptStageDecision2, false)
 		if err != nil {
 			logs.Errf("[!:%s] set bill: %s\n", ecode, err)
 
 			return
 		}
 
-		ResetBill2(opts.db, key)
+		ResetReceipt2(opts.db, key)
 
 		// delete our previous message.
 		if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
