@@ -9,6 +9,7 @@ import (
 	"time"
 
 	badger "github.com/dgraph-io/badger/v3"
+
 	"github.com/vpngen/embassy-tgbot/logs"
 )
 

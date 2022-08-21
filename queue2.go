@@ -8,10 +8,12 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/crypto/pbkdf2"
+
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
 	"github.com/vpngen/embassy-tgbot/logs"
-	"golang.org/x/crypto/pbkdf2"
 )
 
 const (
