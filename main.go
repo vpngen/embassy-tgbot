@@ -22,6 +22,7 @@ func main() {
 	cfg := configFromEnv()
 
 	SetWannaKeyboard(cfg.SupportURL) // i dont know howto do this more clearely
+	SetFatalSomeThingWrongWithLink(cfg.SupportURL)
 
 	// set logs
 	logs.SetLogLevel(int32(cfg.DebugLevel))

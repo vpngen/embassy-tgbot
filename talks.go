@@ -148,7 +148,7 @@ func RemoveMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 
 // Something wrong handling.
 func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
-	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrong, ecode)
+	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrongWithLink, ecode)
 
 	logs.Debugf("[!:%s] %s\n", ecode, err)
 	SendMessage(bot, chatID, 0, text, ecode)

@@ -1,6 +1,10 @@
 package main
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	"fmt"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
 const (
 	// MsgWelcome - welcome message.
@@ -19,7 +23,7 @@ const (
 
 Прислать нам фотку чека с явно видным QR-кодом
 
-Мы поймем, что ты живой нормальный человек, а не тролль испод моста и дадим тебе доступ к системе управления твоим собственным VPN-ом
+Мы поймем, что ты живой нормальный человек, а не тролль из-под моста, и дадим тебе доступ к системе управления твоим собственным VPN-ом
 
 Ждем фоточку чека!`
 
@@ -33,21 +37,21 @@ const (
 	WarnPrivateNotAllowed = `Извини, в личках я не общаюсь`
 
 	// WarnForbidForwards - this bot is only private.
-	WarnForbidForwards = `Извини, я не работаю с пересылками`
+	WarnForbidForwards = `Извини, в целях твоей же безопасности пересылка отключена`
 
 	// WarnUnknownCommand - unknown command.
-	WarnUnknownCommand = `Извини, я не знаком с этим указанием`
+	WarnUnknownCommand = `Извини, но эта команда мне не знакома`
 
 	// FatalUnwellSecurity - if autodelete not set.
 	FatalUnwellSecurity = `Привет!
 
-Установи пожалуйста автоудаление сообщений в этом чате *через 1 или 2 дня* или продолжи.`
+Установи пожалуйста автоудаление сообщений в этом чате на 1 день, если на твоем клиенте это возможно. [Инструкция](https://telegram.org/blog/autodelete-inv2/ru?ln=a)`
 
 	// WarnRequiredPhoto - warning about photo absents.
-	WarnRequiredPhoto = `Ты забыл прикрепить фотографию чека.`
+	WarnRequiredPhoto = `Похоже ты забыл прикрепить фотографию чека.`
 
 	// FatalSomeThingWrong - something wrong happened.
-	FatalSomeThingWrong = `Мне жаль, что-то пошло не так`
+	FatalSomeThingWrong = `Похоже что-то пошло не так. Если ты уверен(-а), что все сделал(-а) правильно - напиши пожалуйста в [поддержку](%s)`
 
 	// DefaultSupportURL - support URL if isn't set.
 	DefaultSupportURL = "https://t.me/"
@@ -83,6 +87,9 @@ var (
 			tgbotapi.NewInlineKeyboardButtonData("Продолжить", "continue"),
 		),
 	)
+
+	// FatalSomeThingWrongWithLink - fatal warning with support link.
+	FatalSomeThingWrongWithLink string //nolint
 )
 
 // SetWannaKeyboard - set wanna keyboard.
@@ -93,4 +100,9 @@ func SetWannaKeyboard(url string) {
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
 	)
+}
+
+// SetFatalSomeThingWrongWithLink - set link in fatal warning string.
+func SetFatalSomeThingWrongWithLink(link string) {
+	FatalSomeThingWrongWithLink = fmt.Sprintf(FatalSomeThingWrong, tgbotapi.EscapeText(tgbotapi.ModeMarkdown, link))
 }
