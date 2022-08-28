@@ -292,7 +292,7 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 	switch receipt.Accepted {
 	case true:
-		fullname, person, mnemo, _, err := fetchGrants()
+		fullname, person, mnemo, _, _, err := fetchGrants()
 		if err != nil {
 			return false, fmt.Errorf("fetch grant message: %w", err)
 		}
@@ -406,19 +406,19 @@ func downloadPhoto(url string) ([]byte, error) {
 }
 
 // fetchGrants - create and send brigadier grants.
-func fetchGrants() (string, *namesgenerator.Person, string, []byte, error) {
+func fetchGrants() (string, *namesgenerator.Person, string, []byte, []byte, error) {
 	fullname, person, err := namesgenerator.PeaceAwardee()
 	if err != nil {
-		return "", nil, "", nil, fmt.Errorf("namegen: %w", err)
+		return "", nil, "", nil, nil, fmt.Errorf("namegen: %w", err)
 	}
 
 	enc := charmap.Windows1251.NewEncoder()
 	spice, _ := enc.String(fullname)
 
-	mnemo, seed, err := seedgenerator.Seed(seedgenerator.ENT128, spice)
+	mnemo, seed, salt, err := seedgenerator.Seed(seedgenerator.ENT64, spice)
 	if err != nil {
-		return "", nil, "", nil, fmt.Errorf("seedgen: %w", err)
+		return "", nil, "", nil, nil, fmt.Errorf("seedgen: %w", err)
 	}
 
-	return fullname, &person, mnemo, seed, nil
+	return fullname, &person, mnemo, seed, salt, nil
 }
