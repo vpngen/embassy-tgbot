@@ -297,7 +297,7 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 			return false, fmt.Errorf("fetch grant message: %w", err)
 		}
 
-		msg := fmt.Sprintf("%s\n\nИмя: *%s*\n\nСлова:\n```\n%s```\n\n*СПРАВКА*\n\n_%s_\nПрисуждение премии мира: %s\n%s",
+		msg := fmt.Sprintf("%s\n\nИмя:\n*%s*\n\nСлова:\n```\n%s```\n\n*СПРАВКА*\n\n_%s_\nПрисуждение премии мира: %s\n%s",
 			GrantMessage,
 			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, fullname),
 			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, mnemo),
