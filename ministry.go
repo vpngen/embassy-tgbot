@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http/httputil"
 	"os"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -92,10 +93,10 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 	time.Sleep(3 * time.Second)
 
 	msg := fmt.Sprintf("*%s*\n\nИмя: %s\nПрисуждение премии мира: _%s_\n%s\n\n",
-		fullname,
-		person,
-		desc,
-		tgbotapi.EscapeText(tgbotapi.ModeMarkdown, string(wiki)),
+		strings.Trim(fullname, " \r\n\t"),
+		strings.Trim(person, " \r\n\t"),
+		strings.Trim(string(desc), " \r\n\t"),
+		tgbotapi.EscapeText(tgbotapi.ModeMarkdown, strings.Trim(string(wiki), " \r\n\t")),
 	)
 	_, err = SendMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
@@ -109,7 +110,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 
 	time.Sleep(1 * time.Second)
 
-	msg = fmt.Sprintf(WordsMessage, mnemo)
+	msg = fmt.Sprintf(WordsMessage, strings.Trim(mnemo, " \r\n\t"))
 	_, err = SendMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send words message: %w", err)
@@ -120,7 +121,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 	filename := sanitizeFilename(fullname)
 
 	doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: filename, Bytes: wgconf})
-	doc.Caption = fmt.Sprintf("http://[%s]", keydesk)
+	doc.Caption = fmt.Sprintf("http://[%s]", strings.Trim(keydesk, " \r\n\t"))
 
 	if _, err := bot.Request(doc); err != nil {
 		return fmt.Errorf("request doc: %w", err)
