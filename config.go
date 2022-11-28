@@ -9,6 +9,7 @@ import (
 
 	"github.com/vpngen/embassy-tgbot/logs"
 	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/ssh"
 )
 
 const (
@@ -22,6 +23,12 @@ const (
 	DefaultKeyLen = 32
 )
 
+type DeptOpts struct {
+	sshConfig *ssh.ClientConfig
+	controlIP string
+	token     string
+}
+
 // Config - config.
 type Config struct {
 	Token      string
@@ -33,6 +40,7 @@ type Config struct {
 	DBKey      []byte
 	SupportURL string
 	ckChatID   int64
+	Dept       DeptOpts
 }
 
 // configFromEnv - fill config from environment vars.
@@ -51,9 +59,17 @@ func configFromEnv() Config {
 	dbKey := os.Getenv("EMBASSY_BADGER_KEY")
 	supportURL := os.Getenv("SUPPORT_URL")
 	ckChat := os.Getenv("CHECK_BILL_CHAT")
+	ministryIP := os.Getenv("MINISTRY_IP")
+	ministryToken := os.Getenv("MINISTRY_TOKEN")
+	sshKeyPath := os.Getenv("SSHKEY_PATH")
 
 	if dbKey == "" {
 		log.Panic("NO ENCRYPTION KEY")
+	}
+
+	sshconf, err := createSSHConfig(sshKeyPath)
+	if err != nil {
+		log.Fatalf("NO SSH KEY: %s\n", err)
 	}
 
 	if supportURL == "" {
@@ -114,5 +130,10 @@ func configFromEnv() Config {
 		DBKey:      key,
 		SupportURL: supportURL,
 		ckChatID:   ckChatID,
+		Dept: DeptOpts{
+			controlIP: ministryIP,
+			sshConfig: sshconf,
+			token:     ministryToken,
+		},
 	}
 }

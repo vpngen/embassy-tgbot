@@ -202,7 +202,7 @@ func getReceipt(txn *badger.Txn, id []byte) ([]byte, error) {
 }
 
 // ReceiptQueueLoop - recept queue loop.
-func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
+func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts) {
 	defer waitGroup.Done()
 
 	timer := time.NewTimer(100 * time.Millisecond)
@@ -213,14 +213,14 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 		case <-stop:
 			return
 		case <-timer.C:
-			rqround(db, bot, bot2, ckChatID)
+			rqround(db, bot, bot2, ckChatID, dept)
 			timer.Reset(100 * time.Millisecond)
 		}
 	}
 }
 
 // do round.
-func rqround(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
+func rqround(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts) {
 	ok, err := catchNewReceipt(db, bot, bot2, ckChatID)
 	if err != nil {
 		logs.Errf("new receipt: %s\n", err)
@@ -229,7 +229,7 @@ func rqround(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 	}
 
 	if !ok {
-		_, err = catchReviewedReceipt(db, bot, bot2, ckChatID)
+		_, err = catchReviewedReceipt(db, bot, bot2, ckChatID, dept)
 		if err != nil {
 			logs.Errf("reviewed receipt: %s\n", err)
 
@@ -273,7 +273,7 @@ func catchNewReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) 
 }
 
 // catch reviewed receipt
-func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) (bool, error) {
+func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts) (bool, error) {
 	key, receipt, err := catchFirstReceipt(db, CkReceiptStageReceived)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
@@ -304,7 +304,10 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 			return false, fmt.Errorf("cleanup: %w", err)
 		}
 
-		/// Link to ministry
+		err = GetBrigadier(bot, receipt.ChatID, ecode, dept)
+		if err != nil {
+			return false, fmt.Errorf("creation: %w", err)
+		}
 	case false:
 		newMsg, err := SendMessage(bot, receipt.ChatID, 0, RejectMessage, ecode)
 		if err != nil {
