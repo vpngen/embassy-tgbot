@@ -12,14 +12,11 @@ import (
 	"time"
 
 	"golang.org/x/crypto/pbkdf2"
-	"golang.org/x/text/encoding/charmap"
 
 	"github.com/dgraph-io/badger/v3"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/vpngen/embassy-tgbot/logs"
-	"github.com/vpngen/wordsgens/namesgenerator"
-	"github.com/vpngen/wordsgens/seedgenerator"
 )
 
 const (
@@ -61,9 +58,7 @@ func PutReceipt(dbase *badger.DB, chatID int64, fileID string) error {
 	}
 
 	err = dbase.Update(func(txn *badger.Txn) error {
-		var key []byte
-
-		key = queueID(chatID)
+		var key []byte = queueID(chatID)
 
 		_, err := txn.Get(key)
 		if err != nil {
@@ -292,19 +287,7 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 	switch receipt.Accepted {
 	case true:
-		fullname, person, mnemo, _, _, err := fetchGrants()
-		if err != nil {
-			return false, fmt.Errorf("fetch grant message: %w", err)
-		}
-
-		msg := fmt.Sprintf("%s\n\nИмя:\n*%s*\n\nСлова:\n```\n%s```\n\n*СПРАВКА*\n\n_%s_\nПрисуждение премии мира: %s\n%s",
-			GrantMessage,
-			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, fullname),
-			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, mnemo),
-			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, person.Name),
-			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, person.Desc),
-			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, person.URL),
-		)
+		msg := fmt.Sprintf("%s\n", GrantMessage)
 
 		newMsg, err := SendMessage(bot, receipt.ChatID, 0, msg, ecode)
 		if err != nil {
@@ -320,6 +303,8 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 		if err != nil {
 			return false, fmt.Errorf("cleanup: %w", err)
 		}
+
+		/// Link to ministry
 	case false:
 		newMsg, err := SendMessage(bot, receipt.ChatID, 0, RejectMessage, ecode)
 		if err != nil {
@@ -403,22 +388,4 @@ func downloadPhoto(url string) ([]byte, error) {
 	}
 
 	return photo, nil
-}
-
-// fetchGrants - create and send brigadier grants.
-func fetchGrants() (string, *namesgenerator.Person, string, []byte, []byte, error) {
-	fullname, person, err := namesgenerator.PeaceAwardee()
-	if err != nil {
-		return "", nil, "", nil, nil, fmt.Errorf("namegen: %w", err)
-	}
-
-	enc := charmap.Windows1251.NewEncoder()
-	spice, _ := enc.String(fullname)
-
-	mnemo, seed, salt, err := seedgenerator.Seed(seedgenerator.ENT64, spice)
-	if err != nil {
-		return "", nil, "", nil, nil, fmt.Errorf("seedgen: %w", err)
-	}
-
-	return fullname, &person, mnemo, seed, salt, nil
 }
