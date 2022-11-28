@@ -15,7 +15,7 @@ import (
 )
 
 func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts) error {
-	cmd := fmt.Sprintf("-ch %s", "")
+	cmd := fmt.Sprintf("-ch %s", dept.token)
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
 
