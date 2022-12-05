@@ -92,7 +92,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 
 	time.Sleep(3 * time.Second)
 
-	msg := fmt.Sprintf("*%s*\n\nИмя: %s\nПрисуждение премии мира: _%s_\n%s\n\n",
+	msg := fmt.Sprintf("*%s*\n\nИмя: %s\nПрисуждение премии по физике: _%s_\n%s\n\n",
 		strings.Trim(fullname, " \r\n\t"),
 		strings.Trim(person, " \r\n\t"),
 		strings.Trim(string(desc), " \r\n\t"),
