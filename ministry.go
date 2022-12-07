@@ -85,6 +85,11 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 		return fmt.Errorf("keydesk read: %w", err)
 	}
 
+	filename, err := r.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("filename read: %w", err)
+	}
+
 	wgconf, err := io.ReadAll(r)
 	if err != nil {
 		return fmt.Errorf("chunk read: %w", err)
@@ -117,8 +122,6 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 	}
 
 	time.Sleep(3 * time.Second)
-
-	filename := sanitizeFilename(fullname)
 
 	doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: filename, Bytes: wgconf})
 	doc.Caption = fmt.Sprintf("http://[%s]", strings.Trim(keydesk, " \r\n\t"))
