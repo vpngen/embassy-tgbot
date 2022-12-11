@@ -102,7 +102,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(2 * time.Second)
 
-	png, err := qrcode.Encode(string(opts.wgconf), qrcode.Medium, 256)
+	png, err := qrcode.Encode(string(opts.wgconf), qrcode.Low, 256)
 	if err != nil {
 		return fmt.Errorf("create qr: %w", err)
 	}
