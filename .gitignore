@@ -3,4 +3,6 @@
 *~
 *.swp
 *.conf
+*.sh
 db/
+keys/
