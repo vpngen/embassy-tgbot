@@ -21,7 +21,7 @@ const (
 func main() {
 	cfg := configFromEnv()
 
-	SetWannaKeyboard(cfg.SupportURL) // i dont know howto do this more clearely
+	SetSupportMessages(cfg.SupportURL, cfg.SupportEmail) // i dont know howto do this more clearely
 	SetFatalSomeThingWrongWithLink(cfg.SupportURL)
 
 	// set logs

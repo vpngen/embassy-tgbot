@@ -47,7 +47,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 
 	if update.Message.ForwardFrom != nil ||
 		update.Message.ForwardFromChat != nil {
-		SendMessage(opts.bot, update.Message.Chat.ID, 0, WarnForbidForwards, ecode)
+		SendProtectMessage(opts.bot, update.Message.Chat.ID, 0, WarnForbidForwards, ecode)
 
 		return
 	}
@@ -151,7 +151,7 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrongWithLink, ecode)
 
 	logs.Debugf("[!:%s] %s\n", ecode, err)
-	SendMessage(bot, chatID, 0, text, ecode)
+	SendProtectMessage(bot, chatID, 0, text, ecode)
 }
 
 // Send Welcome message.
@@ -176,7 +176,7 @@ func sendWelcomeMessage(opts hOpts, chatID int64) error {
 
 // Send Quiz message.
 func sendQuizMessage(opts hOpts, chatID int64, ecode string) error {
-	msg, err := SendMessage(opts.bot, chatID, 0, MsgQuiz, ecode)
+	msg, err := SendProtectMessage(opts.bot, chatID, 0, MsgQuiz, ecode)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
@@ -192,7 +192,7 @@ func sendQuizMessage(opts hOpts, chatID int64, ecode string) error {
 // Check bill message.
 func checkBillMessageMessage(opts hOpts, Message *tgbotapi.Message, ecode string) error {
 	if len(Message.Photo) == 0 {
-		_, err := SendMessage(opts.bot, Message.Chat.ID, Message.MessageID, WarnRequiredPhoto, ecode)
+		_, err := SendProtectMessage(opts.bot, Message.Chat.ID, Message.MessageID, WarnRequiredPhoto, ecode)
 
 		return err
 	}
@@ -211,7 +211,7 @@ func checkBillMessageMessage(opts hOpts, Message *tgbotapi.Message, ecode string
 		return fmt.Errorf("put: %w", err)
 	}
 
-	newMsg, err := SendMessage(opts.bot, Message.Chat.ID, Message.MessageID, MsgAttestationAssigned, ecode)
+	newMsg, err := SendProtectMessage(opts.bot, Message.Chat.ID, Message.MessageID, MsgAttestationAssigned, ecode)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
@@ -310,7 +310,7 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 		if opts.debug == int(logs.LevelDebug) {
 			err := resetSession(opts.db, Message.Chat.ID)
 			if err == nil {
-				SendMessage(opts.bot, Message.Chat.ID, 0, ResetSuccessfull, ecode)
+				SendProtectMessage(opts.bot, Message.Chat.ID, 0, ResetSuccessfull, ecode)
 			}
 
 			return err
@@ -318,19 +318,37 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 
 		fallthrough
 	default:
-		SendMessage(opts.bot, Message.Chat.ID, 0, WarnUnknownCommand, ecode)
+		SendProtectMessage(opts.bot, Message.Chat.ID, 0, WarnUnknownCommand, ecode)
 
 		return nil
 	}
 }
 
+func SendOpenMessage(bot *tgbotapi.BotAPI, chatID int64, replyID int, text, ecode string) (*tgbotapi.Message, error) {
+	msg, err := sendMessage(bot, chatID, replyID, false, text, ecode)
+	if err != nil {
+		return msg, fmt.Errorf("open msg: %w", err)
+	}
+
+	return msg, nil
+}
+
+func SendProtectMessage(bot *tgbotapi.BotAPI, chatID int64, replyID int, text, ecode string) (*tgbotapi.Message, error) {
+	msg, err := sendMessage(bot, chatID, replyID, true, text, ecode)
+	if err != nil {
+		return msg, fmt.Errorf("protect msg: %w", err)
+	}
+
+	return msg, nil
+}
+
 // SendMessage - send common message.
-func SendMessage(bot *tgbotapi.BotAPI, chatID int64, replyID int, text, ecode string) (*tgbotapi.Message, error) {
+func sendMessage(bot *tgbotapi.BotAPI, chatID int64, replyID int, protect bool, text, ecode string) (*tgbotapi.Message, error) {
 	logs.Debugf("[!:%s] send message\n", ecode)
 
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
-	msg.ProtectContent = true
+	msg.ProtectContent = protect
 
 	if replyID != 0 {
 		msg.ReplyToMessageID = replyID

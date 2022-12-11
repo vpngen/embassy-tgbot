@@ -27,20 +27,22 @@ type DeptOpts struct {
 	sshConfig *ssh.ClientConfig
 	controlIP string
 	token     string
+	fake      bool
 }
 
 // Config - config.
 type Config struct {
-	Token      string
-	Token2     string
-	UpdateTout int
-	DebugLevel int
-	BotDebug   bool
-	DBDir      string
-	DBKey      []byte
-	SupportURL string
-	ckChatID   int64
-	Dept       DeptOpts
+	Token        string
+	Token2       string
+	UpdateTout   int
+	DebugLevel   int
+	BotDebug     bool
+	DBDir        string
+	DBKey        []byte
+	SupportURL   string
+	SupportEmail string
+	ckChatID     int64
+	Dept         DeptOpts
 }
 
 // configFromEnv - fill config from environment vars.
@@ -58,6 +60,7 @@ func configFromEnv() Config {
 	dbDir := os.Getenv("EMBASSY_BADGER_DIR")          // Database dir, default db
 	dbKey := os.Getenv("EMBASSY_BADGER_KEY")
 	supportURL := os.Getenv("SUPPORT_URL")
+	supportEmail := os.Getenv("SUPPORT_EMAIL")
 	ckChat := os.Getenv("CHECK_BILL_CHAT")
 	ministryIP := os.Getenv("MINISTRY_IP")
 	ministryToken := os.Getenv("MINISTRY_TOKEN")
@@ -67,9 +70,14 @@ func configFromEnv() Config {
 		log.Panic("NO ENCRYPTION KEY")
 	}
 
+	sshFake := false
 	sshconf, err := createSSHConfig(sshKeyPath)
 	if err != nil {
-		log.Fatalf("NO SSH KEY: %s\n", err)
+		if sshKeyPath != "FAKE" {
+			log.Fatalf("NO SSH KEY: %s\n", err)
+		}
+
+		sshFake = true
 	}
 
 	if supportURL == "" {
@@ -121,19 +129,21 @@ func configFromEnv() Config {
 	}
 
 	return Config{
-		Token:      token,
-		Token2:     token2,
-		UpdateTout: tout,
-		DebugLevel: dbg,
-		BotDebug:   debug,
-		DBDir:      dbDir,
-		DBKey:      key,
-		SupportURL: supportURL,
-		ckChatID:   ckChatID,
+		Token:        token,
+		Token2:       token2,
+		UpdateTout:   tout,
+		DebugLevel:   dbg,
+		BotDebug:     debug,
+		DBDir:        dbDir,
+		DBKey:        key,
+		SupportURL:   supportURL,
+		SupportEmail: supportEmail,
+		ckChatID:     ckChatID,
 		Dept: DeptOpts{
 			controlIP: ministryIP,
 			sshConfig: sshconf,
 			token:     ministryToken,
+			fake:      sshFake,
 		},
 	}
 }

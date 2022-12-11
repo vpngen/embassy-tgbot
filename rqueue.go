@@ -287,14 +287,14 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 	switch receipt.Accepted {
 	case true:
-		msg := fmt.Sprintf("%s\n", GrantMessage)
+		/*msg := fmt.Sprintf("%s\n", GrantMessage)
 
-		newMsg, err := SendMessage(bot, receipt.ChatID, 0, msg, ecode)
+		newMsg, err := SendOpenMessage(bot, receipt.ChatID, 0, msg, ecode)
 		if err != nil {
 			return false, fmt.Errorf("send grant message: %w", err)
-		}
+		}*/
 
-		err = setSession(db, receipt.ChatID, newMsg.MessageID, stageCleanup)
+		err = setSession(db, receipt.ChatID, 0, stageCleanup)
 		if err != nil {
 			return false, fmt.Errorf("update session: %w", err)
 		}
@@ -306,10 +306,12 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 		err = GetBrigadier(bot, receipt.ChatID, ecode, dept)
 		if err != nil {
+			SendProtectMessage(bot, receipt.ChatID, 0, FailMessage, ecode)
+
 			return false, fmt.Errorf("creation: %w", err)
 		}
 	case false:
-		newMsg, err := SendMessage(bot, receipt.ChatID, 0, RejectMessage, ecode)
+		newMsg, err := SendProtectMessage(bot, receipt.ChatID, 0, RejectMessage, ecode)
 		if err != nil {
 			return false, fmt.Errorf("send reject message: %w", err)
 		}
