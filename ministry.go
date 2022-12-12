@@ -94,7 +94,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(2 * time.Second)
 
-	msg = fmt.Sprintf("Конфигурация текстом:\n```%s```", string(opts.wgconf))
+	msg = fmt.Sprintf("Конфигурация текстом:\n```%s```", "\n"+string(opts.wgconf))
 	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send seed message: %w", err)
@@ -116,7 +116,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(2 * time.Second)
 
-	msg = fmt.Sprintf("Доступ в ключницу (только с подключенным VPN). Скопируй этот адрес и вставь в браузер: `http://[%s]/`", opts.keydesk)
+	msg = fmt.Sprintf("Доступ в ключницу (только с подключенным VPN). Скопируй этот адрес и вставь в браузер:\n`http://[%s]/`", opts.keydesk)
 	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
@@ -157,15 +157,19 @@ func callMinistry(dept DeptOpts) (*grantPkg, error) {
 
 	r := bufio.NewReader(httputil.NewChunkedReader(&b))
 
-	opts.fullname, err = r.ReadString('\n')
+	fullname, err := r.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("fullname read: %w", err)
 	}
 
-	opts.person, err = r.ReadString('\n')
+	opts.fullname = strings.Trim(fullname, "\r\n\t ")
+
+	person, err := r.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("person read: %w", err)
 	}
+
+	opts.person = strings.Trim(person, "\r\n\t ")
 
 	desc64, err := r.ReadString('\n')
 	if err != nil {
@@ -191,20 +195,26 @@ func callMinistry(dept DeptOpts) (*grantPkg, error) {
 
 	opts.wiki = string(wiki)
 
-	opts.mnemo, err = r.ReadString('\n')
+	mnemo, err := r.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("mnemo read: %w", err)
 	}
 
-	opts.keydesk, err = r.ReadString('\n')
+	opts.mnemo = strings.Trim(mnemo, "\r\n\t ")
+
+	keydesk, err := r.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("keydesk read: %w", err)
 	}
 
-	opts.filename, err = r.ReadString('\n')
+	opts.keydesk = strings.Trim(keydesk, "\r\n\t ")
+
+	filename, err := r.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("filename read: %w", err)
 	}
+
+	opts.filename = strings.Trim(filename, "\r\n\t ")
 
 	opts.wgconf, err = io.ReadAll(r)
 	if err != nil {
@@ -278,8 +288,7 @@ func genGrants(dept DeptOpts) (*grantPkg, error) {
 
 	wgpub := wgpriv.PublicKey()
 
-	tmpl := `
-[Interface]
+	tmpl := `[Interface]
 Address = %s
 PrivateKey = %s
 DNS = %s
