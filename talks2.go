@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vpngen/embassy-tgbot/logs"
@@ -54,6 +55,29 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 
 		//ResetReceipt2(opts.db, key)
 
+		if len(update.CallbackQuery.Message.Photo) > 0 {
+			photo := tgbotapi.NewPhoto(update.CallbackQuery.Message.Chat.ID, tgbotapi.FileID(update.CallbackQuery.Message.Photo[0].FileID))
+			// msg.ReplyMarkup = WannabeKeyboard
+			photo.ParseMode = tgbotapi.ModeMarkdown
+			photo.ProtectContent = true
+			text := "\U00002705" + ` *Accept receipt*
+Message date: *%s*
+Action date: *%s*
+Admin: [%s](tg://user?id=%d) (@%s)
+			`
+			cbq := update.CallbackQuery
+			photo.Caption = fmt.Sprintf(
+				text,
+				cbq.Message.Time().Format(time.RFC3339),
+				time.Now().Format(time.RFC3339),
+				cbq.From.FirstName+" "+cbq.From.LastName, cbq.From.ID, cbq.From.UserName,
+			)
+
+			if _, err := opts.bot.Request(photo); err != nil {
+				logs.Errf("[!:%s] request2: %s", ecode, err)
+			}
+		}
+
 		// delete our previous message.
 		if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
 			// we don't want to handle this
@@ -74,6 +98,29 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 		}
 
 		//ResetReceipt2(opts.db, key)
+
+		if len(update.CallbackQuery.Message.Photo) > 0 {
+			photo := tgbotapi.NewPhoto(update.CallbackQuery.Message.Chat.ID, tgbotapi.FileID(update.CallbackQuery.Message.Photo[0].FileID))
+			// msg.ReplyMarkup = WannabeKeyboard
+			photo.ParseMode = tgbotapi.ModeMarkdown
+			photo.ProtectContent = true
+			text := "\U0000274C" + ` *Reject receipt*
+Message date: *%s*
+Action date: *%s*
+Admin: [%s](tg://user?id=%d) (@%s)
+			`
+			cbq := update.CallbackQuery
+			photo.Caption = fmt.Sprintf(
+				text,
+				cbq.Message.Time().Format(time.RFC3339),
+				time.Now().Format(time.RFC3339),
+				cbq.From.FirstName+" "+cbq.From.LastName, cbq.From.ID, cbq.From.UserName,
+			)
+
+			if _, err := opts.bot.Request(photo); err != nil {
+				logs.Errf("[!:%s] request2: %s", ecode, err)
+			}
+		}
 
 		// delete our previous message.
 		if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
