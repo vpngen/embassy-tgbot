@@ -63,18 +63,23 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 			text := "\U00002705" + ` *Accept receipt*
 Message date: *%s*
 Action date: *%s*
-Admin: [%s](tg://user?id=%d) (@%s)
-			`
+Admin: [%s](tg://user?id=%d)`
 			cbq := update.CallbackQuery
 			photo.Caption = fmt.Sprintf(
 				text,
-				cbq.Message.Time().Format(time.RFC3339),
-				time.Now().Format(time.RFC3339),
-				cbq.From.FirstName+" "+cbq.From.LastName, cbq.From.ID, cbq.From.UserName,
+				tgbotapi.EscapeText(tgbotapi.ModeMarkdown, cbq.Message.Time().Format(time.RFC3339)),
+				tgbotapi.EscapeText(tgbotapi.ModeMarkdown, time.Now().Format(time.RFC3339)),
+				tgbotapi.EscapeText(tgbotapi.ModeMarkdown, cbq.From.FirstName+" "+cbq.From.LastName),
+				cbq.From.ID,
 			)
 
+			if cbq.From.UserName != "" {
+				photo.Caption += " (@" + tgbotapi.EscapeText(tgbotapi.ModeMarkdown, cbq.From.UserName) + ")"
+
+			}
+
 			if _, err := opts.bot.Request(photo); err != nil {
-				logs.Errf("[!:%s] request2: %s", ecode, err)
+				logs.Errf("[!:%s] repost photo: %s\n", ecode, err)
 			}
 		}
 
@@ -107,18 +112,23 @@ Admin: [%s](tg://user?id=%d) (@%s)
 			text := "\U0000274C" + ` *Reject receipt*
 Message date: *%s*
 Action date: *%s*
-Admin: [%s](tg://user?id=%d) (@%s)
-			`
+Admin: [%s](tg://user?id=%d)`
 			cbq := update.CallbackQuery
 			photo.Caption = fmt.Sprintf(
 				text,
-				cbq.Message.Time().Format(time.RFC3339),
-				time.Now().Format(time.RFC3339),
-				cbq.From.FirstName+" "+cbq.From.LastName, cbq.From.ID, cbq.From.UserName,
+				tgbotapi.EscapeText(tgbotapi.ModeMarkdown, cbq.Message.Time().Format(time.RFC3339)),
+				tgbotapi.EscapeText(tgbotapi.ModeMarkdown, time.Now().Format(time.RFC3339)),
+				tgbotapi.EscapeText(tgbotapi.ModeMarkdown, cbq.From.FirstName+" "+cbq.From.LastName),
+				cbq.From.ID,
 			)
 
+			if cbq.From.UserName != "" {
+				photo.Caption += " (@" + tgbotapi.EscapeText(tgbotapi.ModeMarkdown, cbq.From.UserName) + ")"
+
+			}
+
 			if _, err := opts.bot.Request(photo); err != nil {
-				logs.Errf("[!:%s] request2: %s", ecode, err)
+				logs.Errf("[!:%s] repost photo: %s\n", ecode, err)
 			}
 		}
 
