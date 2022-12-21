@@ -114,7 +114,7 @@ var (
 func SetSupportMessages(url, email string) {
 	WannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "wannabe"),
+			tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "started"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
 	)

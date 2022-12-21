@@ -110,7 +110,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 	time.Sleep(SlowAnswerTimeout)
 
 	switch {
-	case update.CallbackQuery.Data == "wannabe" && session.Stage == stageWait4Choice:
+	case update.CallbackQuery.Data == "started" && session.Stage == stageWait4Choice:
 		if err := sendQuizMessage(opts, update.CallbackQuery.Message.Chat.ID, ecode); err != nil {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 		}
