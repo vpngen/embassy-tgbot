@@ -114,14 +114,6 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		return fmt.Errorf("request photo: %w", err)
 	}
 
-	time.Sleep(2 * time.Second)
-
-	msg = fmt.Sprintf("Доступ в ключницу (только с подключенным VPN). Скопируй этот адрес и вставь в браузер:\n`http://[%s]/`", opts.keydesk)
-	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
-	if err != nil {
-		return fmt.Errorf("send keydesk message: %w", err)
-	}
-
 	return nil
 }
 
