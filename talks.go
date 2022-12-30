@@ -166,7 +166,7 @@ func sendWelcomeMessage(opts hOpts, chatID int64) error {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(opts.db, newMsg.Chat.ID, newMsg.MessageID, stageWait4Choice)
+	err = setSession(opts.db, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageWait4Choice)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -181,7 +181,7 @@ func sendQuizMessage(opts hOpts, chatID int64, ecode string) error {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(opts.db, msg.Chat.ID, msg.MessageID, stageWait4Bill)
+	err = setSession(opts.db, msg.Chat.ID, msg.MessageID, int64(msg.Date), stageWait4Bill)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -216,7 +216,7 @@ func checkBillMessageMessage(opts hOpts, Message *tgbotapi.Message, ecode string
 		return fmt.Errorf("send: %w", err)
 	}
 
-	if err := setSession(opts.db, newMsg.Chat.ID, newMsg.MessageID, stageWait4Decision); err != nil {
+	if err := setSession(opts.db, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageWait4Decision); err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
 

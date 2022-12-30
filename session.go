@@ -34,11 +34,11 @@ func sessionID(chatID int64) []byte {
 	return id
 }
 
-func setSession(dbase *badger.DB, chatID int64, msgID int, stage int) error {
+func setSession(dbase *badger.DB, chatID int64, msgID int, update int64, stage int) error {
 	session := &Session{
 		OurMsgID:   msgID,
 		Stage:      stage,
-		UpdateTime: time.Now().Unix(),
+		UpdateTime: update,
 	}
 
 	data, err := json.Marshal(session)

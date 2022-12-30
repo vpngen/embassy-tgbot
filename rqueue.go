@@ -294,7 +294,7 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 			return false, fmt.Errorf("send grant message: %w", err)
 		}*/
 
-		err = setSession(db, receipt.ChatID, 0, stageCleanup)
+		err = setSession(db, receipt.ChatID, 0, 0, stageCleanup)
 		if err != nil {
 			return false, fmt.Errorf("update session: %w", err)
 		}
@@ -316,7 +316,7 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 			return false, fmt.Errorf("send reject message: %w", err)
 		}
 
-		err = setSession(db, receipt.ChatID, newMsg.MessageID, stageWait4Bill)
+		err = setSession(db, receipt.ChatID, newMsg.MessageID, int64(newMsg.Date), stageWait4Bill)
 		if err != nil {
 			return false, fmt.Errorf("update session: %w", err)
 		}
