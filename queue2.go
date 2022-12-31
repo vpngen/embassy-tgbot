@@ -281,7 +281,7 @@ func SendReceipt2(db *badger.DB, bot2 *tgbotapi.BotAPI, receiptQID []byte, ckCha
 	// msg.ParseMode = tgbotapi.ModeMarkdown
 	// photo.Caption =
 	photo.ReplyMarkup = makeCheckReceiptKeyboard(fmt.Sprintf("%x", id))
-	photo.ProtectContent = true
+	// photo.ProtectContent = true // Oleg Basisty request
 
 	if _, err := bot2.Request(photo); err != nil {
 		return fmt.Errorf("request2: %w", err)
