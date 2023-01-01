@@ -159,6 +159,7 @@ func sendWelcomeMessage(opts hOpts, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MsgWelcome)
 	msg.ReplyMarkup = WannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.DisableWebPagePreview = true
 	msg.ProtectContent = true
 
 	newMsg, err := opts.bot.Send(msg)
