@@ -42,6 +42,7 @@ type grantPkg struct {
 	wgconf   []byte
 }
 
+// SendBrigadierGrants - send grants messages.
 func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *grantPkg) error {
 	msg := fmt.Sprintf(GrantMessage, opts.fullname)
 	_, err := SendOpenMessage(bot, chatID, 0, msg, ecode)
@@ -78,7 +79,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(3 * time.Second)
 
-	_, err = SendOpenMessage(bot, chatID, 0, KeydeskMessage, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, FinalMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send seed message: %w", err)
 	}
@@ -112,6 +113,13 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	if _, err := bot.Request(photo); err != nil {
 		return fmt.Errorf("request photo: %w", err)
+	}
+
+	time.Sleep(3 * time.Second)
+
+	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(KeydeskIPv6Message, opts.keydesk), ecode)
+	if err != nil {
+		return fmt.Errorf("send seed message: %w", err)
 	}
 
 	return nil
@@ -216,6 +224,7 @@ func callMinistry(dept DeptOpts) (*grantPkg, error) {
 	return opts, nil
 }
 
+// GetBrigadier - get brigadier name and config.
 func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts) error {
 	var (
 		opts *grantPkg

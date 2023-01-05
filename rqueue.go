@@ -306,12 +306,12 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 		err = GetBrigadier(bot, receipt.ChatID, ecode, dept)
 		if err != nil {
-			SendProtectMessage(bot, receipt.ChatID, 0, FailMessage, ecode)
+			SendProtectedMessage(bot, receipt.ChatID, 0, FailMessage, ecode)
 
 			return false, fmt.Errorf("creation: %w", err)
 		}
 	case false:
-		newMsg, err := SendProtectMessage(bot, receipt.ChatID, 0, RejectMessage, ecode)
+		newMsg, err := SendProtectedMessage(bot, receipt.ChatID, 0, RejectMessage, ecode)
 		if err != nil {
 			return false, fmt.Errorf("send reject message: %w", err)
 		}

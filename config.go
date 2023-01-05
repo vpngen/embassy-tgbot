@@ -23,6 +23,7 @@ const (
 	DefaultKeyLen = 32
 )
 
+// DeptOpts - opts to ministry conn
 type DeptOpts struct {
 	sshConfig *ssh.ClientConfig
 	controlIP string
