@@ -7,6 +7,10 @@ import (
 )
 
 const (
+
+	// Support additional
+	extraSupport = "Если ты уверен(-а), что все сделал(-а) правильно - напиши пожалуйста в [поддержку](%s)."
+
 	// MsgWelcome - welcome message.
 	MsgWelcome = `Привет! 
 
@@ -36,30 +40,33 @@ VPN Generator находится на начальном этапе своего
 _Если у тебя есть вопросы, почему твой чек отклонен — напиши в_ [поддержку](%s), _мы расскажем_ ` + "\U0000263A."
 
 	// MsgAttestationAssigned - receipt have accepted.
-	MsgAttestationAssigned = `Чек принят к рассмотрению`
+	MsgAttestationAssigned = `Чек принят к рассмотрению.`
 
 	// WarnGroupsNotAllowed - this bot is only private.
-	WarnGroupsNotAllowed = `Извини, в групповых чатах я не общаюсь`
+	WarnGroupsNotAllowed = `Извини, в групповых чатах я не общаюсь.`
 
 	// WarnPrivateNotAllowed - this bot is only private.
-	WarnPrivateNotAllowed = `Извини, в личках я не общаюсь`
+	WarnPrivateNotAllowed = `Извини, в личках я не общаюсь.`
 
 	// WarnForbidForwards - this bot is only private.
-	WarnForbidForwards = `Извини, в целях твоей же безопасности пересылка отключена`
+	WarnForbidForwards = `Извини, в целях твоей же безопасности пересылка отключена.`
 
-	// WarnUnknownCommand - unknown command.
-	WarnUnknownCommand = `Извини, но эта команда мне не знакома`
+	// warnUnknownCommand - unknown command.
+	warnUnknownCommand = `Извини, но эта команда мне не знакома. ` + extraSupport
 
 	// FatalUnwellSecurity - if autodelete not set.
 	FatalUnwellSecurity = `Привет!
 
 Установи пожалуйста автоудаление сообщений в этом чате на 1 день, если на твоем клиенте это возможно. [Инструкция](https://telegram.org/blog/autodelete-inv2/ru?ln=a)`
 
-	// WarnRequiredPhoto - warning about photo absents.
-	WarnRequiredPhoto = `Похоже ты забыл прикрепить фотографию чека. Попробуй ещё раз.`
+	// warnRequiredPhoto - warning about photo absents.
+	warnRequiredPhoto = `Похоже ты забыл прикрепить фотографию чека. Попробуй ещё раз. Если ты не помнишь условий, используй команду /repeat . ` + extraSupport
 
-	// FatalSomeThingWrong - something wrong happened.
-	FatalSomeThingWrong = `Похоже что-то пошло не так. Если ты уверен(-а), что все сделал(-а) правильно - напиши пожалуйста в [поддержку](%s)`
+	// warnWaitForApprovement
+	warnWaitForApprovement = `Ожидай подтверждения чека. Это может занять какое-то время. Если у тебя остались вопросы - напиши пожалуйста в [поддержку](%s).`
+
+	// fatalSomeThingWrong - something wrong happened.
+	fatalSomeThingWrong = `Похоже что-то пошло не так. ` + extraSupport
 
 	// DefaultSupportURL - support URL if isn't set.
 	DefaultSupportURL = "https://t.me/"
@@ -70,8 +77,8 @@ _Если у тебя есть вопросы, почему твой чек от
 	// GrantMessage - grant message.
 	GrantMessage = "Поздравляю! Ты — бригадир!\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
 
-	// RejectMessage - we are shame you.
-	RejectMessage = `Что-то пошло не так. Попробуй пожалуйста перефоткать чек и проверить, соответствует ли то, что ты прислал, условиям выше.`
+	// rejectMessage - we are shame you.
+	rejectMessage = `Что-то пошло не так. Попробуй пожалуйста перефоткать чек и проверить, соответствует ли то, что ты прислал, условиям выше. ` + extraSupport
 	// SeedMessage - you are brigadier.
 	SeedMessage = `Последний, но важный шаг. У меня есть для тебя 6 слов — их я дам. Их нужно где-то хранить — места для хранения я не дам. Эти слова + имя — единственный способ восстановить доступ к твоему VPN.
 
@@ -84,7 +91,7 @@ _Если у тебя есть вопросы, почему твой чек от
 	FinalMessage = `Ниже ты найдешь адрес твоей ключницы и файл конфигурации. Добавь конфигурацию в Wireguard на устройстве, с которого будешь потом управлять VPN-ом и обязательно зайди в ключницу по ссылке [http://vpn.works/](http://vpn.works/) (*работает только с подключенным VPN!*). Следуй инструкции и оставайся на связи!`
 
 	// KeydeskIPv6Message - message with ipv6 keydesk address.
-	KeydeskIPv6Message = "\U0001f510 " + `Возможно ты тоже энтузиаст безопасности и у тебя установлен защищённый DNS в системе или в браузере. Тогда ссылка на ключницу не будет работать, потому что она существует только в нашем DNS. Безопасность требует жертв и тебе придётся в ключницу напрямую по IPv6-адресу: ` + "`http://[%s]/`" +
+	KeydeskIPv6Message = "\U0001f510 " + `Возможно ты тоже энтузиаст(-ка) безопасности и у тебя установлен защищённый DNS в системе или в браузере. Тогда ссылка на ключницу не будет работать, потому что она существует только в нашем DNS. Безопасность требует жертв и тебе придётся в ключницу напрямую по IPv6-адресу: ` + "`http://[%s]/`" +
 
 		`
 
@@ -92,6 +99,13 @@ P.S. К сожалению, этот способ не будет работат
 
 	// failMessage - something wrong during creation time.
 	failMessage = `Что-то сломалось. Попробуй ещё раз позже. Если не получится, напиши в наш бот поддержки: %s или на электропочту: %s.`
+
+	// warnConversationsFinished - dialog after the end.
+	warnConversationsFinished = `Наш приятный разговор завершён. 
+	
+Если ты забыл(-а) своё имя и 6 важных слов, то даже в поддержке мы ничем помочь не сможем. Это условие нашей безопасности.
+	
+` + extraSupport
 )
 
 var (
@@ -122,25 +136,36 @@ var (
 		),
 	)
 
-	// FatalSomeThingWrongWithLink - fatal warning with support link.
-	FatalSomeThingWrongWithLink string //nolint
+	// FatalSomeThingWrong - fatal warning with support link.
+	FatalSomeThingWrong string
+	// WarnUnknownCommand - unknown command.
+	WarnUnknownCommand string
+	// RejectMessage - we are shame you.
+	RejectMessage string
+	// WarnRequiredPhoto -.
+	WarnRequiredPhoto string
+	// WarnWaitForApprovement - .
+	WarnWaitForApprovement string
+	// WarnConversationsFinished - dialog after the end.
+	WarnConversationsFinished string
 )
 
 // SetSupportMessages - set wanna keyboard.
 func SetSupportMessages(url, email string) {
+	link := tgbotapi.EscapeText(tgbotapi.ModeMarkdown, url)
+
 	WannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "started"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
 	)
-
-	FailMessage = fmt.Sprintf(failMessage, url, email)
-
-	MsgQuiz = fmt.Sprintf(msgQuiz, url)
-}
-
-// SetFatalSomeThingWrongWithLink - set link in fatal warning string.
-func SetFatalSomeThingWrongWithLink(link string) {
-	FatalSomeThingWrongWithLink = fmt.Sprintf(FatalSomeThingWrong, tgbotapi.EscapeText(tgbotapi.ModeMarkdown, link))
+	FailMessage = fmt.Sprintf(failMessage, link, email)
+	MsgQuiz = fmt.Sprintf(msgQuiz, link)
+	FatalSomeThingWrong = fmt.Sprintf(fatalSomeThingWrong, link)
+	WarnUnknownCommand = fmt.Sprintf(WarnUnknownCommand, link)
+	RejectMessage = fmt.Sprintf(rejectMessage, link)
+	WarnRequiredPhoto = fmt.Sprintf(warnRequiredPhoto, link)
+	WarnWaitForApprovement = fmt.Sprintf(warnWaitForApprovement, link)
+	WarnConversationsFinished = fmt.Sprintf(warnConversationsFinished, link)
 }

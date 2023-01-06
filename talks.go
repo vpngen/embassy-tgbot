@@ -60,7 +60,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 
 	defer opts.cw.Release(update.Message.Chat.ID)
 
-	if session.Stage != stageStart && update.Message.IsCommand() {
+	if update.Message.IsCommand() {
 		err := handleCommands(opts, update.Message, session, ecode)
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("command: %s: %w", update.Message.Command(), err))
@@ -73,15 +73,23 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 	time.Sleep(SlowAnswerTimeout)
 
 	switch session.Stage {
-	case stageWait4Choice, stageWait4Decision, stageCleanup:
-		return
-
+	case stageCleanup:
+		_, err := SendProtectedMessage(opts.bot, update.Message.Chat.ID, update.Message.MessageID, WarnConversationsFinished, ecode)
+		if err != nil {
+			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
+		}
+	case stageWait4Decision:
+		_, err := SendProtectedMessage(opts.bot, update.Message.Chat.ID, update.Message.MessageID, WarnWaitForApprovement, ecode)
+		if err != nil {
+			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("wait msg: %w", err))
+		}
 	case stageWait4Bill:
 		err := checkBillMessageMessage(opts, update.Message, ecode)
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
-
+	case stageWait4Choice:
+		fallthrough
 	default:
 		if warnAutodeleteSettings(opts, update.Message.Chat.ID, update.Message.Date, ecode) {
 			err := sendWelcomeMessage(opts, update.Message.Chat.ID)
@@ -148,7 +156,7 @@ func RemoveMsg(bot *tgbotapi.BotAPI, chatID int64, msgID int) error {
 
 // Something wrong handling.
 func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
-	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrongWithLink, ecode)
+	text := fmt.Sprintf("%s: код %s", FatalSomeThingWrong, ecode)
 
 	logs.Debugf("[!:%s] %s\n", ecode, err)
 	SendProtectedMessage(bot, chatID, 0, text, ecode)
@@ -306,23 +314,68 @@ func getAction() string {
 }
 
 func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, ecode string) error {
-	switch Message.Command() {
-	case "reset":
-		if opts.debug == int(logs.LevelDebug) {
-			err := resetSession(opts.db, Message.Chat.ID)
-			if err == nil {
-				SendProtectedMessage(opts.bot, Message.Chat.ID, 0, ResetSuccessfull, ecode)
-			}
+	logs.Debugf("[d:%s] stage:  %d\n", ecode, session.Stage)
 
-			return err
+	command := Message.Command()
+
+	if opts.debug == int(logs.LevelDebug) && command == "reset" {
+		err := resetSession(opts.db, Message.Chat.ID)
+		if err != nil {
+			return fmt.Errorf("reset: %w", err)
 		}
 
-		fallthrough
-	default:
-		SendProtectedMessage(opts.bot, Message.Chat.ID, 0, WarnUnknownCommand, ecode)
+		SendProtectedMessage(opts.bot, Message.Chat.ID, 0, ResetSuccessfull, ecode)
 
 		return nil
 	}
+
+	switch command {
+	case "repeat":
+		switch session.Stage {
+		case stageWait4Bill:
+			// don't be in a harry.
+			time.Sleep(SlowAnswerTimeout)
+
+			if err := sendQuizMessage(opts, Message.Chat.ID, ecode); err != nil {
+				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
+			}
+		default:
+			SendProtectedMessage(opts.bot, Message.Chat.ID, 0, WarnUnknownCommand, ecode)
+		}
+	default:
+		switch session.Stage {
+		case stageCleanup:
+			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, WarnConversationsFinished, ecode)
+			if err != nil {
+				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
+			}
+		case stageWait4Decision:
+			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, WarnWaitForApprovement, ecode)
+			if err != nil {
+				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wait msg: %w", err))
+			}
+		case stageStart, stageWait4Choice:
+			// don't be in a harry.
+			time.Sleep(SlowAnswerTimeout)
+
+			if warnAutodeleteSettings(opts, Message.Chat.ID, Message.Date, ecode) {
+				if err := sendWelcomeMessage(opts, Message.Chat.ID); err != nil {
+					stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
+				}
+			}
+		case stageWait4Bill:
+			// don't be in a harry.
+			time.Sleep(SlowAnswerTimeout)
+
+			if err := checkBillMessageMessage(opts, Message, ecode); err != nil {
+				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
+			}
+		default:
+			SendProtectedMessage(opts.bot, Message.Chat.ID, 0, WarnUnknownCommand, ecode)
+		}
+	}
+
+	return nil
 }
 
 // SendOpenMessage - send common message.

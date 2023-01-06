@@ -22,7 +22,6 @@ func main() {
 	cfg := configFromEnv()
 
 	SetSupportMessages(cfg.SupportURL, cfg.SupportEmail) // i dont know howto do this more clearely
-	SetFatalSomeThingWrongWithLink(cfg.SupportURL)
 
 	// set logs
 	logs.SetLogLevel(int32(cfg.DebugLevel))
