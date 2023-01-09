@@ -61,7 +61,7 @@ func runBot(
 					break
 				}
 
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, WarnGroupsNotAllowed)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, InfoGroupsNotAllowedMessage)
 				msg.ReplyToMessageID = update.Message.MessageID
 
 				if _, err := bot.Send(msg); err != nil {

@@ -17,11 +17,6 @@ import (
 )
 
 const (
-	acceptReceiptPrefix = "a-"
-	rejectReceiptPrefix = "r-"
-)
-
-const (
 	receiptqPrefix2 = "rcpt2q"
 	receiptqKeyLen2 = 16 - len(receiptqPrefix2)
 	receiptSalt2    = "Lewm)Ow6"
@@ -40,6 +35,7 @@ type CkReceipt2 struct {
 	Stage          int    `json:"stage"`
 	ReceiptQueueID []byte `json:"receiptq_id"`
 	Accept         bool   `json:"accept"`
+	Reason         int    `json:"reason"` // rejection reason
 }
 
 // PutReceipt2 - put receipt in the queue
@@ -84,7 +80,7 @@ func PutReceipt2(dbase *badger.DB, receiptQID []byte) ([]byte, error) {
 }
 
 // UpdateReceipt2 - .
-func UpdateReceipt2(dbase *badger.DB, id []byte, stage int, accept bool) error {
+func UpdateReceipt2(dbase *badger.DB, id []byte, stage int, accept bool, reason int) error {
 
 	//fmt.Printf("*** update q2: %x stage=%d\n", id, stage)
 
@@ -94,7 +90,7 @@ func UpdateReceipt2(dbase *badger.DB, id []byte, stage int, accept bool) error {
 			return fmt.Errorf("get receipt: %w", err)
 		}
 
-		data, err = updateReceipt2(data, stage, accept)
+		data, err = updateReceipt2(data, stage, accept, reason)
 		if err != nil {
 			return fmt.Errorf("marshal: %w", err)
 		}
@@ -113,7 +109,7 @@ func UpdateReceipt2(dbase *badger.DB, id []byte, stage int, accept bool) error {
 	return nil
 }
 
-func updateReceipt2(data []byte, stage int, accept bool) ([]byte, error) {
+func updateReceipt2(data []byte, stage int, accept bool, reason int) ([]byte, error) {
 	receipt := &CkReceipt2{}
 
 	err := json.Unmarshal(data, receipt)
@@ -123,6 +119,7 @@ func updateReceipt2(data []byte, stage int, accept bool) ([]byte, error) {
 
 	receipt.Stage = stage
 	receipt.Accept = accept
+	receipt.Reason = reason
 
 	data, err = json.Marshal(receipt)
 	if err != nil {
@@ -202,7 +199,7 @@ func qround2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 
 	//fmt.Printf("*** qround2 rcpt:%x %v\n", key, receipt)
 
-	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept); err != nil {
+	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason); err != nil {
 		logs.Errf("update receipt2: %w", err)
 
 		return
@@ -287,20 +284,10 @@ func SendReceipt2(db *badger.DB, bot2 *tgbotapi.BotAPI, receiptQID []byte, ckCha
 		return fmt.Errorf("request2: %w", err)
 	}
 
-	err = UpdateReceipt2(db, id, CkReceiptStageSend2, false)
+	err = UpdateReceipt2(db, id, CkReceiptStageSend2, false, decisionUnknown)
 	if err != nil {
 		return fmt.Errorf("update receipt send2: %w", err)
 	}
 
 	return nil
-}
-
-// makeCheckReceiptKeyboard - set wanna keyboard.
-func makeCheckReceiptKeyboard(id string) tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Подтвердить", acceptReceiptPrefix+id),
-			tgbotapi.NewInlineKeyboardButtonData("Отвергнуть", rejectReceiptPrefix+id),
-		),
-	)
 }

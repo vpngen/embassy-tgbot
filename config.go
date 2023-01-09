@@ -82,7 +82,7 @@ func configFromEnv() Config {
 	}
 
 	if supportURL == "" {
-		supportURL = DefaultSupportURL
+		supportURL = DefaultSupportURLText
 	}
 
 	tout, _ := strconv.Atoi(updateTout)

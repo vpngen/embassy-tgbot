@@ -42,6 +42,7 @@ type CkReceipt struct {
 	ChatID   int64  `json:"chat_id"`  // user
 	FileID   string `json:"file_id"`  // photo
 	Accepted bool   `json:"accepted"` // status
+	Reason   int    `json:"reason"`   // rejection reason
 }
 
 // PutReceipt - put receipt in the queue.
@@ -101,7 +102,7 @@ func queueID(chatID int64) []byte {
 }
 
 // UpdateReceipt - update receipt review status and stage.
-func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool) error {
+func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool, reason int) error {
 	//fmt.Printf("*** update q1: %x stage=%d\n", id, stage)
 
 	err := dbase.Update(func(txn *badger.Txn) error {
@@ -119,6 +120,7 @@ func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool) error {
 
 		receipt.Stage = stage
 		receipt.Accepted = accept
+		receipt.Reason = reason
 
 		data, err = json.Marshal(receipt)
 		if err != nil {
@@ -264,7 +266,7 @@ func catchNewReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) 
 		return false, fmt.Errorf("send receipt2: %w", err)
 	}
 
-	err = UpdateReceipt(db, key, CkReceiptStageSent, false)
+	err = UpdateReceipt(db, key, CkReceiptStageSent, false, decisionUnknown)
 	if err != nil {
 		return false, fmt.Errorf("receipt sent: %w", err)
 	}
@@ -287,42 +289,46 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 	switch receipt.Accepted {
 	case true:
-		/*msg := fmt.Sprintf("%s\n", GrantMessage)
+		if desc, ok := DecisionComments[receipt.Reason]; ok {
+			SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode)
+		}
 
-		newMsg, err := SendOpenMessage(bot, receipt.ChatID, 0, msg, ecode)
-		if err != nil {
-			return false, fmt.Errorf("send grant message: %w", err)
-		}*/
-
-		err = setSession(db, receipt.ChatID, 0, 0, stageCleanup)
-		if err != nil {
+		if err := setSession(db, receipt.ChatID, 0, 0, stageCleanup); err != nil {
 			return false, fmt.Errorf("update session: %w", err)
 		}
 
-		err = DeleteReceipt(db, key)
-		if err != nil {
+		if err := DeleteReceipt(db, key); err != nil {
 			return false, fmt.Errorf("cleanup: %w", err)
 		}
 
-		err = GetBrigadier(bot, receipt.ChatID, ecode, dept)
-		if err != nil {
-			SendProtectedMessage(bot, receipt.ChatID, 0, FailMessage, ecode)
+		if err := GetBrigadier(bot, receipt.ChatID, ecode, dept); err != nil {
+			SendProtectedMessage(bot, receipt.ChatID, 0, MainTrackFailMessage, ecode)
 
 			return false, fmt.Errorf("creation: %w", err)
 		}
 	case false:
-		newMsg, err := SendProtectedMessage(bot, receipt.ChatID, 0, RejectMessage, ecode)
+		desc, ok := DecisionComments[receipt.Reason]
+		if !ok {
+			desc = RejectMessage
+		}
+
+		newMsg, err := SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode)
 		if err != nil {
 			return false, fmt.Errorf("send reject message: %w", err)
 		}
 
-		err = setSession(db, receipt.ChatID, newMsg.MessageID, int64(newMsg.Date), stageWait4Bill)
-		if err != nil {
-			return false, fmt.Errorf("update session: %w", err)
+		switch receipt.Reason {
+		case decisionRejectUnacceptable:
+			if err = setSession(db, receipt.ChatID, 0, 0, stageCleanup); err != nil {
+				return false, fmt.Errorf("update session: %w", err)
+			}
+		default:
+			if err = setSession(db, receipt.ChatID, newMsg.MessageID, int64(newMsg.Date), stageWait4Bill); err != nil {
+				return false, fmt.Errorf("update session: %w", err)
+			}
 		}
 
-		err = DeleteReceipt(db, key)
-		if err != nil {
+		if err := DeleteReceipt(db, key); err != nil {
 			return false, fmt.Errorf("cleanup: %w", err)
 		}
 	}

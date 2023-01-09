@@ -53,7 +53,7 @@ func runBot2(
 				logs.Debugf("[i] User: %s ChatID: %d Message: %s\n", update.Message.From.UserName, update.Message.Chat.ID, update.Message.Text)
 
 				if update.Message.Chat.Type == "private" {
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, WarnPrivateNotAllowed)
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, InfoPrivateNotAllowedMessage)
 					msg.ReplyToMessageID = update.Message.MessageID
 
 					if _, err := bot2.Send(msg); err != nil {

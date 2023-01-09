@@ -44,7 +44,7 @@ type grantPkg struct {
 
 // SendBrigadierGrants - send grants messages.
 func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *grantPkg) error {
-	msg := fmt.Sprintf(GrantMessage, opts.fullname)
+	msg := fmt.Sprintf(MainTrackGrantMessage, opts.fullname)
 	_, err := SendOpenMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send grant message: %w", err)
@@ -52,7 +52,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(2 * time.Second)
 
-	msg = fmt.Sprintf("*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n%s\n\n",
+	msg = fmt.Sprintf(MainTrackPersonDescriptionMessage,
 		strings.Trim(opts.person, " \r\n\t"),
 		strings.Trim(string(opts.desc), " \r\n\t"),
 		tgbotapi.EscapeText(tgbotapi.ModeMarkdown, strings.Trim(string(opts.wiki), " \r\n\t")),
@@ -64,14 +64,14 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(2 * time.Second)
 
-	_, err = SendOpenMessage(bot, chatID, 0, SeedMessage, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, MainTrackSeedDescMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send seed message: %w", err)
 	}
 
 	time.Sleep(2 * time.Second)
 
-	msg = fmt.Sprintf(WordsMessage, strings.Trim(opts.mnemo, " \r\n\t"))
+	msg = fmt.Sprintf(MainTrackWordsMessage, strings.Trim(opts.mnemo, " \r\n\t"))
 	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send words message: %w", err)
@@ -79,7 +79,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(3 * time.Second)
 
-	_, err = SendOpenMessage(bot, chatID, 0, FinalMessage, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, MainTrackConfigsMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send seed message: %w", err)
 	}
@@ -87,7 +87,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 	time.Sleep(2 * time.Second)
 
 	doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: opts.wgconf})
-	doc.Caption = "Конфигурация файлом"
+	doc.Caption = MainTrackConfigFormatFileCaption
 
 	if _, err := bot.Request(doc); err != nil {
 		return fmt.Errorf("request doc: %w", err)
@@ -95,7 +95,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(2 * time.Second)
 
-	msg = fmt.Sprintf("Конфигурация текстом:\n```%s```", "\n"+string(opts.wgconf))
+	msg = fmt.Sprintf(MainTrackConfigFormatTextTemplate, string(opts.wgconf))
 	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send seed message: %w", err)
@@ -109,7 +109,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 	}
 
 	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: png})
-	photo.Caption = "Конфигурация QR-кодом"
+	photo.Caption = MainTrackConfigFormatQRCaption
 
 	if _, err := bot.Request(photo); err != nil {
 		return fmt.Errorf("request photo: %w", err)
@@ -117,7 +117,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(3 * time.Second)
 
-	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(KeydeskIPv6Message, opts.keydesk), ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackKeydeskIPv6Message, opts.keydesk), ecode)
 	if err != nil {
 		return fmt.Errorf("send seed message: %w", err)
 	}

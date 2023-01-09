@@ -9,10 +9,15 @@ import (
 const (
 
 	// Support additional
-	extraSupport = "Если ты уверен(-а), что все сделал(-а) правильно - напиши пожалуйста в [поддержку](%s)."
+	extraSupportText = "Если ты уверен(-а), что все сделал(-а) правильно - напиши пожалуйста в [поддержку](%s)."
 
-	// MsgWelcome - welcome message.
-	MsgWelcome = `Привет! 
+	// MainTrackUnwellSecurityMessage - if autodelete not set.
+	MainTrackUnwellSecurityMessage = `Привет!
+
+Установи пожалуйста автоудаление сообщений в этом чате на 1 день, если на твоем клиенте это возможно. [Инструкция](https://telegram.org/blog/autodelete-inv2/ru?ln=a)`
+
+	// MainTrackWelcomeMessage - welcome message.
+	MainTrackWelcomeMessage = `Привет! 
 
 Это VPN Generator — простой и *бесплатный* способ завести свой собственный VPN для друзей и родных. Нажми «Хочу свой VPN», чтобы начать регистрацию.
 
@@ -24,8 +29,8 @@ const (
 VPN Generator находится на начальном этапе своего развития. Поэтому пока что VPN Generator работает на базе безопасного решения [Wireguard](https://www.wireguard.com/) с открытым исходным кодом. В дальнейшем мы будем добавлять другие протоколы и, при необходимости, реализуем свой.
 `
 
-	// msgQuiz - quiz message.
-	msgQuiz = `Сейчас будет немного странное. Мы очень не хотим брать ни твой телефон, ни имейл на случай, если к нам придут злые дяди в форме и заберут эти данные. А потом как начнут их обогащать содержимым госуслуг и прочих утечек, и будет грустно. 
+	// mainTrackQuizMessage - quiz message.
+	mainTrackQuizMessage = `Сейчас будет немного странное. Мы очень не хотим брать ни твой телефон, ни имейл на случай, если к нам придут злые дяди в форме и заберут эти данные. А потом как начнут их обогащать содержимым госуслуг и прочих утечек, и будет грустно. 
 
 Но нам нужно понять, что ты живой нормальный человек, а не тролль из-под моста. Поэтому тебе придется:
 	
@@ -39,89 +44,97 @@ VPN Generator находится на начальном этапе своего
 
 _Если у тебя есть вопросы, почему твой чек отклонен — напиши в_ [поддержку](%s), _мы расскажем_ ` + "\U0000263A."
 
-	// MsgAttestationAssigned - receipt have accepted.
-	MsgAttestationAssigned = `Чек принят к рассмотрению.`
+	// MainTrackSendForAttestationMessage - receipt have accepted.
+	MainTrackSendForAttestationMessage = `Чек принят к рассмотрению.`
 
-	// WarnGroupsNotAllowed - this bot is only private.
-	WarnGroupsNotAllowed = `Извини, в групповых чатах я не общаюсь.`
+	// mainTrackWarnRequiredPhoto - warning about photo absents.
+	mainTrackWarnRequiredPhoto = `Похоже ты забыл прикрепить фотографию чека. Попробуй ещё раз. Если ты не помнишь условий, используй команду /repeat . ` + extraSupportText
 
-	// WarnPrivateNotAllowed - this bot is only private.
-	WarnPrivateNotAllowed = `Извини, в личках я не общаюсь.`
+	// mainTrackWarnWaitForApprovement
+	mainTrackWarnWaitForApprovement = `Ожидай подтверждения чека. Это может занять какое-то время. Если у тебя остались вопросы - напиши пожалуйста в [поддержку](%s).`
 
-	// WarnForbidForwards - this bot is only private.
-	WarnForbidForwards = `Извини, в целях твоей же безопасности пересылка отключена.`
+	// MainTrackGrantMessage - grant message.
+	MainTrackGrantMessage = "Поздравляю! Ты — бригадир!\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
 
-	// warnUnknownCommand - unknown command.
-	warnUnknownCommand = `Извини, но эта команда мне не знакома. ` + extraSupport
+	// MainTrackPersonDescriptionMessage - brief on name.
+	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n%s\n\n"
 
-	// FatalUnwellSecurity - if autodelete not set.
-	FatalUnwellSecurity = `Привет!
+	// MainTrackConfigFormatFileCaption - config file caption.
+	MainTrackConfigFormatFileCaption = "Конфигурация файлом"
 
-Установи пожалуйста автоудаление сообщений в этом чате на 1 день, если на твоем клиенте это возможно. [Инструкция](https://telegram.org/blog/autodelete-inv2/ru?ln=a)`
+	// MainTrackConfigFormatTextTemplate - config text template.
+	MainTrackConfigFormatTextTemplate = "Конфигурация текстом:\n```\n%s```"
 
-	// warnRequiredPhoto - warning about photo absents.
-	warnRequiredPhoto = `Похоже ты забыл прикрепить фотографию чека. Попробуй ещё раз. Если ты не помнишь условий, используй команду /repeat . ` + extraSupport
+	// MainTrackConfigFormatQRCaption - qr-config caption.
+	MainTrackConfigFormatQRCaption = "Конфигурация QR-кодом"
 
-	// warnWaitForApprovement
-	warnWaitForApprovement = `Ожидай подтверждения чека. Это может занять какое-то время. Если у тебя остались вопросы - напиши пожалуйста в [поддержку](%s).`
-
-	// fatalSomeThingWrong - something wrong happened.
-	fatalSomeThingWrong = `Похоже что-то пошло не так. ` + extraSupport
-
-	// DefaultSupportURL - support URL if isn't set.
-	DefaultSupportURL = "https://t.me/"
-
-	// ResetSuccessfull - Resety session.
-	ResetSuccessfull = `Диалог сброшен`
-
-	// GrantMessage - grant message.
-	GrantMessage = "Поздравляю! Ты — бригадир!\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
-
-	// rejectMessage - we are shame you.
-	rejectMessage = `Что-то пошло не так. Попробуй пожалуйста перефоткать чек и проверить, соответствует ли то, что ты прислал, условиям выше. ` + extraSupport
-	// SeedMessage - you are brigadier.
-	SeedMessage = `Последний, но важный шаг. У меня есть для тебя 6 слов — их я дам. Их нужно где-то хранить — места для хранения я не дам. Эти слова + имя — единственный способ восстановить доступ к твоему VPN.
+	// MainTrackSeedDescMessage - you are brigadier.
+	MainTrackSeedDescMessage = `Последний, но важный шаг. У меня есть для тебя 6 слов — их я дам. Их нужно где-то хранить — места для хранения я не дам. Эти слова + имя — единственный способ восстановить доступ к твоему VPN.
 
 Спрячь эти слова туда, куда ты сможешь добраться в любой непонятной ситуации, но не доберется трщ майор. Нет, не туда! Туда доберется… Лучше в хранилку паролей или еще какое-нибудь хитрое место.`
 
-	// WordsMessage - 6 words.
-	WordsMessage = "6 важных слов:\n`%s`"
+	// MainTrackWordsMessage - 6 words.
+	MainTrackWordsMessage = "6 важных слов:\n`%s`"
 
-	// FinalMessage - keydesk address and config.
-	FinalMessage = `Ниже ты найдешь адрес твоей ключницы и файл конфигурации. Добавь конфигурацию в Wireguard на устройстве, с которого будешь потом управлять VPN-ом и обязательно зайди в ключницу по ссылке [http://vpn.works/](http://vpn.works/) (*работает только с подключенным VPN!*). Следуй инструкции и оставайся на связи!`
+	// MainTrackConfigsMessage - keydesk address and config.
+	MainTrackConfigsMessage = `Ниже ты найдешь адрес твоей ключницы и файл конфигурации. Добавь конфигурацию в Wireguard на устройстве, с которого будешь потом управлять VPN-ом и обязательно зайди в ключницу по ссылке [http://vpn.works/](http://vpn.works/) (*работает только с подключенным VPN!*). Следуй инструкции и оставайся на связи!`
 
-	// KeydeskIPv6Message - message with ipv6 keydesk address.
-	KeydeskIPv6Message = "\U0001f510 " + `Возможно ты тоже энтузиаст(-ка) безопасности и у тебя установлен защищённый DNS в системе или в браузере. Тогда ссылка на ключницу не будет работать, потому что она существует только в нашем DNS. Безопасность требует жертв и тебе придётся в ключницу напрямую по IPv6-адресу: ` + "`http://[%s]/`" +
+	// MainTrackKeydeskIPv6Message - message with ipv6 keydesk address.
+	MainTrackKeydeskIPv6Message = "\U0001f510 " + `Возможно ты тоже энтузиаст(-ка) безопасности и у тебя установлен защищённый DNS в системе или в браузере. Тогда ссылка на ключницу не будет работать, потому что она существует только в нашем DNS. Безопасность требует жертв и тебе придётся в ключницу напрямую по IPv6-адресу: ` + "`http://[%s]/`" +
 
 		`
 
 P.S. К сожалению, этот способ не будет работать в мобильной версии браузера Firefox`
 
-	// failMessage - something wrong during creation time.
-	failMessage = `Что-то сломалось. Попробуй ещё раз позже. Если не получится, напиши в наш бот поддержки: %s или на электропочту: %s.`
-
-	// warnConversationsFinished - dialog after the end.
-	warnConversationsFinished = `Наш приятный разговор завершён. 
+	// mainTrackWarnConversationsFinished - dialog after the end.
+	mainTrackWarnConversationsFinished = `Наш приятный разговор завершён. 
 	
 Если ты забыл(-а) своё имя и 6 важных слов, то даже в поддержке мы ничем помочь не сможем. Это условие нашей безопасности.
 	
-` + extraSupport
+` + extraSupportText
+
+	// MainTrackResetSuccessfull - Resety session.
+	MainTrackResetSuccessfull = `Диалог сброшен`
+
+	// mainTrackFailMessage - something wrong during creation time.
+	mainTrackFailMessage = `Что-то сломалось. Попробуй ещё раз позже. Если не получится, напиши в наш бот поддержки: %s или на электропочту: %s.`
+
+	// InfoGroupsNotAllowedMessage - this bot is only private.
+	InfoGroupsNotAllowedMessage = `Извини, в групповых чатах я не общаюсь.`
+
+	// InfoPrivateNotAllowedMessage - this bot is only private.
+	InfoPrivateNotAllowedMessage = `Извини, в личках я не общаюсь.`
+
+	// InfoForbidForwardsMessage - this bot is only private.
+	InfoForbidForwardsMessage = `Извини, в целях твоей же безопасности пересылка отключена.`
+
+	// infoUnknownCommandMessage - unknown command.
+	infoUnknownCommandMessage = `Извини, но эта команда мне не знакома. ` + extraSupportText
+
+	// fatalSomeThingWrong - something wrong happened.
+	fatalSomeThingWrong = `Похоже что-то пошло не так. ` + extraSupportText
+
+	// DefaultSupportURLText - support URL if isn't set.
+	DefaultSupportURLText = "https://t.me/"
+
+	// rejectMessage - we are shame you.
+	rejectMessage = `Что-то пошло не так. Попробуй пожалуйста перефоткать чек и проверить, соответствует ли то, что ты прислал, условиям выше. ` + extraSupportText
 )
 
 var (
-	// FailMessage - something wrong during creation time.
-	FailMessage string
+	// MainTrackFailMessage - something wrong during creation time.
+	MainTrackFailMessage string
 
-	// MsgQuiz - quiz message.
-	MsgQuiz string
+	// MainTrackQuizMessage - quiz message.
+	MainTrackQuizMessage string
 
 	// WannabeKeyboard - wanna keyboard.
 	WannabeKeyboard tgbotapi.InlineKeyboardMarkup //nolint
 	// CheckBillKeyboard - check bill keyboard.
 	CheckBillKeyboard tgbotapi.InlineKeyboardMarkup //nolint
 
-	// StandartChatActions - something in status.
-	StandartChatActions = [...]string{ //nolint
+	// StandardChatActions - something in status.
+	StandardChatActions = [...]string{ //nolint
 		"typing",
 		"choose_sticker",
 		"upload_photo",
@@ -138,16 +151,46 @@ var (
 
 	// FatalSomeThingWrong - fatal warning with support link.
 	FatalSomeThingWrong string
-	// WarnUnknownCommand - unknown command.
-	WarnUnknownCommand string
+	// InfoUnknownCommandMessage - unknown command.
+	InfoUnknownCommandMessage string
+	// MainTrackWarnRequiredPhoto -.
+	MainTrackWarnRequiredPhoto string
+	// MainTrackWarnWaitForApprovement - .
+	MainTrackWarnWaitForApprovement string
+	// MainTrackWarnConversationsFinished - dialog after the end.
+	MainTrackWarnConversationsFinished string
+
 	// RejectMessage - we are shame you.
 	RejectMessage string
-	// WarnRequiredPhoto -.
-	WarnRequiredPhoto string
-	// WarnWaitForApprovement - .
-	WarnWaitForApprovement string
-	// WarnConversationsFinished - dialog after the end.
-	WarnConversationsFinished string
+
+	// DecisionComments - descriptive text on check decidion.
+	DecisionComments = map[int]string{
+		decisionUnknown:              "",
+		decisionAcceptGeneral:        "",
+		decisionAcceptCats:           "",
+		decisionRejectUnacceptable:   "",
+		decisionRejectUnreadable:     "",
+		decisionRejectElectronic:     "",
+		decisionRejectIncomplete:     "",
+		decisionRejectUnverifiable:   "",
+		decisionRejectAmountMismatch: "",
+		decisionRejectTooOld:         "",
+		decisionRejectWithCallback:   "",
+	}
+
+	// decisionCommentsTemplate - descriptive text on check decidion.
+	decisionCommentsTemplate = map[int]string{
+		decisionUnknown:              "Что-то пошло не так... " + extraSupportText,
+		decisionAcceptCats:           "Котики - это святое! \U0001f63b",
+		decisionRejectUnacceptable:   "Похоже, ты прислал(-а) что-то очень нехорошее. Тебя забанили в сервисе на веки \U0001f937 . " + extraSupportText,
+		decisionRejectUnreadable:     "Пожалуйста, пришли читаемый чек! " + extraSupportText,
+		decisionRejectElectronic:     "Пожалуйста, пришли сам чек, а не результат его расшифровки! " + extraSupportText,
+		decisionRejectIncomplete:     "Пожалуйста, пришли чек целиком! " + extraSupportText,
+		decisionRejectUnverifiable:   "Чек не бьется с налоговой, пришли пожалуйста другой чек! " + extraSupportText,
+		decisionRejectAmountMismatch: "Похоже что-то серьезно не так с суммой чека. Пришли пожалуйста другой! " + extraSupportText,
+		decisionRejectTooOld:         "Похоже чек устарел. Пришли пожалуйста тот, что не старше недели. " + extraSupportText,
+		decisionRejectWithCallback:   "Похоже что-то не так с чеком и нам нужно поговорить. Свяжись пожалуйста с [нами](%s).",
+	}
 )
 
 // SetSupportMessages - set wanna keyboard.
@@ -160,12 +203,23 @@ func SetSupportMessages(url, email string) {
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
 	)
-	FailMessage = fmt.Sprintf(failMessage, link, email)
-	MsgQuiz = fmt.Sprintf(msgQuiz, link)
+	MainTrackFailMessage = fmt.Sprintf(mainTrackFailMessage, link, email)
+	MainTrackQuizMessage = fmt.Sprintf(mainTrackQuizMessage, link)
 	FatalSomeThingWrong = fmt.Sprintf(fatalSomeThingWrong, link)
-	WarnUnknownCommand = fmt.Sprintf(WarnUnknownCommand, link)
+	InfoUnknownCommandMessage = fmt.Sprintf(infoUnknownCommandMessage, link)
 	RejectMessage = fmt.Sprintf(rejectMessage, link)
-	WarnRequiredPhoto = fmt.Sprintf(warnRequiredPhoto, link)
-	WarnWaitForApprovement = fmt.Sprintf(warnWaitForApprovement, link)
-	WarnConversationsFinished = fmt.Sprintf(warnConversationsFinished, link)
+	MainTrackWarnRequiredPhoto = fmt.Sprintf(mainTrackWarnRequiredPhoto, link)
+	MainTrackWarnWaitForApprovement = fmt.Sprintf(mainTrackWarnWaitForApprovement, link)
+	MainTrackWarnConversationsFinished = fmt.Sprintf(mainTrackWarnConversationsFinished, link)
+
+	DecisionComments[decisionUnknown] = fmt.Sprintf(decisionCommentsTemplate[decisionUnknown], link)
+	DecisionComments[decisionAcceptCats] = decisionCommentsTemplate[decisionAcceptCats]
+	DecisionComments[decisionRejectUnacceptable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnacceptable], link)
+	DecisionComments[decisionRejectUnreadable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnreadable], link)
+	DecisionComments[decisionRejectElectronic] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectElectronic], link)
+	DecisionComments[decisionRejectIncomplete] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectIncomplete], link)
+	DecisionComments[decisionRejectUnverifiable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnverifiable], link)
+	DecisionComments[decisionRejectAmountMismatch] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectAmountMismatch], link)
+	DecisionComments[decisionRejectTooOld] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectTooOld], link)
+	DecisionComments[decisionRejectWithCallback] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectWithCallback], link)
 }

@@ -47,7 +47,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 
 	if update.Message.ForwardFrom != nil ||
 		update.Message.ForwardFromChat != nil {
-		SendProtectedMessage(opts.bot, update.Message.Chat.ID, 0, WarnForbidForwards, ecode)
+		SendProtectedMessage(opts.bot, update.Message.Chat.ID, 0, InfoForbidForwardsMessage, ecode)
 
 		return
 	}
@@ -74,12 +74,12 @@ func messageHandler(opts hOpts, update tgbotapi.Update) {
 
 	switch session.Stage {
 	case stageCleanup:
-		_, err := SendProtectedMessage(opts.bot, update.Message.Chat.ID, update.Message.MessageID, WarnConversationsFinished, ecode)
+		_, err := SendProtectedMessage(opts.bot, update.Message.Chat.ID, update.Message.MessageID, MainTrackWarnConversationsFinished, ecode)
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
 		}
 	case stageWait4Decision:
-		_, err := SendProtectedMessage(opts.bot, update.Message.Chat.ID, update.Message.MessageID, WarnWaitForApprovement, ecode)
+		_, err := SendProtectedMessage(opts.bot, update.Message.Chat.ID, update.Message.MessageID, MainTrackWarnWaitForApprovement, ecode)
 		if err != nil {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("wait msg: %w", err))
 		}
@@ -164,7 +164,7 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 
 // Send Welcome message.
 func sendWelcomeMessage(opts hOpts, chatID int64) error {
-	msg := tgbotapi.NewMessage(chatID, MsgWelcome)
+	msg := tgbotapi.NewMessage(chatID, MainTrackWelcomeMessage)
 	msg.ReplyMarkup = WannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
@@ -185,7 +185,7 @@ func sendWelcomeMessage(opts hOpts, chatID int64) error {
 
 // Send Quiz message.
 func sendQuizMessage(opts hOpts, chatID int64, ecode string) error {
-	msg, err := SendProtectedMessage(opts.bot, chatID, 0, MsgQuiz, ecode)
+	msg, err := SendProtectedMessage(opts.bot, chatID, 0, MainTrackQuizMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
@@ -201,7 +201,7 @@ func sendQuizMessage(opts hOpts, chatID int64, ecode string) error {
 // Check bill message.
 func checkBillMessageMessage(opts hOpts, Message *tgbotapi.Message, ecode string) error {
 	if len(Message.Photo) == 0 {
-		_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, WarnRequiredPhoto, ecode)
+		_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, MainTrackWarnRequiredPhoto, ecode)
 
 		return err
 	}
@@ -220,7 +220,7 @@ func checkBillMessageMessage(opts hOpts, Message *tgbotapi.Message, ecode string
 		return fmt.Errorf("put: %w", err)
 	}
 
-	newMsg, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, MsgAttestationAssigned, ecode)
+	newMsg, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, MainTrackSendForAttestationMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
@@ -291,7 +291,7 @@ func warnAutodeleteSettings(opts hOpts, chatID int64, ut int, ecode string) bool
 	}
 
 	if !adSet {
-		msg := tgbotapi.NewMessage(chatID, FatalUnwellSecurity)
+		msg := tgbotapi.NewMessage(chatID, MainTrackUnwellSecurityMessage)
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.ProtectContent = true
 		msg.ReplyMarkup = ContinueKeyboard
@@ -308,9 +308,9 @@ func warnAutodeleteSettings(opts hOpts, chatID int64, ut int, ecode string) bool
 }
 
 func getAction() string {
-	ix := int(rand.Int31n(int32(len(StandartChatActions)))) //nolint
+	ix := int(rand.Int31n(int32(len(StandardChatActions)))) //nolint
 
-	return StandartChatActions[ix]
+	return StandardChatActions[ix]
 }
 
 func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, ecode string) error {
@@ -324,7 +324,7 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 			return fmt.Errorf("reset: %w", err)
 		}
 
-		SendProtectedMessage(opts.bot, Message.Chat.ID, 0, ResetSuccessfull, ecode)
+		SendProtectedMessage(opts.bot, Message.Chat.ID, 0, MainTrackResetSuccessfull, ecode)
 
 		return nil
 	}
@@ -340,17 +340,17 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 			}
 		default:
-			SendProtectedMessage(opts.bot, Message.Chat.ID, 0, WarnUnknownCommand, ecode)
+			SendProtectedMessage(opts.bot, Message.Chat.ID, 0, InfoUnknownCommandMessage, ecode)
 		}
 	default:
 		switch session.Stage {
 		case stageCleanup:
-			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, WarnConversationsFinished, ecode)
+			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, MainTrackWarnConversationsFinished, ecode)
 			if err != nil {
 				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
 			}
 		case stageWait4Decision:
-			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, WarnWaitForApprovement, ecode)
+			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, MainTrackWarnWaitForApprovement, ecode)
 			if err != nil {
 				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wait msg: %w", err))
 			}
@@ -371,7 +371,7 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 			}
 		default:
-			SendProtectedMessage(opts.bot, Message.Chat.ID, 0, WarnUnknownCommand, ecode)
+			SendProtectedMessage(opts.bot, Message.Chat.ID, 0, InfoUnknownCommandMessage, ecode)
 		}
 	}
 
