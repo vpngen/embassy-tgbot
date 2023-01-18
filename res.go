@@ -170,6 +170,7 @@ var (
 		decisionAcceptCats:           "",
 		decisionRejectUnacceptable:   "",
 		decisionRejectUnreadable:     "",
+		decisionRejectBankCard:       "",
 		decisionRejectElectronic:     "",
 		decisionRejectIncomplete:     "",
 		decisionRejectUnverifiable:   "",
@@ -184,6 +185,7 @@ var (
 		decisionAcceptCats:           "Котики - это святое! \U0001f63b",
 		decisionRejectUnacceptable:   "Похоже, ты прислал(-а) что-то очень нехорошее. Тебя забанили в сервисе на веки \U0001f937 . " + extraSupportText,
 		decisionRejectUnreadable:     "Пожалуйста, пришли читаемый чек! " + extraSupportText,
+		decisionRejectBankCard:       "Похоже, ты оплатил(-а) картой. Пожалуйста принеси чек, оплаченный наличкой. " + extraSupportText,
 		decisionRejectElectronic:     "Пожалуйста, пришли сам чек, а не результат его расшифровки! " + extraSupportText,
 		decisionRejectIncomplete:     "Пожалуйста, пришли чек целиком! " + extraSupportText,
 		decisionRejectUnverifiable:   "Чек не бьется с налоговой, пришли пожалуйста другой чек! " + extraSupportText,
@@ -216,6 +218,7 @@ func SetSupportMessages(url, email string) {
 	DecisionComments[decisionAcceptCats] = decisionCommentsTemplate[decisionAcceptCats]
 	DecisionComments[decisionRejectUnacceptable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnacceptable], link)
 	DecisionComments[decisionRejectUnreadable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnreadable], link)
+	DecisionComments[decisionRejectBankCard] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectBankCard], link)
 	DecisionComments[decisionRejectElectronic] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectElectronic], link)
 	DecisionComments[decisionRejectIncomplete] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectIncomplete], link)
 	DecisionComments[decisionRejectUnverifiable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnverifiable], link)
