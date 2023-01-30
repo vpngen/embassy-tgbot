@@ -289,7 +289,7 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 	switch receipt.Accepted {
 	case true:
-		if desc, ok := DecisionComments[receipt.Reason]; ok {
+		if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
 			SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode)
 		}
 

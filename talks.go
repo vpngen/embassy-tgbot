@@ -16,7 +16,7 @@ import (
 const (
 	secondsInTheDay  = 24 * 3600
 	minSecondsToLive = secondsInTheDay
-	maxSecondsToLive = 2 * secondsInTheDay
+	maxSecondsToLive = 3 * secondsInTheDay
 )
 
 const (
