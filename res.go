@@ -21,7 +21,7 @@ const (
 
 Это VPN Generator — простой и *бесплатный* способ завести свой собственный VPN для друзей и родных. Нажми «Хочу свой VPN», чтобы начать регистрацию.
 
-После регистрации ты станешь бригадиром и получишь в свои руки _ключницу_ — инструмент, который будет генерировать VPN-конфигурации для тех, с кем ты захочешь ими поделиться.
+После регистрации ты станешь бригадиром и получишь в свои руки _ключницу_ — инструмент, через который ты будешь генерировать VPN-конфигурации для тех, с кем захочешь ими поделиться.
 
 У тебя уже есть VPN на наших мощностях и что-то не так? Нажми «Задать вопрос» и мы ответим... Но не факт, что быстро ` + "\U0000263A." +
 		`
@@ -60,13 +60,13 @@ _Если у тебя есть вопросы, почему твой чек от
 	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n%s\n\n"
 
 	// MainTrackConfigFormatFileCaption - config file caption.
-	MainTrackConfigFormatFileCaption = "Конфигурация файлом"
+	MainTrackConfigFormatFileCaption = "Твоя личная конфигурация файлом"
 
 	// MainTrackConfigFormatTextTemplate - config text template.
-	MainTrackConfigFormatTextTemplate = "Конфигурация текстом:\n```\n%s```"
+	MainTrackConfigFormatTextTemplate = "Твоя личная конфигурация текстом:\n```\n%s```"
 
 	// MainTrackConfigFormatQRCaption - qr-config caption.
-	MainTrackConfigFormatQRCaption = "Конфигурация QR-кодом"
+	MainTrackConfigFormatQRCaption = "Твоя личная конфигурация QR-кодом"
 
 	// MainTrackSeedDescMessage - you are brigadier.
 	MainTrackSeedDescMessage = `Последний, но важный шаг. У меня есть для тебя 6 слов — их я дам. Их нужно где-то хранить — места для хранения я не дам. Эти слова + имя — единственный способ восстановить доступ к твоему VPN.
@@ -77,7 +77,7 @@ _Если у тебя есть вопросы, почему твой чек от
 	MainTrackWordsMessage = "6 важных слов:\n`%s`"
 
 	// MainTrackConfigsMessage - keydesk address and config.
-	MainTrackConfigsMessage = `Ниже ты найдешь адрес твоей ключницы и файл конфигурации. Добавь конфигурацию в Wireguard на устройстве, с которого будешь потом управлять VPN-ом и обязательно зайди в течение 3-ёх суток в ключницу по ссылке [http://vpn.works/](http://vpn.works/) (*работает только с подключенным VPN!*). Следуй инструкции и оставайся на связи!`
+	MainTrackConfigsMessage = `Выше — файл твоей личной конфигурации. Добавь конфигурацию в Wireguard на устройстве, с которого будешь потом управлять VPN-ом и *обязательно* зайди в ключницу *с включённым VPN* по ссылке [http://vpn.works/](http://vpn.works/) или напрямую по IPv6-адресу: ` + "`http://[%s]/`" + ` *в течение трех дней* для активации бригады.`
 
 	// MainTrackKeydeskIPv6Message - message with ipv6 keydesk address.
 	MainTrackKeydeskIPv6Message = "\U0001f510 " + `Возможно ты тоже энтузиаст(-ка) безопасности и у тебя установлен защищённый DNS в системе или в браузере. Тогда ссылка на ключницу не будет работать, потому что она существует только в нашем DNS. Безопасность требует жертв и тебе придётся в ключницу напрямую по IPv6-адресу: ` + "`http://[%s]/`" +
