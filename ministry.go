@@ -94,6 +94,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: png})
 	photo.Caption = MainTrackConfigFormatQRCaption
+	photo.ParseMode = tgbotapi.ModeMarkdown
 
 	if _, err := bot.Request(photo); err != nil {
 		return fmt.Errorf("send qr config: %w", err)
@@ -103,6 +104,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: opts.wgconf})
 	doc.Caption = MainTrackConfigFormatFileCaption
+	doc.ParseMode = tgbotapi.ModeMarkdown
 
 	if _, err := bot.Request(doc); err != nil {
 		return fmt.Errorf("send file config: %w", err)
