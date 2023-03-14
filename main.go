@@ -101,14 +101,18 @@ func badgerGC(wg *sync.WaitGroup, stop <-chan struct{}, db *badger.DB) {
 
 	defer timer.Stop()
 
-	select {
-	case <-timer.C:
-	again:
-		err := db.RunValueLogGC(0.5)
-		if err == nil {
-			goto again
+	for {
+		select {
+		case <-timer.C:
+		again:
+			err := db.RunValueLogGC(0.5)
+			if err == nil {
+				goto again
+			}
+
+			timer.Reset(5 * time.Minute)
+		case <-stop:
+			return
 		}
-	case <-stop:
-		return
 	}
 }
