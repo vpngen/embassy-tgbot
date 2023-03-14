@@ -27,6 +27,8 @@ const (
 		`
 
 VPN Generator находится на начальном этапе своего развития. Поэтому пока что VPN Generator работает на базе безопасного решения [Wireguard](https://www.wireguard.com/) с открытым исходным кодом. В дальнейшем мы будем добавлять другие протоколы и, при необходимости, реализуем свой.
+
+Чтобы узнавать о новшествах, проблемах и в целом о развитии проекта, обязательно подпишись на [@vpngen](https://t.me/vpngen). Инструкция как быть бригадиром - [тут](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/)
 `
 
 	// mainTrackQuizMessage - quiz message.
