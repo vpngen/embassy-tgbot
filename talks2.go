@@ -153,25 +153,3 @@ func saveDecision(bot *tgbotapi.BotAPI, cbq tgbotapi.CallbackQuery, reason int, 
 
 	return nil
 }
-
-func handleCommands2(opts hOpts, Message *tgbotapi.Message, session *Session, ecode string) error {
-	/*switch Message.Command() {
-	case "reset":
-		if opts.debug == int(logs.LevelDebug) {
-			err := resetSession(opts.db, Message.Chat.ID)
-			if err == nil {
-				SendMessage(opts.bot, Message.Chat.ID, 0, ResetSuccessfull, ecode)
-			}
-
-			return err
-		}
-
-		fallthrough
-	default:
-		SendMessage(opts.bot, Message.Chat.ID, 0, WarnUnknownCommand, ecode)
-
-		return nil
-	}*/
-
-	return nil
-}

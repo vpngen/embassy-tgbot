@@ -79,26 +79,10 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(3 * time.Second)
 
-	_, err = SendOpenMessage(bot, chatID, 0, MainTrackConfigsMessage, ecode)
-	if err != nil {
-		return fmt.Errorf("send seed message: %w", err)
-	}
-
-	time.Sleep(2 * time.Second)
-
-	doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: opts.wgconf})
-	doc.Caption = MainTrackConfigFormatFileCaption
-
-	if _, err := bot.Request(doc); err != nil {
-		return fmt.Errorf("request doc: %w", err)
-	}
-
-	time.Sleep(2 * time.Second)
-
 	msg = fmt.Sprintf(MainTrackConfigFormatTextTemplate, string(opts.wgconf))
 	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
-		return fmt.Errorf("send seed message: %w", err)
+		return fmt.Errorf("send text config: %w", err)
 	}
 
 	time.Sleep(2 * time.Second)
@@ -110,17 +94,35 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: png})
 	photo.Caption = MainTrackConfigFormatQRCaption
+	photo.ParseMode = tgbotapi.ModeMarkdown
 
 	if _, err := bot.Request(photo); err != nil {
-		return fmt.Errorf("request photo: %w", err)
+		return fmt.Errorf("send qr config: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: opts.wgconf})
+	doc.Caption = MainTrackConfigFormatFileCaption
+	doc.ParseMode = tgbotapi.ModeMarkdown
+
+	if _, err := bot.Request(doc); err != nil {
+		return fmt.Errorf("send file config: %w", err)
 	}
 
 	time.Sleep(3 * time.Second)
 
-	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackKeydeskIPv6Message, opts.keydesk), ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackConfigsMessage, opts.keydesk), ecode)
 	if err != nil {
-		return fmt.Errorf("send seed message: %w", err)
+		return fmt.Errorf("send keydesk message: %w", err)
 	}
+
+	//	time.Sleep(2 * time.Second)
+
+	//	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackKeydeskIPv6Message, opts.keydesk), ecode)
+	//	if err != nil {
+	//		return fmt.Errorf("send seed message: %w", err)
+	//	}
 
 	return nil
 }

@@ -18,6 +18,7 @@ const (
 	decisionAcceptCats
 	decisionRejectUnacceptable
 	decisionRejectUnreadable
+	decisionRejectBankCard
 	decisionRejectElectronic
 	decisionRejectIncomplete
 	decisionRejectUnverifiable
@@ -33,6 +34,7 @@ var (
 		decisionAcceptCats:           "\U0001f63b Котики",
 		decisionRejectUnacceptable:   "\U0001f595 Бан", //\U0000274c
 		decisionRejectUnreadable:     "\U0001f576 Нечит.",
+		decisionRejectBankCard:       "\U0001F4B3 Безнал",
 		decisionRejectElectronic:     "\U0001f4f1 Эл-ый",
 		decisionRejectIncomplete:     "\U0001f313 Неполн.",
 		decisionRejectUnverifiable:   "\U0001f46e Непров.",
@@ -71,11 +73,12 @@ func makeCheckReceiptKeyboard(id string) tgbotapi.InlineKeyboardMarkup {
 			makeKeyboardButton(decisionRejectElectronic, id, false),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			makeKeyboardButton(decisionRejectBankCard, id, false),
 			makeKeyboardButton(decisionRejectUnreadable, id, false),
 			makeKeyboardButton(decisionRejectUnverifiable, id, false),
-			makeKeyboardButton(decisionRejectIncomplete, id, false),
 		),
 		tgbotapi.NewInlineKeyboardRow(
+			makeKeyboardButton(decisionRejectIncomplete, id, false),
 			makeKeyboardButton(decisionRejectWithCallback, id, false),
 			makeKeyboardButton(decisionRejectUnacceptable, id, false),
 		),

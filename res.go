@@ -21,12 +21,14 @@ const (
 
 Это VPN Generator — простой и *бесплатный* способ завести свой собственный VPN для друзей и родных. Нажми «Хочу свой VPN», чтобы начать регистрацию.
 
-После регистрации ты станешь бригадиром и получишь в свои руки _ключницу_ — инструмент, который будет генерировать VPN-конфигурации для тех, с кем ты захочешь ими поделиться.
+После регистрации ты станешь бригадиром и получишь в свои руки _ключницу_ — инструмент, через который ты будешь генерировать VPN-конфигурации для тех, с кем захочешь ими поделиться.
 
 У тебя уже есть VPN на наших мощностях и что-то не так? Нажми «Задать вопрос» и мы ответим... Но не факт, что быстро ` + "\U0000263A." +
 		`
 
 VPN Generator находится на начальном этапе своего развития. Поэтому пока что VPN Generator работает на базе безопасного решения [Wireguard](https://www.wireguard.com/) с открытым исходным кодом. В дальнейшем мы будем добавлять другие протоколы и, при необходимости, реализуем свой.
+
+Чтобы узнавать о новшествах, проблемах и в целом о развитии проекта, обязательно подпишись на [@vpngen](https://t.me/vpngen). Инструкция как быть бригадиром - [тут](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/)
 `
 
 	// mainTrackQuizMessage - quiz message.
@@ -60,13 +62,13 @@ _Если у тебя есть вопросы, почему твой чек от
 	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n%s\n\n"
 
 	// MainTrackConfigFormatFileCaption - config file caption.
-	MainTrackConfigFormatFileCaption = "Конфигурация файлом"
+	MainTrackConfigFormatFileCaption = "Твоя *личная* конфигурация файлом"
 
 	// MainTrackConfigFormatTextTemplate - config text template.
-	MainTrackConfigFormatTextTemplate = "Конфигурация текстом:\n```\n%s```"
+	MainTrackConfigFormatTextTemplate = "Твоя *личная* конфигурация текстом:\n```\n%s```"
 
 	// MainTrackConfigFormatQRCaption - qr-config caption.
-	MainTrackConfigFormatQRCaption = "Конфигурация QR-кодом"
+	MainTrackConfigFormatQRCaption = "Твоя *личная* конфигурация QR-кодом"
 
 	// MainTrackSeedDescMessage - you are brigadier.
 	MainTrackSeedDescMessage = `Последний, но важный шаг. У меня есть для тебя 6 слов — их я дам. Их нужно где-то хранить — места для хранения я не дам. Эти слова + имя — единственный способ восстановить доступ к твоему VPN.
@@ -74,10 +76,10 @@ _Если у тебя есть вопросы, почему твой чек от
 Спрячь эти слова туда, куда ты сможешь добраться в любой непонятной ситуации, но не доберется трщ майор. Нет, не туда! Туда доберется… Лучше в хранилку паролей или еще какое-нибудь хитрое место.`
 
 	// MainTrackWordsMessage - 6 words.
-	MainTrackWordsMessage = "6 важных слов:\n`%s`"
+	MainTrackWordsMessage = "*6 важных слов:*\n`%s`"
 
 	// MainTrackConfigsMessage - keydesk address and config.
-	MainTrackConfigsMessage = `Ниже ты найдешь адрес твоей ключницы и файл конфигурации. Добавь конфигурацию в Wireguard на устройстве, с которого будешь потом управлять VPN-ом и обязательно зайди в ключницу по ссылке [http://vpn.works/](http://vpn.works/) (*работает только с подключенным VPN!*). Следуй инструкции и оставайся на связи!`
+	MainTrackConfigsMessage = `Выше — файл твоей *личной* конфигурации. Добавь конфигурацию в Wireguard на устройстве, с которого будешь потом управлять VPN-ом и *обязательно* зайди в ключницу *с включённым VPN* по ссылке [http://vpn.works/](http://vpn.works/) или напрямую по IPv6-адресу: ` + "`http://[%s]/`" + ` *в течение трех дней* для активации бригады.`
 
 	// MainTrackKeydeskIPv6Message - message with ipv6 keydesk address.
 	MainTrackKeydeskIPv6Message = "\U0001f510 " + `Возможно ты тоже энтузиаст(-ка) безопасности и у тебя установлен защищённый DNS в системе или в браузере. Тогда ссылка на ключницу не будет работать, потому что она существует только в нашем DNS. Безопасность требует жертв и тебе придётся в ключницу напрямую по IPv6-адресу: ` + "`http://[%s]/`" +
@@ -170,6 +172,7 @@ var (
 		decisionAcceptCats:           "",
 		decisionRejectUnacceptable:   "",
 		decisionRejectUnreadable:     "",
+		decisionRejectBankCard:       "",
 		decisionRejectElectronic:     "",
 		decisionRejectIncomplete:     "",
 		decisionRejectUnverifiable:   "",
@@ -184,6 +187,7 @@ var (
 		decisionAcceptCats:           "Котики - это святое! \U0001f63b",
 		decisionRejectUnacceptable:   "Похоже, ты прислал(-а) что-то очень нехорошее. Тебя забанили в сервисе на веки \U0001f937 . " + extraSupportText,
 		decisionRejectUnreadable:     "Пожалуйста, пришли читаемый чек! " + extraSupportText,
+		decisionRejectBankCard:       "Похоже, ты оплатил(-а) картой. Пожалуйста принеси чек, оплаченный наличкой. " + extraSupportText,
 		decisionRejectElectronic:     "Пожалуйста, пришли сам чек, а не результат его расшифровки! " + extraSupportText,
 		decisionRejectIncomplete:     "Пожалуйста, пришли чек целиком! " + extraSupportText,
 		decisionRejectUnverifiable:   "Чек не бьется с налоговой, пришли пожалуйста другой чек! " + extraSupportText,
@@ -216,6 +220,7 @@ func SetSupportMessages(url, email string) {
 	DecisionComments[decisionAcceptCats] = decisionCommentsTemplate[decisionAcceptCats]
 	DecisionComments[decisionRejectUnacceptable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnacceptable], link)
 	DecisionComments[decisionRejectUnreadable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnreadable], link)
+	DecisionComments[decisionRejectBankCard] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectBankCard], link)
 	DecisionComments[decisionRejectElectronic] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectElectronic], link)
 	DecisionComments[decisionRejectIncomplete] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectIncomplete], link)
 	DecisionComments[decisionRejectUnverifiable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnverifiable], link)
