@@ -130,7 +130,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 			}
 		}()
-	case update.CallbackQuery.Data == "continue" && session.Stage == stageStart:
+	case update.CallbackQuery.Data == "continue" && (session.Stage == stageStart || session.Stage == stageWait4Choice):
 		err := sendWelcomeMessage(opts, update.CallbackQuery.Message.Chat.ID)
 		if err != nil {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
@@ -358,7 +358,7 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 			// don't be in a harry.
 			time.Sleep(SlowAnswerTimeout)
 
-			if warnAutodeleteSettings(opts, Message.Chat.ID, Message.Date, ecode) {
+			if session.Stage == stageWait4Choice || warnAutodeleteSettings(opts, Message.Chat.ID, Message.Date, ecode) {
 				if err := sendWelcomeMessage(opts, Message.Chat.ID); err != nil {
 					stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
 				}
