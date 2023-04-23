@@ -14,21 +14,22 @@ const (
 	// MainTrackUnwellSecurityMessage - if autodelete not set.
 	MainTrackUnwellSecurityMessage = `Привет!
 
-Установи пожалуйста автоудаление сообщений в этом чате на 1 день, если на твоем клиенте это возможно. [Инструкция](https://telegram.org/blog/autodelete-inv2/ru?ln=a)`
+Если ты в России/Беларуси и беспокоишься о своей безопасности — пожалуйста, установи автоудаление сообщений в этом чате на 1 день. [Инструкция](https://telegram.org/blog/autodelete-inv2/ru?ln=a)`
 
 	// MainTrackWelcomeMessage - welcome message.
 	MainTrackWelcomeMessage = `Привет! 
 
 Это VPN Generator — простой и *бесплатный* способ завести свой собственный VPN для друзей и родных. Нажми «Хочу свой VPN», чтобы начать регистрацию.
 
-После регистрации ты станешь бригадиром и получишь в свои руки _ключницу_ — инструмент, через который ты будешь генерировать VPN-конфигурации для тех, с кем захочешь ими поделиться.
+ВАЖНО: здесь ты получишь целый сервер. Это ценный и очень ограниченный ресурс, который ты получишь бесплатно. Поэтому тебе придется соответствовать простым требованиям:
+• Начать пользоваться системой управления сервером в течение 24 часов.
+• Начиная со следующего месяца после твоей регистрации иметь не менее пяти активных пользователей в месяц. Т.е. начать распространять VPN в своем окружении.
 
-У тебя уже есть VPN на наших мощностях и что-то не так? Нажми «Задать вопрос» и мы ответим... Но не факт, что быстро ` + "\U0000263A." +
-		`
+Или мы удалим твою бригаду ` + "\U0001F937" + `.
 
-VPN Generator находится на начальном этапе своего развития. Поэтому пока что VPN Generator работает на базе безопасного решения [Wireguard](https://www.wireguard.com/) с открытым исходным кодом. В дальнейшем мы будем добавлять другие протоколы и, при необходимости, реализуем свой.
+У тебя уже есть VPN на наших мощностях и что-то не так? Нажми «Задать вопрос» и мы ответим... Но не факт, что быстро ` + "\U0000263A." + `
 
-Чтобы узнавать о новшествах, проблемах и в целом о развитии проекта, обязательно подпишись на [@vpngen](https://t.me/vpngen). Инструкция как быть бригадиром - [тут](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/)
+Чтобы узнавать о возможностях, проблемах и в целом о развитии проекта, обязательно подпишись на [@vpngen](https://t.me/vpngen). Инструкция как быть бригадиром - [тут](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/)
 `
 
 	// mainTrackQuizMessage - quiz message.
@@ -36,11 +37,11 @@ VPN Generator находится на начальном этапе своего
 
 Но нам нужно понять, что ты живой нормальный человек, а не тролль из-под моста. Поэтому тебе придется:
 	
-• Сходить ножками в магазин и что-нибудь купить примерно на 500 рублей или больше, ровно-ровно набивать не нужно. Купить не нам, себе. Ну или своему котику. 
+• Сходить ножками в магазин и что-нибудь купить примерно на 500 рублей (или эквивалент в твоей валюте) или больше, ровно-ровно набивать не нужно. Купить не нам, себе. Ну или своему котику.
 	
 • Заплатить за это *наличкой*. Прям бумажными деньгами — это нужно для твоей безопасности, чтобы процесс проверки никак не мог тебя деанонимизировать. *И никаких карт лояльности*!!!!
 	
-• Прислать нам фотку чека не старше 7 дней. Если чек из РФ, то на нём должен быть хорошо различимый проверяемый QR-код налоговой.
+• Прислать нам фотку чека с хорошо читаемым QR-кодом, если ты в России. Если не в России — QR код рисовать не надо.
 
 Ждем фоточку чека и мы дадим тебе твой VPN!
 
@@ -56,7 +57,7 @@ _Если у тебя есть вопросы, почему твой чек от
 	mainTrackWarnWaitForApprovement = `Ожидай подтверждения чека. Это может занять какое-то время. Если у тебя остались вопросы - напиши пожалуйста в [поддержку](%s).`
 
 	// MainTrackGrantMessage - grant message.
-	MainTrackGrantMessage = "Поздравляю! Ты — бригадир!\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
+	MainTrackGrantMessage = "Поздравляю! Ты — бригадир! Вот полная [инструкция пользования](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/) сервисом.\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
 
 	// MainTrackPersonDescriptionMessage - brief on name.
 	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n%s\n\n"
@@ -71,7 +72,7 @@ _Если у тебя есть вопросы, почему твой чек от
 	MainTrackConfigFormatQRCaption = "Твоя *личная* конфигурация QR-кодом"
 
 	// MainTrackSeedDescMessage - you are brigadier.
-	MainTrackSeedDescMessage = `Последний, но важный шаг. У меня есть для тебя 6 слов — их я дам. Их нужно где-то хранить — места для хранения я не дам. Эти слова + имя — единственный способ восстановить доступ к твоему VPN.
+	MainTrackSeedDescMessage = `Последний, но важный шаг. У меня есть для тебя 6 слов — их я дам. Их нужно где-то хранить — места для хранения я не дам. Эти слова + имя — *единственный способ* восстановить доступ к твоему VPN.
 
 Спрячь эти слова туда, куда ты сможешь добраться в любой непонятной ситуации, но не доберется трщ майор. Нет, не туда! Туда доберется… Лучше в хранилку паролей или еще какое-нибудь хитрое место.`
 
@@ -79,7 +80,9 @@ _Если у тебя есть вопросы, почему твой чек от
 	MainTrackWordsMessage = "*6 важных слов:*\n`%s`"
 
 	// MainTrackConfigsMessage - keydesk address and config.
-	MainTrackConfigsMessage = `Выше — файл твоей *личной* конфигурации. Добавь конфигурацию в Wireguard на устройстве, с которого будешь потом управлять VPN-ом и *обязательно* зайди в ключницу *с включённым VPN* по ссылке [http://vpn.works/](http://vpn.works/) или напрямую по IPv6-адресу: ` + "`http://[%s]/`" + ` *в течение трех дней* для активации бригады.`
+	MainTrackConfigsMessage = `Выше — файл твоей *личной* конфигурации. Добавь конфигурацию в Wireguard на устройстве, с которого будешь потом управлять VPN-ом и *обязательно* зайди в ключницу *с включённым VPN* по ссылке [http://vpn.works/](http://vpn.works/) или напрямую по IPv6-адресу: ` + "`http://[%s]/`" + ` *в течение 24 часов* для активации бригады.
+	
+P.S. Ты можешь закинуть свой конфиг в сохраненки, это достаточно безопасно.`
 
 	// MainTrackKeydeskIPv6Message - message with ipv6 keydesk address.
 	MainTrackKeydeskIPv6Message = "\U0001f510 " + `Возможно ты тоже энтузиаст(-ка) безопасности и у тебя установлен защищённый DNS в системе или в браузере. Тогда ссылка на ключницу не будет работать, потому что она существует только в нашем DNS. Безопасность требует жертв и тебе придётся в ключницу напрямую по IPv6-адресу: ` + "`http://[%s]/`" +
@@ -94,6 +97,11 @@ P.S. К сожалению, этот способ не будет работат
 Если ты забыл(-а) своё имя и 6 важных слов, то даже в поддержке мы ничем помочь не сможем. Это условие нашей безопасности.
 	
 ` + extraSupportText
+
+	// repeatTrackWarnConversationsFinished - answer to /repeat after the end.
+	repeatTrackWarnConversationsFinished = `Мы не можем повторить выданные данные, потому что мы их не храним. Если у тебя сохранились имя бригадира и 6 волшебных слов — ты можешь восстановить свою конфигурацию через [поддержку](%s).
+	
+Если и конфигурация, и слова для восстановления потеряны, боюсь, мы бессильны тебе помочь.`
 
 	// MainTrackResetSuccessfull - Resety session.
 	MainTrackResetSuccessfull = `Диалог сброшен`
@@ -161,6 +169,8 @@ var (
 	MainTrackWarnWaitForApprovement string
 	// MainTrackWarnConversationsFinished - dialog after the end.
 	MainTrackWarnConversationsFinished string
+	// RepeatTrackWarnConversationsFinished - answer to /repeat after the end.
+	RepeatTrackWarnConversationsFinished string
 
 	// RejectMessage - we are shame you.
 	RejectMessage string
@@ -215,6 +225,7 @@ func SetSupportMessages(url, email string) {
 	MainTrackWarnRequiredPhoto = fmt.Sprintf(mainTrackWarnRequiredPhoto, link)
 	MainTrackWarnWaitForApprovement = fmt.Sprintf(mainTrackWarnWaitForApprovement, link)
 	MainTrackWarnConversationsFinished = fmt.Sprintf(mainTrackWarnConversationsFinished, link)
+	RepeatTrackWarnConversationsFinished = fmt.Sprintf(repeatTrackWarnConversationsFinished, link)
 
 	DecisionComments[decisionUnknown] = fmt.Sprintf(decisionCommentsTemplate[decisionUnknown], link)
 	DecisionComments[decisionAcceptCats] = decisionCommentsTemplate[decisionAcceptCats]

@@ -339,9 +339,18 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 			if err := sendQuizMessage(opts, Message.Chat.ID, ecode); err != nil {
 				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 			}
-		default:
-			SendProtectedMessage(opts.bot, Message.Chat.ID, 0, InfoUnknownCommandMessage, ecode)
+
+			return nil
+		case stageCleanup:
+			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, RepeatTrackWarnConversationsFinished, ecode)
+			if err != nil {
+				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
+			}
+
+			return nil
 		}
+
+		fallthrough // !!! it'a a dirty hack. we neeed rewrite this code.
 	default:
 		switch session.Stage {
 		case stageCleanup:
