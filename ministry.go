@@ -14,7 +14,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/vpngen/keydesk/user"
+	"github.com/vpngen/embassy-tgbot/internal/kdlib"
 	"github.com/vpngen/wordsgens/namesgenerator"
 	"github.com/vpngen/wordsgens/seedgenerator"
 	"golang.org/x/crypto/ssh"
@@ -128,7 +128,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 }
 
 func callMinistry(dept DeptOpts) (*grantPkg, error) {
-	var opts = &grantPkg{}
+	opts := &grantPkg{}
 
 	cmd := fmt.Sprintf("-ch %s", dept.token)
 
@@ -257,7 +257,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 }
 
 func genGrants(dept DeptOpts) (*grantPkg, error) {
-	var opts = &grantPkg{}
+	opts := &grantPkg{}
 
 	fullname, person, err := namesgenerator.PhysicsAwardeeShort()
 	if err != nil {
@@ -274,10 +274,10 @@ func genGrants(dept DeptOpts) (*grantPkg, error) {
 		return nil, fmt.Errorf("gen seed6: %w", err)
 	}
 
-	opts.keydesk = user.RandomAddrIPv6(netip.MustParsePrefix(fakeKeydeskPrefix)).String()
+	opts.keydesk = kdlib.RandomAddrIPv6(netip.MustParsePrefix(fakeKeydeskPrefix)).String()
 
 	numbered := fmt.Sprintf("%03d %s", rand.Int31n(256), fullname)
-	opts.filename = user.SanitizeFilename(numbered)
+	opts.filename = kdlib.SanitizeFilename(numbered)
 
 	wgkey, err := wgtypes.GenerateKey()
 	if err != nil {
@@ -303,9 +303,9 @@ PresharedKey = %s
 AllowedIPs = 0.0.0.0/0,::/0
 `
 
-	ipv4 := user.RandomAddrIPv4(netip.MustParsePrefix(fakeCGNAT))
-	ipv6 := user.RandomAddrIPv6(netip.MustParsePrefix(fakeULA))
-	ep := user.RandomAddrIPv4(netip.MustParsePrefix(fakeEndpointNet))
+	ipv4 := kdlib.RandomAddrIPv4(netip.MustParsePrefix(fakeCGNAT))
+	ipv6 := kdlib.RandomAddrIPv6(netip.MustParsePrefix(fakeULA))
+	ep := kdlib.RandomAddrIPv4(netip.MustParsePrefix(fakeEndpointNet))
 
 	opts.wgconf = fmt.Appendf(opts.wgconf,
 		tmpl,
