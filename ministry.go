@@ -130,7 +130,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 func callMinistry(dept DeptOpts) (*grantPkg, error) {
 	opts := &grantPkg{}
 
-	cmd := fmt.Sprintf("-ch %s", dept.token)
+	cmd := fmt.Sprintf("createbrigade -ch %s", dept.token)
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
 
