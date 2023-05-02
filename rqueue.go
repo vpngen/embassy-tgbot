@@ -77,7 +77,7 @@ func PutReceipt(dbase *badger.DB, chatID int64, fileID string) error {
 			return fmt.Errorf("set: %w", err)
 		}
 
-		//fmt.Printf("*** q1 id: %x\n", key)
+		// fmt.Printf("*** q1 id: %x\n", key)
 
 		return nil
 	})
@@ -103,7 +103,7 @@ func queueID(chatID int64) []byte {
 
 // UpdateReceipt - update receipt review status and stage.
 func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool, reason int) error {
-	//fmt.Printf("*** update q1: %x stage=%d\n", id, stage)
+	// fmt.Printf("*** update q1: %x stage=%d\n", id, stage)
 
 	err := dbase.Update(func(txn *badger.Txn) error {
 		receipt := &CkReceipt{}
@@ -184,7 +184,7 @@ func GetReceipt(dbase *badger.DB, id []byte) (*CkReceipt, error) {
 // help get data from badgerBD.
 func getReceipt(txn *badger.Txn, id []byte) ([]byte, error) {
 	var data []byte
-	//fmt.Printf("*** get q1: %x\n", id)
+	// fmt.Printf("*** get q1: %x\n", id)
 
 	item, err := txn.Get(id)
 	if err != nil {
@@ -293,10 +293,6 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 			SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode)
 		}
 
-		if err := setSession(db, receipt.ChatID, 0, 0, stageCleanup); err != nil {
-			return false, fmt.Errorf("update session: %w", err)
-		}
-
 		if err := DeleteReceipt(db, key); err != nil {
 			return false, fmt.Errorf("cleanup: %w", err)
 		}
@@ -306,6 +302,11 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 			return false, fmt.Errorf("creation: %w", err)
 		}
+
+		if err := setSession(db, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionPayloadSomething, nil); err != nil {
+			return false, fmt.Errorf("update session: %w", err)
+		}
+
 	case false:
 		desc, ok := DecisionComments[receipt.Reason]
 		if !ok {
@@ -319,11 +320,11 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 		switch receipt.Reason {
 		case decisionRejectUnacceptable:
-			if err = setSession(db, receipt.ChatID, 0, 0, stageCleanup); err != nil {
+			if err = setSession(db, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionPayloadBan, nil); err != nil {
 				return false, fmt.Errorf("update session: %w", err)
 			}
 		default:
-			if err = setSession(db, receipt.ChatID, newMsg.MessageID, int64(newMsg.Date), stageWait4Bill); err != nil {
+			if err = setSession(db, receipt.ChatID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForBill, SessionPayloadSomething, nil); err != nil {
 				return false, fmt.Errorf("update session: %w", err)
 			}
 		}
