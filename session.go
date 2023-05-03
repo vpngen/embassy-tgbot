@@ -16,11 +16,24 @@ const (
 	sessionPrefix = "session"
 )
 
+const (
+	SessionCommonTTL = 3 * 24 * time.Hour // 3 days
+)
+
+const (
+	SessionStageNone = iota
+	SessionPayloadSomething
+	SessionPayloadBan
+	SessionPayloadSecondary
+)
+
 // Session - session.
 type Session struct {
-	OurMsgID   int   `json:"our_message_id"`
-	Stage      int   `json:"stage"`
-	UpdateTime int64 `json:"updatetime"`
+	OurMsgID   int    `json:"our_message_id"`
+	Stage      int    `json:"stage"`
+	UpdateTime int64  `json:"updatetime"`
+	State      int    `json:"state"`
+	Payload    []byte `json:"payload"`
 }
 
 func sessionID(chatID int64) []byte {
@@ -34,11 +47,12 @@ func sessionID(chatID int64) []byte {
 	return id
 }
 
-func setSession(dbase *badger.DB, chatID int64, msgID int, update int64, stage int) error {
+func setSession(dbase *badger.DB, chatID int64, msgID int, update int64, stage int, state int, payload []byte) error {
 	session := &Session{
 		OurMsgID:   msgID,
 		Stage:      stage,
 		UpdateTime: update,
+		Payload:    payload,
 	}
 
 	data, err := json.Marshal(session)
@@ -48,7 +62,7 @@ func setSession(dbase *badger.DB, chatID int64, msgID int, update int64, stage i
 
 	key := sessionID(chatID)
 	err = dbase.Update(func(txn *badger.Txn) error {
-		e := badger.NewEntry(key, data).WithTTL(maxSecondsToLive * time.Second)
+		e := badger.NewEntry(key, data).WithTTL(SessionCommonTTL)
 		if err := txn.SetEntry(e); err != nil {
 			return fmt.Errorf("set: %w", err)
 		}
@@ -91,7 +105,6 @@ func checkSession(dbase *badger.DB, chatID int64) (*Session, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return session, fmt.Errorf("db: %w", err)
 	}
@@ -117,7 +130,6 @@ func resetSession(dbase *badger.DB, chatID int64) error {
 
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}

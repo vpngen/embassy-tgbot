@@ -30,6 +30,7 @@ func runBot(
 	bot *tgbotapi.BotAPI,
 	updateTout,
 	debugLevel int,
+	dept DeptOpts,
 ) {
 	defer waitGroup.Done()
 
@@ -56,7 +57,7 @@ func runBot(
 
 					waitGroup.Add(1)
 
-					go messageHandler(opts, update)
+					go messageHandler(opts, update, dept)
 
 					break
 				}
