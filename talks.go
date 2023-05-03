@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -66,6 +67,9 @@ func messageHandler(opts hOpts, update tgbotapi.Update, dept DeptOpts) {
 
 	defer opts.cw.Release(update.Message.Chat.ID)
 
+	// don't be in a harry.
+	time.Sleep(SlowAnswerTimeout)
+
 	if update.Message.IsCommand() {
 		err := handleCommands(opts, update.Message, session, ecode)
 		if err != nil {
@@ -74,9 +78,6 @@ func messageHandler(opts hOpts, update tgbotapi.Update, dept DeptOpts) {
 
 		return
 	}
-
-	// don't be in a harry.
-	time.Sleep(SlowAnswerTimeout)
 
 	switch session.Stage {
 	case stageMainTrackCleanup:
@@ -189,16 +190,18 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 			}
 		}()
-	case (update.CallbackQuery.Data == "again" || update.CallbackQuery.Data == "retrun") && session.Stage == stageRestoreTrackSendWords:
+	case (update.CallbackQuery.Data == "again" || update.CallbackQuery.Data == "return") &&
+		session.Stage == stageRestoreTrackSendWords:
 		defer func() {
 			text := RestoreTrackWordsMessage
 
 			switch update.CallbackQuery.Data {
 			case "again":
 				text = RestoreTrackBrigadeNotFoundMessage
-			case "retrun":
+			case "return":
 				text = RestoreTrackWordsMessage
 			}
+
 			if err := RemoveKeyboardMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, text); err != nil {
 				// we don't want to handle this
 				logs.Errf("[!:%s] restore keyboard: %s\n", ecode, err)
@@ -220,7 +223,43 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("reset push: %w", err))
 		}
 
+		// delete our previous message.
+		defer func() {
+			if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
+				// we don't want to handle this
+				logs.Errf("[!:%s] remove: %s\n", ecode, err)
+			}
+		}()
+	case update.CallbackQuery.Data == "restore":
+		prev := 0
+		if session.Stage == stageMainTrackCleanup || session.Stage == stageRestoreTrackStart ||
+			session.Stage == stageRestoreTrackSendName || session.Stage == stageRestoreTrackSendWords ||
+			session.Stage == stageRestoreTrackCleanup {
+			prev = session.State
+		}
+
+		if prev == SessionPayloadBan {
+			_, err := SendProtectedMessage(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, MainTrackWarnConversationsFinished, ecode)
+			if err != nil {
+				stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
+			}
+
+			return
+		}
+
+		if err := sendRestoreStartMessage(opts, update.CallbackQuery.Message.Chat.ID, prev); err != nil {
+			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("restore push: %w", err))
+		}
+
+		// delete our previous message.
+		defer func() {
+			if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
+				// we don't want to handle this
+				logs.Errf("[!:%s] remove: %s\n", ecode, err)
+			}
+		}()
 	default:
+		fmt.Fprintf(os.Stderr, "unknown callback: %q session: %#v\n", update.CallbackQuery.Data, session)
 	}
 }
 
@@ -603,8 +642,6 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 			return nil
 		}
 
-		time.Sleep(SlowAnswerTimeout)
-
 		if err := sendRestoreStartMessage(opts, Message.Chat.ID, prev); err != nil {
 			stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 		}
@@ -613,9 +650,6 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 	case "repeat":
 		switch session.Stage {
 		case stageMainTrackWaitForBill:
-			// don't be in a harry.
-			time.Sleep(SlowAnswerTimeout)
-
 			if err := sendQuizMessage(opts, Message.Chat.ID, ecode); err != nil {
 				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
 			}
@@ -634,55 +668,34 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 	default:
 		switch session.Stage {
 		case stageRestoreTrackSendWords:
-			// don't be in a harry.
-			time.Sleep(SlowAnswerTimeout)
-
 			if err := sendRestoreWordsMessage(opts, Message.Chat.ID, session.State, string(session.Payload)); err != nil {
-				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
+				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("send words: %w", err))
 			}
 		case stageRestoreTrackSendName:
-			// don't be in a harry.
-			time.Sleep(SlowAnswerTimeout)
-
 			if err := sendRestoreNameMessage(opts, Message.Chat.ID, ecode, session.State); err != nil {
-				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
+				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("sendname: %w", err))
 			}
 		case stageRestoreTrackStart:
-			// don't be in a harry.
-			time.Sleep(SlowAnswerTimeout)
-
 			if err := sendRestoreStartMessage(opts, Message.Chat.ID, session.State); err != nil {
-				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
+				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("restore: %w", err))
 			}
 		case stageMainTrackCleanup:
-			// don't be in a harry.
-			time.Sleep(SlowAnswerTimeout)
-
 			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, MainTrackWarnConversationsFinished, ecode)
 			if err != nil {
 				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
 			}
 		case stageMainTrackWaitForApprovement:
-			// don't be in a harry.
-			time.Sleep(SlowAnswerTimeout)
-
 			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, MainTrackWarnWaitForApprovement, ecode)
 			if err != nil {
 				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wait msg: %w", err))
 			}
 		case stageMainTrackStart, stageMainTrackWaitForWanting:
-			// don't be in a harry.
-			time.Sleep(SlowAnswerTimeout)
-
 			if session.Stage == stageMainTrackWaitForWanting || warnAutodeleteSettings(opts, Message.Chat.ID, Message.Date, ecode) {
 				if err := sendWelcomeMessage(opts, Message.Chat.ID); err != nil {
 					stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
 				}
 			}
 		case stageMainTrackWaitForBill:
-			// don't be in a harry.
-			time.Sleep(SlowAnswerTimeout)
-
 			if err := checkBillMessageMessage(opts, Message, ecode); err != nil {
 				stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 			}

@@ -249,7 +249,9 @@ func SetSupportMessages(url, email string) {
 
 	RestoreWordsKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Ещё раз Имя", "return"),
+			tgbotapi.NewInlineKeyboardButtonData("Попробовать ещё раз", "return"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
@@ -257,7 +259,9 @@ func SetSupportMessages(url, email string) {
 
 	RestoreWordsKeyboard2 = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Ещё раз Имя", "again"),
+			tgbotapi.NewInlineKeyboardButtonData("Попробовать ещё раз", "again"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
@@ -273,6 +277,9 @@ func SetSupportMessages(url, email string) {
 	RestoreStartKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Начать", "restore"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
 	)
@@ -282,7 +289,11 @@ func SetSupportMessages(url, email string) {
 			tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "started"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Восстановить бригаду", "restore"),
+		),
 	)
+
 	MainTrackFailMessage = fmt.Sprintf(mainTrackFailMessage, link, email)
 	MainTrackQuizMessage = fmt.Sprintf(mainTrackQuizMessage, link)
 	FatalSomeThingWrong = fmt.Sprintf(fatalSomeThingWrong, link)
