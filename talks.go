@@ -190,18 +190,16 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 			}
 		}()
-	case (update.CallbackQuery.Data == "again" || update.CallbackQuery.Data == "return") &&
-		session.Stage == stageRestoreTrackSendWords:
+	case (update.CallbackQuery.Data == "again" || update.CallbackQuery.Data == "retrun") && session.Stage == stageRestoreTrackSendWords:
 		defer func() {
 			text := RestoreTrackWordsMessage
 
 			switch update.CallbackQuery.Data {
 			case "again":
 				text = RestoreTrackBrigadeNotFoundMessage
-			case "return":
+			case "retrun":
 				text = RestoreTrackWordsMessage
 			}
-
 			if err := RemoveKeyboardMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, text); err != nil {
 				// we don't want to handle this
 				logs.Errf("[!:%s] restore keyboard: %s\n", ecode, err)
@@ -641,6 +639,8 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 
 			return nil
 		}
+
+		time.Sleep(SlowAnswerTimeout)
 
 		if err := sendRestoreStartMessage(opts, Message.Chat.ID, prev); err != nil {
 			stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("wannable push: %w", err))
