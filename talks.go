@@ -190,7 +190,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 			}
 		}()
-	case (update.CallbackQuery.Data == "again" || update.CallbackQuery.Data == "retrun") && session.Stage == stageRestoreTrackSendWords:
+	case session.Stage == stageRestoreTrackSendWords && (update.CallbackQuery.Data == "again" || update.CallbackQuery.Data == "return"):
 		defer func() {
 			text := RestoreTrackWordsMessage
 
