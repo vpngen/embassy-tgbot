@@ -10,22 +10,23 @@ import (
 )
 
 const (
-	sshkeyFilename       = "id_ecdsa"
-	sshkeyRemoteUsername = "_kolyan_"
-	sshTimeOut           = time.Duration(5 * time.Second)
+	sshkeyECDSAFilename   = "id_ecdsa"
+	sshkeyED25519Filename = "id_ed25519"
+	sshkeyRemoteUsername  = "_kolyan_"
+	sshTimeOut            = time.Duration(5 * time.Second)
 )
 
 func createSSHConfig(path string) (*ssh.ClientConfig, error) {
 	// var hostKey ssh.PublicKey
 
-	key, err := os.ReadFile(filepath.Join(path, sshkeyFilename))
+	key, err := os.ReadFile(filepath.Join(path, sshkeyED25519Filename))
 	if err != nil {
-		return nil, fmt.Errorf("read private key: %w", err)
+		return nil, fmt.Errorf("read private ed25519 key: %w", err)
 	}
 
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		return nil, fmt.Errorf("parse private key: %w", err)
+		return nil, fmt.Errorf("parse private ed25519 key: %w", err)
 	}
 
 	config := &ssh.ClientConfig{
