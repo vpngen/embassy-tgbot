@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -41,6 +42,8 @@ type grantPkg struct {
 	filename string
 	wgconf   []byte
 }
+
+var ErrBrigadeNotFound = errors.New("brigade not found")
 
 // SendBrigadierGrants - send grants messages.
 func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *grantPkg) error {
@@ -127,10 +130,60 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 	return nil
 }
 
+// SendRestoredBrigadierGrants - send grants messages.
+func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *grantPkg) error {
+	_, err := SendOpenMessage(bot, chatID, 0, RestoreTrackGrantMessage, ecode)
+	if err != nil {
+		return fmt.Errorf("send restore grant message: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	msg := fmt.Sprintf(MainTrackConfigFormatTextTemplate, string(opts.wgconf))
+	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+	if err != nil {
+		return fmt.Errorf("send text config: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	png, err := qrcode.Encode(string(opts.wgconf), qrcode.Low, 256)
+	if err != nil {
+		return fmt.Errorf("create qr: %w", err)
+	}
+
+	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: png})
+	photo.Caption = MainTrackConfigFormatQRCaption
+	photo.ParseMode = tgbotapi.ModeMarkdown
+
+	if _, err := bot.Request(photo); err != nil {
+		return fmt.Errorf("send qr config: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: opts.wgconf})
+	doc.Caption = MainTrackConfigFormatFileCaption
+	doc.ParseMode = tgbotapi.ModeMarkdown
+
+	if _, err := bot.Request(doc); err != nil {
+		return fmt.Errorf("send file config: %w", err)
+	}
+
+	time.Sleep(3 * time.Second)
+
+	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackConfigsMessage, opts.keydesk), ecode)
+	if err != nil {
+		return fmt.Errorf("send keydesk message: %w", err)
+	}
+
+	return nil
+}
+
 func callMinistry(dept DeptOpts) (*grantPkg, error) {
 	opts := &grantPkg{}
 
-	cmd := fmt.Sprintf("-ch %s", dept.token)
+	cmd := fmt.Sprintf("createbrigade -ch %s", dept.token)
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
 
@@ -226,6 +279,72 @@ func callMinistry(dept DeptOpts) (*grantPkg, error) {
 	return opts, nil
 }
 
+func callMinistryRestore(dept DeptOpts, name, words string) (*grantPkg, error) {
+	opts := &grantPkg{}
+
+	base64name := base64.StdEncoding.EncodeToString([]byte(name))
+	base64words := base64.StdEncoding.EncodeToString([]byte(words))
+
+	cmd := fmt.Sprintf("restorebrigadier -ch %s %s", base64name, base64words)
+
+	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
+
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", dept.controlIP), dept.sshConfig)
+	if err != nil {
+		return nil, fmt.Errorf("ssh dial: %w", err)
+	}
+	defer client.Close()
+
+	session, err := client.NewSession()
+	if err != nil {
+		return nil, fmt.Errorf("ssh session: %w", err)
+	}
+	defer session.Close()
+
+	var b, e bytes.Buffer
+
+	session.Stdout = &b
+	session.Stderr = &e
+
+	if err := session.Run(cmd); err != nil {
+		fmt.Fprintf(os.Stderr, "session errors:\n%s\n", e.String())
+
+		return nil, fmt.Errorf("ssh run: %w", err)
+	}
+
+	r := bufio.NewReader(httputil.NewChunkedReader(&b))
+
+	status, err := r.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("fullname read: %w", err)
+	}
+
+	if strings.Trim(status, "\r\n\t ") != "WGCONFIG" {
+		return nil, fmt.Errorf("status: %s: %w", status, ErrBrigadeNotFound)
+	}
+
+	keydesk, err := r.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("keydesk read: %w", err)
+	}
+
+	opts.keydesk = strings.Trim(keydesk, "\r\n\t ")
+
+	filename, err := r.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("filename read: %w", err)
+	}
+
+	opts.filename = strings.Trim(filename, "\r\n\t ")
+
+	opts.wgconf, err = io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("wgconf read: %w", err)
+	}
+
+	return opts, nil
+}
+
 // GetBrigadier - get brigadier name and config.
 func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts) error {
 	var (
@@ -249,6 +368,36 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 	time.Sleep(3 * time.Second)
 
 	err = SendBrigadierGrants(bot, chatID, ecode, opts)
+	if err != nil {
+		return fmt.Errorf("send grants: %w", err)
+	}
+
+	return nil
+}
+
+// RestoreBrigadier - restore brigadier  config.
+func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts, name, words string) error {
+	var (
+		opts *grantPkg
+		err  error
+	)
+
+	switch dept.fake {
+	case false:
+		opts, err = callMinistryRestore(dept, name, words)
+		if err != nil {
+			return fmt.Errorf("call ministry: %w", err)
+		}
+	case true:
+		opts, err = genGrants(dept)
+		if err != nil {
+			return fmt.Errorf("gen grants: %w", err)
+		}
+	}
+
+	time.Sleep(3 * time.Second)
+
+	err = SendRestoredBrigadierGrants(bot, chatID, ecode, opts)
 	if err != nil {
 		return fmt.Errorf("send grants: %w", err)
 	}

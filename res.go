@@ -9,7 +9,30 @@ import (
 const (
 
 	// Support additional
-	extraSupportText = "Если ты уверен(-а), что все сделал(-а) правильно - напиши пожалуйста в [поддержку](%s)."
+	extraSupportText      = "Если ты уверен(-а), что все сделал(-а) правильно - напиши пожалуйста в [поддержку](%s)."
+	extraSupportTextShort = "Или напиши в [поддержку](%s)."
+
+	RestoreTrackStartMessage = `Здесь восстанавливаются бригады. Мы сможем *восстановить твою бригаду* если у тебя потерян конфиг и тебе нужно восстановить контроль над бригадой. 
+
+Или
+	
+Мы сможем выдать тебе *новую бригаду* в случае, если мы удалили твою старую за нарушение условий использования. Новая бригада означает, что тебе придется раздавать конфиги пользователям заново.
+	
+В обоих случаях _обязательно знать  имя бригадира и шесть волшебных слов_. Поехали?
+`
+
+	RestoreTrackNameMessage  = `Чтобы восстановить свой конфиг, напиши пожалуйста имя бригадира. Оно выглядит как прилагательное и фамилия лауреата Нобелевской премии мира через пробел.`
+	RestoreTrackWordsMessage = `Супер, а теперь назови пожалуйста 6 волшебных слов.`
+
+	RestoreTrackInvalidNameMessage = `Это не похоже на имя, попробуй еще раз. Будь внимателен(-на), мы чувствительны к регистру (большим и маленьким буквам) и вообще за чистоту русского языка:). 
+
+Если ты не помнишь имя — возможно стоит начать сначала и идти за чеком.`
+
+	RestoreTrackBrigadeNotFoundMessage = `Сим-сим не открылся, с именем или словами что-то не так. Будь внимателен(-на), мы чувствительны к регистру (большим и маленьким буквам) и к порядку слов! 
+
+Если ты не помнишь имя и/или волшебные слова — возможно стоит начать сначала и идти за чеком.`
+
+	RestoreTrackGrantMessage = `Мы узнали тебя, держи свой конфиг!`
 
 	// MainTrackUnwellSecurityMessage - if autodelete not set.
 	MainTrackUnwellSecurityMessage = `Привет!
@@ -132,6 +155,18 @@ P.S. К сожалению, этот способ не будет работат
 )
 
 var (
+	// RestoreWordsKeyboard1 - restore keyboard for words warn.
+	RestoreWordsKeyboard1 tgbotapi.InlineKeyboardMarkup //nolint
+
+	// RestoreWordsKeyboard2 - restore keyboard for words warn.
+	RestoreWordsKeyboard2 tgbotapi.InlineKeyboardMarkup //nolint
+
+	// RestoreNameKeyboard - restore keyboard for name warn.
+	RestoreNameKeyboard tgbotapi.InlineKeyboardMarkup //nolint
+
+	// RestoreStartKeyboard - restore keyboard.
+	RestoreStartKeyboard tgbotapi.InlineKeyboardMarkup //nolint
+
 	// MainTrackFailMessage - something wrong during creation time.
 	MainTrackFailMessage string
 
@@ -140,6 +175,7 @@ var (
 
 	// WannabeKeyboard - wanna keyboard.
 	WannabeKeyboard tgbotapi.InlineKeyboardMarkup //nolint
+
 	// CheckBillKeyboard - check bill keyboard.
 	CheckBillKeyboard tgbotapi.InlineKeyboardMarkup //nolint
 
@@ -211,12 +247,53 @@ var (
 func SetSupportMessages(url, email string) {
 	link := tgbotapi.EscapeText(tgbotapi.ModeMarkdown, url)
 
+	RestoreWordsKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Попробовать ещё раз", "return"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
+			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
+		),
+	)
+
+	RestoreWordsKeyboard2 = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Попробовать ещё раз", "again"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
+			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
+		),
+	)
+
+	RestoreNameKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
+			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
+		),
+	)
+
+	RestoreStartKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Начать", "restore"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
+			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
+		),
+	)
+
 	WannabeKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Хочу свой VPN", "started"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Восстановить бригаду", "restore"),
+		),
 	)
+
 	MainTrackFailMessage = fmt.Sprintf(mainTrackFailMessage, link, email)
 	MainTrackQuizMessage = fmt.Sprintf(mainTrackQuizMessage, link)
 	FatalSomeThingWrong = fmt.Sprintf(fatalSomeThingWrong, link)
