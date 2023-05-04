@@ -204,9 +204,22 @@ func callMinistry(dept DeptOpts) (*grantPkg, error) {
 	session.Stdout = &b
 	session.Stderr = &e
 
-	if err := session.Run(cmd); err != nil {
-		fmt.Fprintf(os.Stderr, "session errors:\n%s\n", e.String())
+	LogTag := "tgembass"
+	defer func() {
+		fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr:\n", LogTag)
 
+		switch errstr := e.String(); errstr {
+		case "":
+			fmt.Fprintln(os.Stderr, " empty")
+		default:
+			fmt.Fprintln(os.Stderr)
+			for _, line := range strings.Split(errstr, "\n") {
+				fmt.Fprintf(os.Stderr, "%s:    | %s\n", LogTag, line)
+			}
+		}
+	}()
+
+	if err := session.Run(cmd); err != nil {
 		return nil, fmt.Errorf("ssh run: %w", err)
 	}
 
@@ -306,9 +319,22 @@ func callMinistryRestore(dept DeptOpts, name, words string) (*grantPkg, error) {
 	session.Stdout = &b
 	session.Stderr = &e
 
-	if err := session.Run(cmd); err != nil {
-		fmt.Fprintf(os.Stderr, "session errors:\n%s\n", e.String())
+	LogTag := "tgembass"
+	defer func() {
+		fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr:\n", LogTag)
 
+		switch errstr := e.String(); errstr {
+		case "":
+			fmt.Fprintln(os.Stderr, " empty")
+		default:
+			fmt.Fprintln(os.Stderr)
+			for _, line := range strings.Split(errstr, "\n") {
+				fmt.Fprintf(os.Stderr, "%s:    | %s\n", LogTag, line)
+			}
+		}
+	}()
+
+	if err := session.Run(cmd); err != nil {
 		return nil, fmt.Errorf("ssh run: %w", err)
 	}
 
@@ -316,8 +342,10 @@ func callMinistryRestore(dept DeptOpts, name, words string) (*grantPkg, error) {
 
 	status, err := r.ReadString('\n')
 	if err != nil {
-		return nil, fmt.Errorf("fullname read: %w", err)
+		return nil, fmt.Errorf("status read: %w", err)
 	}
+
+	fmt.Fprintf(os.Stderr, "%s: Returned status: %s\n", LogTag, status)
 
 	if strings.Trim(status, "\r\n\t ") != "WGCONFIG" {
 		return nil, fmt.Errorf("status: %s: %w", status, ErrBrigadeNotFound)
