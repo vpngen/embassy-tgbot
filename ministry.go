@@ -206,15 +206,13 @@ func callMinistry(dept DeptOpts) (*grantPkg, error) {
 
 	LogTag := "tgembass"
 	defer func() {
-		fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr:\n", LogTag)
-
 		switch errstr := e.String(); errstr {
 		case "":
-			fmt.Fprintln(os.Stderr, " empty")
+			fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr: empty\n", LogTag)
 		default:
-			fmt.Fprintln(os.Stderr)
+			fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr:\n", LogTag)
 			for _, line := range strings.Split(errstr, "\n") {
-				fmt.Fprintf(os.Stderr, "%s:    | %s\n", LogTag, line)
+				fmt.Fprintf(os.Stderr, "%s: | %s\n", LogTag, line)
 			}
 		}
 	}()
@@ -321,15 +319,13 @@ func callMinistryRestore(dept DeptOpts, name, words string) (*grantPkg, error) {
 
 	LogTag := "tgembass"
 	defer func() {
-		fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr:\n", LogTag)
-
 		switch errstr := e.String(); errstr {
 		case "":
-			fmt.Fprintln(os.Stderr, " empty")
+			fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr: empty\n", LogTag)
 		default:
-			fmt.Fprintln(os.Stderr)
+			fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr:\n", LogTag)
 			for _, line := range strings.Split(errstr, "\n") {
-				fmt.Fprintf(os.Stderr, "%s:    | %s\n", LogTag, line)
+				fmt.Fprintf(os.Stderr, "%s: | %s\n", LogTag, line)
 			}
 		}
 	}()
