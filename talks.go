@@ -49,8 +49,13 @@ type hOpts struct {
 
 func IsForbiddenError(err error) bool {
 	botErr := &tgbotapi.Error{}
-	if errors.As(err, botErr) && botErr.Code == 403 {
-		return true
+	if errors.As(err, botErr) {
+
+		fmt.Fprintf(os.Stderr, "**** tgbotapi error: %d: %s\n", botErr.Code, botErr.Message)
+
+		if botErr.Code == 403 {
+			return true
+		}
 	}
 
 	return false
