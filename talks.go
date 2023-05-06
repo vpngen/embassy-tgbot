@@ -48,14 +48,13 @@ type hOpts struct {
 }
 
 func IsForbiddenError(err error) bool {
-	fmt.Fprintf(os.Stderr, "**** error: %#v\n", err)
+	fmt.Fprintf(os.Stderr, "**** tg error: %#v\n", err)
 
-	botErr := &tgbotapi.Error{}
-	if errors.As(err, botErr) {
+	var tgErr tgbotapi.Error
+	if errors.As(err, &tgErr) {
+		fmt.Fprintf(os.Stderr, "#### tg error: %d: %s\n", tgErr.Code, tgErr.Message)
 
-		fmt.Fprintf(os.Stderr, "**** tgbotapi error: %d: %s\n", botErr.Code, botErr.Message)
-
-		if botErr.Code == 403 {
+		if tgErr.Code == 403 {
 			return true
 		}
 	}
