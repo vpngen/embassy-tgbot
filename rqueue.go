@@ -336,10 +336,10 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 				DeleteReceipt(db, key)
 				setSession(db, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
 
-				return false, fmt.Errorf("send message: %w", err)
+				return false, fmt.Errorf("send reject message x: %w", err)
 			}
 
-			return false, fmt.Errorf("send reject message: %w", err)
+			return false, fmt.Errorf("send reject message y: %w", err)
 		}
 
 		switch receipt.Reason {
