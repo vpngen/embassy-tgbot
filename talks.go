@@ -50,7 +50,7 @@ type hOpts struct {
 func IsForbiddenError(err error) bool {
 	fmt.Fprintf(os.Stderr, "**** tg error: %#v\n", err)
 
-	var tgErr tgbotapi.Error
+	tgErr := &tgbotapi.Error{}
 	if errors.As(err, &tgErr) {
 		fmt.Fprintf(os.Stderr, "#### tg error: %d: %s\n", tgErr.Code, tgErr.Message)
 
