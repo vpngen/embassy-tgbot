@@ -333,7 +333,7 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 		newMsg, err := SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode)
 		if err != nil {
 			fmt.Printf("***: %#v\n", err)
-			fmt.Printf("***: %#v\n", err.(tgbotapi.Error))
+			fmt.Printf("***: %#v\n", err.(*tgbotapi.Error))
 			if IsForbiddenError(err) {
 				DeleteReceipt(db, key)
 				setSession(db, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
