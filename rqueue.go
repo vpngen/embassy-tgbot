@@ -290,7 +290,17 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 	switch receipt.Accepted {
 	case true:
 		if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
-			SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode)
+			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode); err != nil {
+				botErr := &tgbotapi.Error{}
+				if errors.As(err, botErr) && botErr.Code == 403 {
+					DeleteReceipt(db, key)
+					setSession(db, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+
+					return false, fmt.Errorf("send message: %w", err)
+				}
+
+				return false, fmt.Errorf("send message: %w", err)
+			}
 		}
 
 		if err := DeleteReceipt(db, key); err != nil {
@@ -298,7 +308,16 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 		}
 
 		if err := GetBrigadier(bot, receipt.ChatID, ecode, dept); err != nil {
-			SendProtectedMessage(bot, receipt.ChatID, 0, MainTrackFailMessage, ecode)
+			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, MainTrackFailMessage, ecode); err != nil {
+				botErr := &tgbotapi.Error{}
+				if errors.As(err, botErr) && botErr.Code == 403 {
+					setSession(db, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+
+					return false, fmt.Errorf("send message: %w", err)
+				}
+
+				return false, fmt.Errorf("send fail message: %w", err)
+			}
 
 			return false, fmt.Errorf("creation: %w", err)
 		}
@@ -315,6 +334,13 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 		newMsg, err := SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode)
 		if err != nil {
+			botErr := &tgbotapi.Error{}
+			if errors.As(err, botErr) && botErr.Code == 403 {
+				DeleteReceipt(db, key)
+				setSession(db, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+
+				return false, fmt.Errorf("send message: %w", err)
+			}
 			return false, fmt.Errorf("send reject message: %w", err)
 		}
 

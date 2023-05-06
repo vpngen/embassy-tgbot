@@ -25,6 +25,7 @@ const (
 	SessionPayloadSomething
 	SessionPayloadBan
 	SessionPayloadSecondary
+	SessionBanOnBan // ban on ban
 )
 
 // Session - session.
