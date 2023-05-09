@@ -13,6 +13,8 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vpngen/embassy-tgbot/internal/kdlib"
@@ -399,6 +401,52 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 	return nil
 }
 
+func MyTitle(s string) string {
+	// Use a closure here to remember state.
+	// Hackish but effective. Depends on Map scanning in order and calling
+	// the closure once per rune.
+	prev := ' '
+	return strings.Map(
+		func(r rune) rune {
+			if r != ' ' && prev == ' ' || prev == '-' || prev == '_' || prev == '.' {
+				prev = r
+				return unicode.ToTitle(r)
+			}
+			prev = r
+			return r
+		},
+		s)
+}
+
+const maxEYoCombinations = 9
+
+func generateCombinations(s string, max int) []string {
+	return replaceEWithYo(s, 0, max)
+}
+
+func replaceEWithYo(s string, start, max int) []string {
+	if start >= len(s) || max <= 0 {
+		return []string{s}
+	}
+
+	r, size := utf8.DecodeRuneInString(s[start:])
+	if r == 'е' || r == 'ё' {
+		eStr := replaceRuneAt(s, start, size, "е")
+		yoStr := replaceRuneAt(s, start, size, "ё")
+
+		return append(
+			replaceEWithYo(eStr, start+size, (max-1)/2),
+			replaceEWithYo(yoStr, start+size, (max-1)/2)...,
+		)
+	} else {
+		return replaceEWithYo(s, start+size, max)
+	}
+}
+
+func replaceRuneAt(s string, index, size int, replacement string) string {
+	return s[:index] + replacement + s[index+size:]
+}
+
 // RestoreBrigadier - restore brigadier  config.
 func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts, name, words string) error {
 	var (
@@ -409,9 +457,41 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Dep
 	switch dept.fake {
 	case false:
 		opts, err = callMinistryRestore(dept, name, words)
+		if err == nil {
+			break
+		}
+
+		words = strings.Replace(strings.ToLower(words), "ё", "е", -1)
+
+		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
+
+		opts, err = callMinistryRestore(dept, name, words)
+		if err == nil {
+			break
+		}
+
+		name = MyTitle(strings.ToLower(name))
+
+		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
+
+		opts, err = callMinistryRestore(dept, name, words)
+		if err == nil {
+			break
+		}
+
+		for _, name := range generateCombinations(name, maxEYoCombinations) {
+			fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
+
+			opts, err = callMinistryRestore(dept, name, words)
+			if err == nil {
+				break
+			}
+		}
+
 		if err != nil {
 			return fmt.Errorf("call ministry: %w", err)
 		}
+
 	case true:
 		opts, err = genGrants(dept)
 		if err != nil {
