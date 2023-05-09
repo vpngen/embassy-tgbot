@@ -720,10 +720,10 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 
 	command := Message.Command()
 
-	if opts.debug == int(logs.LevelDebug) && command == "reset" {
+	if opts.debug == int(logs.LevelDebug) && command == "vpnregen" {
 		err := resetSession(opts.db, Message.Chat.ID)
 		if err != nil {
-			return fmt.Errorf("reset: %w", err)
+			return fmt.Errorf("vpnregen: %w", err)
 		}
 
 		if _, err := SendProtectedMessage(opts.bot, Message.Chat.ID, 0, MainTrackResetSuccessfull, ecode); err != nil {
