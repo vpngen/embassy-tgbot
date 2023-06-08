@@ -130,7 +130,7 @@ P.S. К сожалению, этот способ не будет работат
 	MainTrackResetSuccessfull = `Диалог сброшен`
 
 	// mainTrackFailMessage - something wrong during creation time.
-	mainTrackFailMessage = `Что-то сломалось. Попробуй ещё раз позже. Если не получится, напиши в наш бот поддержки: %s или на электропочту: %s.`
+	mainTrackFailMessage = `Что-то сломалось. Попробуй ещё раз отослать чек позже. Если не получится, напиши в наш бот поддержки: %s или на электропочту: %s.`
 
 	// InfoGroupsNotAllowedMessage - this bot is only private.
 	InfoGroupsNotAllowedMessage = `Извини, в групповых чатах я не общаюсь.`
