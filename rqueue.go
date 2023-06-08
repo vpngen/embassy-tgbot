@@ -307,6 +307,8 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 		}
 
 		if err := GetBrigadier(bot, receipt.ChatID, ecode, dept); err != nil {
+			setSession(db, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionPayloadSomething, nil)
+
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, MainTrackFailMessage, ecode); err != nil {
 				if IsForbiddenError(err) {
 					setSession(db, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
