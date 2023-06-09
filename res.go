@@ -142,7 +142,7 @@ P.S. К сожалению, этот способ не будет работат
 	InfoForbidForwardsMessage = `Извини, в целях твоей же безопасности пересылка отключена.`
 
 	// infoUnknownCommandMessage - unknown command.
-	infoUnknownCommandMessage = `Извини, но эта команда мне не знакома. ` + extraSupportText
+	infoUnknownCommandMessage = `Если ты забыл(-а) на каком ты этапе, нажми /repeat . Если хочешь с нами пообщаться, напиши в наш бот поддержки: %s или на электропочту: %s.`
 
 	// fatalSomeThingWrong - something wrong happened.
 	fatalSomeThingWrong = `Похоже что-то пошло не так. ` + extraSupportText
@@ -297,7 +297,7 @@ func SetSupportMessages(url, email string) {
 	MainTrackFailMessage = fmt.Sprintf(mainTrackFailMessage, link, email)
 	MainTrackQuizMessage = fmt.Sprintf(mainTrackQuizMessage, link)
 	FatalSomeThingWrong = fmt.Sprintf(fatalSomeThingWrong, link)
-	InfoUnknownCommandMessage = fmt.Sprintf(infoUnknownCommandMessage, link)
+	InfoUnknownCommandMessage = fmt.Sprintf(infoUnknownCommandMessage, link, email)
 	RejectMessage = fmt.Sprintf(rejectMessage, link)
 	MainTrackWarnRequiredPhoto = fmt.Sprintf(mainTrackWarnRequiredPhoto, link)
 	MainTrackWarnWaitForApprovement = fmt.Sprintf(mainTrackWarnWaitForApprovement, link)
