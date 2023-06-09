@@ -74,15 +74,14 @@ func PutReceipt2(dbase *badger.DB, receiptQID []byte) ([]byte, error) {
 		return nil, fmt.Errorf("update: %w", err)
 	}
 
-	//fmt.Printf("*** q2 id (q1 id): %x (%x)\n", key, receiptQID)
+	// fmt.Printf("*** q2 id (q1 id): %x (%x)\n", key, receiptQID)
 
 	return key, nil
 }
 
 // UpdateReceipt2 - .
 func UpdateReceipt2(dbase *badger.DB, id []byte, stage int, accept bool, reason int) error {
-
-	//fmt.Printf("*** update q2: %x stage=%d\n", id, stage)
+	// fmt.Printf("*** update q2: %x stage=%d\n", id, stage)
 
 	err := dbase.Update(func(txn *badger.Txn) error {
 		data, err := getReceipt2(txn, id)
@@ -154,7 +153,7 @@ func DeleteReceipt2(dbase *badger.DB, id []byte) error {
 func getReceipt2(txn *badger.Txn, id []byte) ([]byte, error) {
 	var data []byte
 
-	//fmt.Printf("*** get q2: %x\n", id)
+	// fmt.Printf("*** get q2: %x\n", id)
 
 	item, err := txn.Get(id)
 	if err != nil {
@@ -197,16 +196,16 @@ func qround2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 		return
 	}
 
-	//fmt.Printf("*** qround2 rcpt:%x %v\n", key, receipt)
+	// fmt.Printf("*** qround2 rcpt:%x %v\n", key, receipt)
 
 	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason); err != nil {
-		logs.Errf("update receipt2: %w", err)
+		logs.Errf("update receipt2: %s", err)
 
 		return
 	}
 
 	if err := DeleteReceipt2(db, key); err != nil {
-		logs.Errf("delete receipt2: %w", err)
+		logs.Errf("delete receipt2: %s", err)
 
 		return
 	}

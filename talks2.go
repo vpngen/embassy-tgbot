@@ -66,7 +66,7 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 			return
 		}
 
-		//ResetReceipt2(opts.db, key)
+		// ResetReceipt2(opts.db, key)
 
 		if err := saveDecision(opts.bot, *update.CallbackQuery, reason, decisionAdminAccept, ecode); err != nil {
 			logs.Errf("[!:%s] repost photo: %s\n", ecode, err)
@@ -88,7 +88,7 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 			return
 		}
 
-		logs.Debugf("[!:%s]reject receipt: %s: %s: %s\n", ecode, id, reasonString, reason)
+		logs.Debugf("[!:%s]reject receipt: %s: %s: %s\n", ecode, id, reasonString, reasonString)
 		fmt.Sscanf(id, "%x", &key)
 
 		err = UpdateReceipt2(opts.db, key, CkReceiptStageDecision2, false, reason)
@@ -98,7 +98,7 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 			return
 		}
 
-		//ResetReceipt2(opts.db, key)
+		// ResetReceipt2(opts.db, key)
 
 		if err := saveDecision(opts.bot, *update.CallbackQuery, reason, decisionAdminReject, ecode); err != nil {
 			logs.Errf("[!:%s] repost photo: %s\n", ecode, err)
@@ -143,7 +143,6 @@ func saveDecision(bot *tgbotapi.BotAPI, cbq tgbotapi.CallbackQuery, reason int, 
 
 		if cbq.From.UserName != "" {
 			photo.Caption += " (@" + tgbotapi.EscapeText(tgbotapi.ModeMarkdown, cbq.From.UserName) + ")"
-
 		}
 
 		if _, err := bot.Request(photo); err != nil {
