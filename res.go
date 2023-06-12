@@ -130,7 +130,7 @@ P.S. К сожалению, этот способ не будет работат
 	MainTrackResetSuccessfull = `Диалог сброшен`
 
 	// mainTrackFailMessage - something wrong during creation time.
-	mainTrackFailMessage = `Что-то сломалось. Попробуй ещё раз отослать чек позже. Если не получится, напиши в наш бот поддержки: %s или на электропочту: %s.`
+	mainTrackFailMessage = `Что-то сломалось. Попробуй ещё раз отослать чек позже. ` + extraSupportText
 
 	// InfoGroupsNotAllowedMessage - this bot is only private.
 	InfoGroupsNotAllowedMessage = `Извини, в групповых чатах я не общаюсь.`
@@ -142,7 +142,7 @@ P.S. К сожалению, этот способ не будет работат
 	InfoForbidForwardsMessage = `Извини, в целях твоей же безопасности пересылка отключена.`
 
 	// infoUnknownCommandMessage - unknown command.
-	infoUnknownCommandMessage = `Если ты забыл(-а) на каком ты этапе, нажми /repeat . Если хочешь с нами пообщаться, напиши в наш бот поддержки: %s или на электропочту: %s.`
+	infoUnknownCommandMessage = `Если ты забыл(-а) на каком ты этапе, нажми /repeat . ` + extraSupportText
 
 	// fatalSomeThingWrong - something wrong happened.
 	fatalSomeThingWrong = `Похоже что-то пошло не так. ` + extraSupportText
@@ -244,7 +244,7 @@ var (
 )
 
 // SetSupportMessages - set wanna keyboard.
-func SetSupportMessages(url, email string) {
+func SetSupportMessages(url string) {
 	link := tgbotapi.EscapeText(tgbotapi.ModeMarkdown, url)
 
 	RestoreWordsKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
@@ -294,10 +294,10 @@ func SetSupportMessages(url, email string) {
 		),
 	)
 
-	MainTrackFailMessage = fmt.Sprintf(mainTrackFailMessage, link, email)
+	MainTrackFailMessage = fmt.Sprintf(mainTrackFailMessage, link)
 	MainTrackQuizMessage = fmt.Sprintf(mainTrackQuizMessage, link)
 	FatalSomeThingWrong = fmt.Sprintf(fatalSomeThingWrong, link)
-	InfoUnknownCommandMessage = fmt.Sprintf(infoUnknownCommandMessage, link, email)
+	InfoUnknownCommandMessage = fmt.Sprintf(infoUnknownCommandMessage, link)
 	RejectMessage = fmt.Sprintf(rejectMessage, link)
 	MainTrackWarnRequiredPhoto = fmt.Sprintf(mainTrackWarnRequiredPhoto, link)
 	MainTrackWarnWaitForApprovement = fmt.Sprintf(mainTrackWarnWaitForApprovement, link)
