@@ -224,7 +224,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 	case update.CallbackQuery.Data == "started" && session.Stage == stageMainTrackWaitForWanting:
 		if err := sendQuizMessage(opts, update.CallbackQuery.Message.Chat.ID, ecode); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+				setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
 
 				return
 			}
@@ -243,7 +243,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 		err := sendWelcomeMessage(opts, update.CallbackQuery.Message.Chat.ID)
 		if err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+				setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
 
 				return
 			}
@@ -253,7 +253,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 	case update.CallbackQuery.Data == "restore" && session.Stage == stageRestoreTrackStart:
 		if err := sendRestoreNameMessage(opts, update.CallbackQuery.Message.Chat.ID, ecode, session.State); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+				setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
 
 				return
 			}
@@ -287,7 +287,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 
 		if err := sendRestoreNameMessage(opts, update.CallbackQuery.Message.Chat.ID, ecode, session.State); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+				setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
 
 				return
 			}
@@ -299,7 +299,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 			_, err := SendProtectedMessage(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, MainTrackWarnConversationsFinished, ecode)
 			if err != nil {
 				if IsForbiddenError(err) {
-					setSession(opts.db, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+					setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
 
 					return
 				}
@@ -310,7 +310,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 
 		if err := sendWelcomeMessage(opts, update.CallbackQuery.Message.Chat.ID); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+				setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
 
 				return
 			}
@@ -337,7 +337,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 			_, err := SendProtectedMessage(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, MainTrackWarnConversationsFinished, ecode)
 			if err != nil {
 				if IsForbiddenError(err) {
-					setSession(opts.db, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+					setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
 
 					return
 				}
@@ -350,7 +350,7 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 
 		if err := sendRestoreStartMessage(opts, update.CallbackQuery.Message.Chat.ID, prev); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+				setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
 
 				return
 			}
