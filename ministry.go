@@ -179,6 +179,36 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
+	time.Sleep(2 * time.Second)
+
+	domain := "[выдаваемый домен]"
+	lines := strings.Split(string(opts.wgconf), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Endpoint") {
+			_, d, _ := strings.Cut(line, "=")
+			d = strings.Trim(d, " \r\n\t")
+			d, _, _ = strings.Cut(d, ":")
+			if d != "" {
+				domain = d
+			}
+		}
+	}
+
+	hint := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Bytes: RestoreTrackImgVgbs})
+	hint.Caption = fmt.Sprintf(RestoreTracIP2DomainHintsMessage, domain)
+	hint.ParseMode = tgbotapi.ModeMarkdown
+
+	if _, err := bot.Request(hint); err != nil {
+		return fmt.Errorf("send hint: %w", err)
+	}
+
+	/*if _, err := netip.ParseAddr(domain); err == nil {
+		_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(RestoreTracIP2DomainHintsMessage, domain), ecode)
+		if err != nil {
+			return fmt.Errorf("send hints message: %w", err)
+		}
+	}*/
+
 	return nil
 }
 
