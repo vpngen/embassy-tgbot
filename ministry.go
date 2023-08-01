@@ -194,6 +194,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		}
 	}
 
+	// only if domain
 	if _, err := netip.ParseAddr(domain); err != nil {
 		hint := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Bytes: RestoreTrackImgVgbs})
 		hint.Caption = fmt.Sprintf(RestoreTracIP2DomainHintsMessage, domain)
