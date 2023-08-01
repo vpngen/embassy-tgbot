@@ -194,20 +194,15 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		}
 	}
 
-	hint := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Bytes: RestoreTrackImgVgbs})
-	hint.Caption = fmt.Sprintf(RestoreTracIP2DomainHintsMessage, domain)
-	hint.ParseMode = tgbotapi.ModeMarkdown
+	if _, err := netip.ParseAddr(domain); err == nil {
+		hint := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Bytes: RestoreTrackImgVgbs})
+		hint.Caption = fmt.Sprintf(RestoreTracIP2DomainHintsMessage, domain)
+		hint.ParseMode = tgbotapi.ModeMarkdown
 
-	if _, err := bot.Request(hint); err != nil {
-		return fmt.Errorf("send hint: %w", err)
-	}
-
-	/*if _, err := netip.ParseAddr(domain); err == nil {
-		_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(RestoreTracIP2DomainHintsMessage, domain), ecode)
-		if err != nil {
-			return fmt.Errorf("send hints message: %w", err)
+		if _, err := bot.Request(hint); err != nil {
+			return fmt.Errorf("send hint: %w", err)
 		}
-	}*/
+	}
 
 	return nil
 }
