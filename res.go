@@ -3,13 +3,18 @@ package main
 import (
 	"fmt"
 
+	_ "embed"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
+//go:embed vgbs.png
+var RestoreTrackImgVgbs []byte
 
 const (
 
 	// Support additional
-	extraSupportText      = "Если ты уверен(-а), что все сделал(-а) правильно - напиши пожалуйста в [поддержку](%s)."
+	extraSupportText      = "Если ты уверен(-а), что все сделал(-а) правильно — напиши пожалуйста в [поддержку](%s)."
 	extraSupportTextShort = "Или напиши в [поддержку](%s)."
 
 	RestoreTrackStartMessage = `Здесь восстанавливаются бригады. Мы сможем *восстановить твою бригаду* если у тебя потерян конфиг и тебе нужно восстановить контроль над бригадой. 
@@ -33,6 +38,11 @@ const (
 Если ты не помнишь имя и/или волшебные слова — возможно стоит начать сначала и идти за чеком.`
 
 	RestoreTrackGrantMessage = `Мы узнали тебя, держи свой конфиг!`
+
+	RestoreTracIP2DomainHintsMessage = `У тебя есть 2 способа восстановить конфиги членов своей бригады:
+
+• Выпустить всем членам бригады новые конфиги (подойдет для небольших бригад)
+• Попросить членов бригады заменить в последней строчку строчке конфигурации WireGuard _Endpoint_ IP-адрес (набор чисел, разделенных точками, например ` + "`185.135.141.11`" + `) на ` + "`%s`" + `. И все заработает!`
 
 	// MainTrackUnwellSecurityMessage - if autodelete not set.
 	MainTrackUnwellSecurityMessage = `Привет!
@@ -77,7 +87,7 @@ _Если у тебя есть вопросы, почему твой чек от
 	mainTrackWarnRequiredPhoto = `Похоже ты забыл прикрепить фотографию чека. Попробуй ещё раз. Если ты не помнишь условий, используй команду /repeat . ` + extraSupportText
 
 	// mainTrackWarnWaitForApprovement
-	mainTrackWarnWaitForApprovement = `Ожидай подтверждения чека. Это может занять какое-то время. Если у тебя остались вопросы - напиши пожалуйста в [поддержку](%s).`
+	mainTrackWarnWaitForApprovement = `Ожидай подтверждения чека. Это может занять какое-то время. Если у тебя остались вопросы — напиши пожалуйста в [поддержку](%s).`
 
 	// MainTrackGrantMessage - grant message.
 	MainTrackGrantMessage = "Поздравляю! Ты — бригадир! Вот полная [инструкция пользования](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/) сервисом.\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
@@ -86,13 +96,21 @@ _Если у тебя есть вопросы, почему твой чек от
 	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n%s\n\n"
 
 	// MainTrackConfigFormatFileCaption - config file caption.
-	MainTrackConfigFormatFileCaption = "Твоя *личная* конфигурация файлом"
+	MainTrackConfigFormatFileCaption = "Твоя *личная* конфигурация Wireguard файлом"
+	// MainTrackAmneziaOvcConfigFormatFileCaption - config file caption.
+	MainTrackAmneziaOvcConfigFormatFileCaption = "Твоя *личная* конфигурация Amnezia файлом"
 
 	// MainTrackConfigFormatTextTemplate - config text template.
-	MainTrackConfigFormatTextTemplate = "Твоя *личная* конфигурация текстом:\n```\n%s```"
+	MainTrackConfigFormatTextTemplate = "Твоя *личная* конфигурация Wireguard текстом:\n```\n%s```"
+
+	// MainTrackOutlineAccessKeyTemplate - config text template.
+	MainTrackOutlineAccessKeyTemplate = "Твой *личный* ключ Outline:\n`%s`"
+
+	// MainTrackIPSecL2TPManualConfigTemplate - config text template.
+	MainTrackIPSecL2TPManualConfigTemplate = "Твоя *личная* конфигурация IPSec/L2TP:\nPreshared Key: `%s`\nUsername: `%s`\nPassword: `%s`\nServer: `%s`"
 
 	// MainTrackConfigFormatQRCaption - qr-config caption.
-	MainTrackConfigFormatQRCaption = "Твоя *личная* конфигурация QR-кодом"
+	MainTrackConfigFormatQRCaption = "Твоя *личная* конфигурация Wireguard QR-кодом"
 
 	// MainTrackSeedDescMessage - you are brigadier.
 	MainTrackSeedDescMessage = `Последний, но важный шаг. У меня есть для тебя 6 слов — их я дам. Их нужно где-то хранить — места для хранения я не дам. Эти слова + имя — *единственный способ* восстановить доступ к твоему VPN.
