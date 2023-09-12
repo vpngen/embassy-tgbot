@@ -97,9 +97,17 @@ _Если у тебя есть вопросы, почему твой чек от
 
 	// MainTrackConfigFormatFileCaption - config file caption.
 	MainTrackConfigFormatFileCaption = "Твоя *личная* конфигурация файлом"
+	// MainTrackAmneziaOvcConfigFormatFileCaption - config file caption.
+	MainTrackAmneziaOvcConfigFormatFileCaption = "Твоя *личная* конфигурация Amnezia файлом"
 
 	// MainTrackConfigFormatTextTemplate - config text template.
-	MainTrackConfigFormatTextTemplate = "Твоя *личная* конфигурация текстом:\n```\n%s```"
+	MainTrackConfigFormatTextTemplate = "Твоя *личная* конфигурация Wireguard текстом:\n```\n%s```"
+
+	// MainTrackOutlineAccessKeyTemplate - config text template.
+	MainTrackOutlineAccessKeyTemplate = "Твой *личный* ключ Outline:\n`%s`"
+
+	// MainTrackIPSecL2TPManualConfigTemplate - config text template.
+	MainTrackIPSecL2TPManualConfigTemplate = "Твоя *личная* конфигурация IPSec/L2TP:\nPreshared Key: `%s`\nUsername: `%s`\nPassword: `%s`\nServer: `%s`"
 
 	// MainTrackConfigFormatQRCaption - qr-config caption.
 	MainTrackConfigFormatQRCaption = "Твоя *личная* конфигурация QR-кодом"
