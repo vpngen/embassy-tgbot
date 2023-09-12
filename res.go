@@ -96,7 +96,7 @@ _Если у тебя есть вопросы, почему твой чек от
 	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n%s\n\n"
 
 	// MainTrackConfigFormatFileCaption - config file caption.
-	MainTrackConfigFormatFileCaption = "Твоя *личная* конфигурация файлом"
+	MainTrackConfigFormatFileCaption = "Твоя *личная* конфигурация Wireguard файлом"
 	// MainTrackAmneziaOvcConfigFormatFileCaption - config file caption.
 	MainTrackAmneziaOvcConfigFormatFileCaption = "Твоя *личная* конфигурация Amnezia файлом"
 
@@ -110,7 +110,7 @@ _Если у тебя есть вопросы, почему твой чек от
 	MainTrackIPSecL2TPManualConfigTemplate = "Твоя *личная* конфигурация IPSec/L2TP:\nPreshared Key: `%s`\nUsername: `%s`\nPassword: `%s`\nServer: `%s`"
 
 	// MainTrackConfigFormatQRCaption - qr-config caption.
-	MainTrackConfigFormatQRCaption = "Твоя *личная* конфигурация QR-кодом"
+	MainTrackConfigFormatQRCaption = "Твоя *личная* конфигурация Wireguard QR-кодом"
 
 	// MainTrackSeedDescMessage - you are brigadier.
 	MainTrackSeedDescMessage = `Последний, но важный шаг. У меня есть для тебя 6 слов — их я дам. Их нужно где-то хранить — места для хранения я не дам. Эти слова + имя — *единственный способ* восстановить доступ к твоему VPN.

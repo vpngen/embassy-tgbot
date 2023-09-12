@@ -87,7 +87,8 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(3 * time.Second)
 
-	if opts.Configs.WireguardConfig.FileContent != nil &&
+	if opts.Configs.WireguardConfig != nil &&
+		opts.Configs.WireguardConfig.FileContent != nil &&
 		opts.Configs.WireguardConfig.FileName != nil &&
 		opts.Configs.WireguardConfig.TonnelName != nil {
 		msg = fmt.Sprintf(MainTrackConfigFormatTextTemplate, *opts.Configs.WireguardConfig.FileContent)
@@ -129,7 +130,8 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
-	if opts.Configs.AmnzOvcConfig.FileContent != nil &&
+	if opts.Configs.AmnzOvcConfig != nil &&
+		opts.Configs.AmnzOvcConfig.FileContent != nil &&
 		opts.Configs.AmnzOvcConfig.FileName != nil {
 		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
 		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
@@ -142,7 +144,8 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		time.Sleep(3 * time.Second)
 	}
 
-	if opts.Configs.IPSecL2TPManualConfig.PSK != nil &&
+	if opts.Configs.IPSecL2TPManualConfig != nil &&
+		opts.Configs.IPSecL2TPManualConfig.PSK != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Username != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Password != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Server != nil {
@@ -158,7 +161,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		}
 	}
 
-	if opts.Configs.OutlineConfig.AccessKey != nil {
+	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
 		msg = fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
 		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
 		if err != nil {
@@ -187,7 +190,8 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 
 	time.Sleep(2 * time.Second)
 
-	if opts.Configs.WireguardConfig.FileContent != nil &&
+	if opts.Configs.WireguardConfig != nil &&
+		opts.Configs.WireguardConfig.FileContent != nil &&
 		opts.Configs.WireguardConfig.FileName != nil &&
 		opts.Configs.WireguardConfig.TonnelName != nil {
 		msg := fmt.Sprintf(MainTrackConfigFormatTextTemplate, *opts.Configs.WireguardConfig.FileContent)
@@ -255,7 +259,8 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		}
 	}
 
-	if opts.Configs.AmnzOvcConfig.FileContent != nil &&
+	if opts.Configs.AmnzOvcConfig != nil &&
+		opts.Configs.AmnzOvcConfig.FileContent != nil &&
 		opts.Configs.AmnzOvcConfig.FileName != nil {
 		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
 		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
@@ -268,7 +273,8 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		time.Sleep(3 * time.Second)
 	}
 
-	if opts.Configs.IPSecL2TPManualConfig.PSK != nil &&
+	if opts.Configs.IPSecL2TPManualConfig != nil &&
+		opts.Configs.IPSecL2TPManualConfig.PSK != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Username != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Password != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Server != nil {
@@ -284,7 +290,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		}
 	}
 
-	if opts.Configs.OutlineConfig.AccessKey != nil {
+	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
 		msg := fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
 		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
 		if err != nil {
@@ -350,7 +356,8 @@ func callMinistry(dept DeptOpts) (*ministry.Answer, error) {
 		return nil, fmt.Errorf("json unmarshal: %w", err)
 	}
 
-	if wgconf.Configs.WireguardConfig.FileContent == nil ||
+	if wgconf.Configs.WireguardConfig == nil ||
+		wgconf.Configs.WireguardConfig.FileContent == nil ||
 		wgconf.Configs.WireguardConfig.FileName == nil ||
 		wgconf.Configs.WireguardConfig.TonnelName == nil {
 		return nil, fmt.Errorf("wgconf read: %w", err)
@@ -479,7 +486,8 @@ func callMinistryRestore(dept DeptOpts, name, words string) (*ministry.Answer, e
 		return nil, fmt.Errorf("json unmarshal: %w", err)
 	}
 
-	if wgconf.Configs.WireguardConfig.FileContent == nil ||
+	if wgconf.Configs.WireguardConfig == nil ||
+		wgconf.Configs.WireguardConfig.FileContent == nil ||
 		wgconf.Configs.WireguardConfig.FileName == nil ||
 		wgconf.Configs.WireguardConfig.TonnelName == nil {
 		return nil, fmt.Errorf("wgconf read: %w", err)
