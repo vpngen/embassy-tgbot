@@ -234,7 +234,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 
 		time.Sleep(2 * time.Second)
 
-		domain := "[выдаваемый домен]"
+		/*domain := "[выдаваемый домен]"
 		lines := strings.Split(*opts.Configs.WireguardConfig.FileContent, "\n")
 		for _, line := range lines {
 			if strings.Contains(line, "Endpoint") {
@@ -256,7 +256,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 			if _, err := bot.Request(hint); err != nil {
 				return fmt.Errorf("send hint: %w", err)
 			}
-		}
+		}*/
 	}
 
 	if opts.Configs.AmnzOvcConfig != nil &&
