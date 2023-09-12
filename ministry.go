@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -23,6 +24,8 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
+	"github.com/vpngen/ministry"
+
 	qrcode "github.com/skip2/go-qrcode"
 )
 
@@ -34,7 +37,7 @@ const (
 	fakeULA           = "fd00::/8"
 )
 
-type grantPkg struct {
+/*type grantPkg struct {
 	fullname string
 	person   string
 	desc     string
@@ -43,13 +46,13 @@ type grantPkg struct {
 	keydesk  string
 	filename string
 	wgconf   []byte
-}
+}*/
 
 var ErrBrigadeNotFound = errors.New("brigade not found")
 
 // SendBrigadierGrants - send grants messages.
-func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *grantPkg) error {
-	msg := fmt.Sprintf(MainTrackGrantMessage, opts.fullname)
+func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *ministry.Answer) error {
+	msg := fmt.Sprintf(MainTrackGrantMessage, opts.Name)
 	_, err := SendOpenMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send grant message: %w", err)
@@ -58,9 +61,9 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 	time.Sleep(2 * time.Second)
 
 	msg = fmt.Sprintf(MainTrackPersonDescriptionMessage,
-		strings.Trim(opts.person, " \r\n\t"),
-		strings.Trim(string(opts.desc), " \r\n\t"),
-		tgbotapi.EscapeText(tgbotapi.ModeMarkdown, strings.Trim(string(opts.wiki), " \r\n\t")),
+		strings.Trim(opts.Person.Name, " \r\n\t"),
+		strings.Trim(string(opts.Person.Desc), " \r\n\t"),
+		tgbotapi.EscapeText(tgbotapi.ModeMarkdown, strings.Trim(string(opts.Person.URL), " \r\n\t")),
 	)
 	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
@@ -76,7 +79,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(2 * time.Second)
 
-	msg = fmt.Sprintf(MainTrackWordsMessage, strings.Trim(opts.mnemo, " \r\n\t"))
+	msg = fmt.Sprintf(MainTrackWordsMessage, strings.Trim(opts.Mnemo, " \r\n\t"))
 	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send words message: %w", err)
@@ -84,42 +87,88 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(3 * time.Second)
 
-	msg = fmt.Sprintf(MainTrackConfigFormatTextTemplate, string(opts.wgconf))
-	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
-	if err != nil {
-		return fmt.Errorf("send text config: %w", err)
+	if opts.Configs.WireguardConfig != nil &&
+		opts.Configs.WireguardConfig.FileContent != nil &&
+		opts.Configs.WireguardConfig.FileName != nil &&
+		opts.Configs.WireguardConfig.TonnelName != nil {
+		msg = fmt.Sprintf(MainTrackConfigFormatTextTemplate, *opts.Configs.WireguardConfig.FileContent)
+		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		if err != nil {
+			return fmt.Errorf("send text config: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
+
+		png, err := qrcode.Encode(*opts.Configs.WireguardConfig.FileContent, qrcode.Low, 256)
+		if err != nil {
+			return fmt.Errorf("create qr: %w", err)
+		}
+
+		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Name: *opts.Configs.WireguardConfig.FileName, Bytes: png})
+		photo.Caption = MainTrackConfigFormatQRCaption
+		photo.ParseMode = tgbotapi.ModeMarkdown
+
+		if _, err := bot.Request(photo); err != nil {
+			return fmt.Errorf("send qr config: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
+
+		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.WireguardConfig.FileName, Bytes: []byte(*opts.Configs.WireguardConfig.FileContent)})
+		doc.Caption = MainTrackConfigFormatFileCaption
+		doc.ParseMode = tgbotapi.ModeMarkdown
+
+		if _, err := bot.Request(doc); err != nil {
+			return fmt.Errorf("send file config: %w", err)
+		}
+
+		time.Sleep(3 * time.Second)
 	}
 
-	time.Sleep(2 * time.Second)
-
-	png, err := qrcode.Encode(string(opts.wgconf), qrcode.Low, 256)
-	if err != nil {
-		return fmt.Errorf("create qr: %w", err)
-	}
-
-	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: png})
-	photo.Caption = MainTrackConfigFormatQRCaption
-	photo.ParseMode = tgbotapi.ModeMarkdown
-
-	if _, err := bot.Request(photo); err != nil {
-		return fmt.Errorf("send qr config: %w", err)
-	}
-
-	time.Sleep(2 * time.Second)
-
-	doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: opts.wgconf})
-	doc.Caption = MainTrackConfigFormatFileCaption
-	doc.ParseMode = tgbotapi.ModeMarkdown
-
-	if _, err := bot.Request(doc); err != nil {
-		return fmt.Errorf("send file config: %w", err)
-	}
-
-	time.Sleep(3 * time.Second)
-
-	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackConfigsMessage, opts.keydesk), ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackConfigsMessage, opts.KeydeskIPv6), ecode)
 	if err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
+	}
+
+	if opts.Configs.AmnzOvcConfig != nil &&
+		opts.Configs.AmnzOvcConfig.FileContent != nil &&
+		opts.Configs.AmnzOvcConfig.FileName != nil {
+		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
+		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
+		doc.ParseMode = tgbotapi.ModeMarkdown
+
+		if _, err := bot.Request(doc); err != nil {
+			return fmt.Errorf("send amnezia file config: %w", err)
+		}
+
+		time.Sleep(3 * time.Second)
+	}
+
+	if opts.Configs.IPSecL2TPManualConfig != nil &&
+		opts.Configs.IPSecL2TPManualConfig.PSK != nil &&
+		opts.Configs.IPSecL2TPManualConfig.Username != nil &&
+		opts.Configs.IPSecL2TPManualConfig.Password != nil &&
+		opts.Configs.IPSecL2TPManualConfig.Server != nil {
+		msg = fmt.Sprintf(MainTrackIPSecL2TPManualConfigTemplate,
+			*opts.Configs.IPSecL2TPManualConfig.PSK,
+			*opts.Configs.IPSecL2TPManualConfig.Username,
+			*opts.Configs.IPSecL2TPManualConfig.Password,
+			*opts.Configs.IPSecL2TPManualConfig.Server,
+		)
+		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		if err != nil {
+			return fmt.Errorf("send ipsec l2tp manual config: %w", err)
+		}
+	}
+
+	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
+		msg = fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
+		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		if err != nil {
+			return fmt.Errorf("send outline config: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
 	}
 
 	//	time.Sleep(2 * time.Second)
@@ -133,7 +182,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 }
 
 // SendRestoredBrigadierGrants - send grants messages.
-func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *grantPkg) error {
+func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *ministry.Answer) error {
 	_, err := SendOpenMessage(bot, chatID, 0, RestoreTrackGrantMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send restore grant message: %w", err)
@@ -141,77 +190,123 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 
 	time.Sleep(2 * time.Second)
 
-	msg := fmt.Sprintf(MainTrackConfigFormatTextTemplate, string(opts.wgconf))
-	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
-	if err != nil {
-		return fmt.Errorf("send text config: %w", err)
-	}
+	if opts.Configs.WireguardConfig != nil &&
+		opts.Configs.WireguardConfig.FileContent != nil &&
+		opts.Configs.WireguardConfig.FileName != nil &&
+		opts.Configs.WireguardConfig.TonnelName != nil {
+		msg := fmt.Sprintf(MainTrackConfigFormatTextTemplate, *opts.Configs.WireguardConfig.FileContent)
+		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		if err != nil {
+			return fmt.Errorf("send text config: %w", err)
+		}
 
-	time.Sleep(2 * time.Second)
+		time.Sleep(2 * time.Second)
 
-	png, err := qrcode.Encode(string(opts.wgconf), qrcode.Low, 256)
-	if err != nil {
-		return fmt.Errorf("create qr: %w", err)
-	}
+		png, err := qrcode.Encode(*opts.Configs.WireguardConfig.FileContent, qrcode.Low, 256)
+		if err != nil {
+			return fmt.Errorf("create qr: %w", err)
+		}
 
-	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: png})
-	photo.Caption = MainTrackConfigFormatQRCaption
-	photo.ParseMode = tgbotapi.ModeMarkdown
+		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Name: *opts.Configs.WireguardConfig.FileName, Bytes: png})
+		photo.Caption = MainTrackConfigFormatQRCaption
+		photo.ParseMode = tgbotapi.ModeMarkdown
 
-	if _, err := bot.Request(photo); err != nil {
-		return fmt.Errorf("send qr config: %w", err)
-	}
+		if _, err := bot.Request(photo); err != nil {
+			return fmt.Errorf("send qr config: %w", err)
+		}
 
-	time.Sleep(2 * time.Second)
+		time.Sleep(2 * time.Second)
 
-	doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: opts.filename, Bytes: opts.wgconf})
-	doc.Caption = MainTrackConfigFormatFileCaption
-	doc.ParseMode = tgbotapi.ModeMarkdown
+		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.WireguardConfig.FileName, Bytes: []byte(*opts.Configs.WireguardConfig.FileContent)})
+		doc.Caption = MainTrackConfigFormatFileCaption
+		doc.ParseMode = tgbotapi.ModeMarkdown
 
-	if _, err := bot.Request(doc); err != nil {
-		return fmt.Errorf("send file config: %w", err)
-	}
+		if _, err := bot.Request(doc); err != nil {
+			return fmt.Errorf("send file config: %w", err)
+		}
 
-	time.Sleep(3 * time.Second)
+		time.Sleep(3 * time.Second)
 
-	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackConfigsMessage, opts.keydesk), ecode)
-	if err != nil {
-		return fmt.Errorf("send keydesk message: %w", err)
-	}
+		_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackConfigsMessage, opts.KeydeskIPv6), ecode)
+		if err != nil {
+			return fmt.Errorf("send keydesk message: %w", err)
+		}
 
-	time.Sleep(2 * time.Second)
+		time.Sleep(2 * time.Second)
 
-	domain := "[выдаваемый домен]"
-	lines := strings.Split(string(opts.wgconf), "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "Endpoint") {
-			_, d, _ := strings.Cut(line, "=")
-			d = strings.Trim(d, " \r\n\t")
-			d, _, _ = strings.Cut(d, ":")
-			if d != "" {
-				domain = d
+		/*domain := "[выдаваемый домен]"
+		lines := strings.Split(*opts.Configs.WireguardConfig.FileContent, "\n")
+		for _, line := range lines {
+			if strings.Contains(line, "Endpoint") {
+				_, d, _ := strings.Cut(line, "=")
+				d = strings.Trim(d, " \r\n\t")
+				d, _, _ = strings.Cut(d, ":")
+				if d != "" {
+					domain = d
+				}
 			}
 		}
+
+		// only if domain
+		if _, err := netip.ParseAddr(domain); err != nil {
+			hint := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Bytes: RestoreTrackImgVgbs})
+			hint.Caption = fmt.Sprintf(RestoreTracIP2DomainHintsMessage, domain)
+			hint.ParseMode = tgbotapi.ModeMarkdown
+
+			if _, err := bot.Request(hint); err != nil {
+				return fmt.Errorf("send hint: %w", err)
+			}
+		}*/
 	}
 
-	// only if domain
-	if _, err := netip.ParseAddr(domain); err != nil {
-		hint := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{Bytes: RestoreTrackImgVgbs})
-		hint.Caption = fmt.Sprintf(RestoreTracIP2DomainHintsMessage, domain)
-		hint.ParseMode = tgbotapi.ModeMarkdown
+	if opts.Configs.AmnzOvcConfig != nil &&
+		opts.Configs.AmnzOvcConfig.FileContent != nil &&
+		opts.Configs.AmnzOvcConfig.FileName != nil {
+		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
+		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
+		doc.ParseMode = tgbotapi.ModeMarkdown
 
-		if _, err := bot.Request(hint); err != nil {
-			return fmt.Errorf("send hint: %w", err)
+		if _, err := bot.Request(doc); err != nil {
+			return fmt.Errorf("send file config: %w", err)
 		}
+
+		time.Sleep(3 * time.Second)
+	}
+
+	if opts.Configs.IPSecL2TPManualConfig != nil &&
+		opts.Configs.IPSecL2TPManualConfig.PSK != nil &&
+		opts.Configs.IPSecL2TPManualConfig.Username != nil &&
+		opts.Configs.IPSecL2TPManualConfig.Password != nil &&
+		opts.Configs.IPSecL2TPManualConfig.Server != nil {
+		msg := fmt.Sprintf(MainTrackIPSecL2TPManualConfigTemplate,
+			*opts.Configs.IPSecL2TPManualConfig.PSK,
+			*opts.Configs.IPSecL2TPManualConfig.Username,
+			*opts.Configs.IPSecL2TPManualConfig.Password,
+			*opts.Configs.IPSecL2TPManualConfig.Server,
+		)
+		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		if err != nil {
+			return fmt.Errorf("send ipsec l2tp manual config: %w", err)
+		}
+	}
+
+	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
+		msg := fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
+		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		if err != nil {
+			return fmt.Errorf("send outline config: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
 	}
 
 	return nil
 }
 
-func callMinistry(dept DeptOpts) (*grantPkg, error) {
-	opts := &grantPkg{}
+func callMinistry(dept DeptOpts) (*ministry.Answer, error) {
+	// opts := &grantPkg{}
 
-	cmd := fmt.Sprintf("createbrigade -ch %s", dept.token)
+	cmd := fmt.Sprintf("createbrigade -ch -j %s", dept.token)
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
 
@@ -251,7 +346,24 @@ func callMinistry(dept DeptOpts) (*grantPkg, error) {
 
 	r := bufio.NewReader(httputil.NewChunkedReader(&b))
 
-	fullname, err := r.ReadString('\n')
+	payload, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("chunk read: %w", err)
+	}
+
+	wgconf := &ministry.Answer{}
+	if err := json.Unmarshal(payload, &wgconf); err != nil {
+		return nil, fmt.Errorf("json unmarshal: %w", err)
+	}
+
+	if wgconf.Configs.WireguardConfig == nil ||
+		wgconf.Configs.WireguardConfig.FileContent == nil ||
+		wgconf.Configs.WireguardConfig.FileName == nil ||
+		wgconf.Configs.WireguardConfig.TonnelName == nil {
+		return nil, fmt.Errorf("wgconf read: %w", err)
+	}
+
+	/*fullname, err := r.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("fullname read: %w", err)
 	}
@@ -313,18 +425,18 @@ func callMinistry(dept DeptOpts) (*grantPkg, error) {
 	opts.wgconf, err = io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("chunk read: %w", err)
-	}
+	}*/
 
-	return opts, nil
+	return wgconf, nil
 }
 
-func callMinistryRestore(dept DeptOpts, name, words string) (*grantPkg, error) {
-	opts := &grantPkg{}
+func callMinistryRestore(dept DeptOpts, name, words string) (*ministry.Answer, error) {
+	// opts := &grantPkg{}
 
 	base64name := base64.StdEncoding.EncodeToString([]byte(name))
 	base64words := base64.StdEncoding.EncodeToString([]byte(words))
 
-	cmd := fmt.Sprintf("restorebrigadier -ch %s %s", base64name, base64words)
+	cmd := fmt.Sprintf("restorebrigadier -ch -j %s %s", base64name, base64words)
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
 
@@ -364,7 +476,24 @@ func callMinistryRestore(dept DeptOpts, name, words string) (*grantPkg, error) {
 
 	r := bufio.NewReader(httputil.NewChunkedReader(&b))
 
-	status, err := r.ReadString('\n')
+	payload, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("chunk read: %w", err)
+	}
+
+	wgconf := &ministry.Answer{}
+	if err := json.Unmarshal(payload, &wgconf); err != nil {
+		return nil, fmt.Errorf("json unmarshal: %w", err)
+	}
+
+	if wgconf.Configs.WireguardConfig == nil ||
+		wgconf.Configs.WireguardConfig.FileContent == nil ||
+		wgconf.Configs.WireguardConfig.FileName == nil ||
+		wgconf.Configs.WireguardConfig.TonnelName == nil {
+		return nil, fmt.Errorf("wgconf read: %w", err)
+	}
+
+	/*status, err := r.ReadString('\n')
 	if err != nil {
 		return nil, fmt.Errorf("status read: %w", err)
 	}
@@ -392,26 +521,26 @@ func callMinistryRestore(dept DeptOpts, name, words string) (*grantPkg, error) {
 	opts.wgconf, err = io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("wgconf read: %w", err)
-	}
+	}*/
 
-	return opts, nil
+	return wgconf, nil
 }
 
 // GetBrigadier - get brigadier name and config.
 func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts) error {
 	var (
-		opts *grantPkg
-		err  error
+		wgconf *ministry.Answer
+		err    error
 	)
 
 	switch dept.fake {
 	case false:
-		opts, err = callMinistry(dept)
+		wgconf, err = callMinistry(dept)
 		if err != nil {
 			return fmt.Errorf("call ministry: %w", err)
 		}
 	case true:
-		opts, err = genGrants(dept)
+		wgconf, err = genGrants(dept)
 		if err != nil {
 			return fmt.Errorf("gen grants: %w", err)
 		}
@@ -419,7 +548,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 
 	time.Sleep(3 * time.Second)
 
-	err = SendBrigadierGrants(bot, chatID, ecode, opts)
+	err = SendBrigadierGrants(bot, chatID, ecode, wgconf)
 	if err != nil {
 		return fmt.Errorf("send grants: %w", err)
 	}
@@ -476,13 +605,13 @@ func replaceRuneAt(s string, index, size int, replacement string) string {
 // RestoreBrigadier - restore brigadier  config.
 func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts, name, words string) error {
 	var (
-		opts *grantPkg
-		err  error
+		wgconf *ministry.Answer
+		err    error
 	)
 
 	switch dept.fake {
 	case false:
-		opts, err = callMinistryRestore(dept, name, words)
+		wgconf, err = callMinistryRestore(dept, name, words)
 		if err == nil {
 			break
 		}
@@ -491,7 +620,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Dep
 
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
-		opts, err = callMinistryRestore(dept, name, words)
+		wgconf, err = callMinistryRestore(dept, name, words)
 		if err == nil {
 			break
 		}
@@ -500,7 +629,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Dep
 
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
-		opts, err = callMinistryRestore(dept, name, words)
+		wgconf, err = callMinistryRestore(dept, name, words)
 		if err == nil {
 			break
 		}
@@ -508,7 +637,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Dep
 		for _, name := range generateCombinations(name, maxEYoCombinations) {
 			fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
-			opts, err = callMinistryRestore(dept, name, words)
+			wgconf, err = callMinistryRestore(dept, name, words)
 			if err == nil {
 				break
 			}
@@ -519,7 +648,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Dep
 		}
 
 	case true:
-		opts, err = genGrants(dept)
+		wgconf, err = genGrants(dept)
 		if err != nil {
 			return fmt.Errorf("gen grants: %w", err)
 		}
@@ -527,7 +656,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Dep
 
 	time.Sleep(3 * time.Second)
 
-	err = SendRestoredBrigadierGrants(bot, chatID, ecode, opts)
+	err = SendRestoredBrigadierGrants(bot, chatID, ecode, wgconf)
 	if err != nil {
 		return fmt.Errorf("send grants: %w", err)
 	}
@@ -535,28 +664,30 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Dep
 	return nil
 }
 
-func genGrants(dept DeptOpts) (*grantPkg, error) {
-	opts := &grantPkg{}
+func genGrants(dept DeptOpts) (*ministry.Answer, error) {
+	// opts := &grantPkg{}
+	wgconf := &ministry.Answer{}
 
 	fullname, person, err := namesgenerator.PhysicsAwardeeShort()
 	if err != nil {
 		return nil, fmt.Errorf("physics gen: %w", err)
 	}
 
-	opts.fullname = fullname
-	opts.person = person.Name
-	opts.desc = person.Desc
-	opts.wiki = person.URL
+	wgconf.Name = fullname
+	wgconf.Person = person
 
-	opts.mnemo, _, _, err = seedgenerator.Seed(seedgenerator.ENT64, fakeSeedPrefix)
+	wgconf.Mnemo, _, _, err = seedgenerator.Seed(seedgenerator.ENT64, fakeSeedPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("gen seed6: %w", err)
 	}
 
-	opts.keydesk = kdlib.RandomAddrIPv6(netip.MustParsePrefix(fakeKeydeskPrefix)).String()
+	wgconf.KeydeskIPv6 = kdlib.RandomAddrIPv6(netip.MustParsePrefix(fakeKeydeskPrefix))
 
 	numbered := fmt.Sprintf("%03d %s", rand.Int31n(256), fullname)
-	opts.filename = kdlib.SanitizeFilename(numbered)
+	tunname := kdlib.SanitizeFilename(numbered)
+	wgconf.Configs.WireguardConfig.FileName = &tunname
+	filename := tunname + ".conf"
+	wgconf.Configs.WireguardConfig.TonnelName = &filename
 
 	wgkey, err := wgtypes.GenerateKey()
 	if err != nil {
@@ -586,7 +717,7 @@ AllowedIPs = 0.0.0.0/0,::/0
 	ipv6 := kdlib.RandomAddrIPv6(netip.MustParsePrefix(fakeULA))
 	ep := kdlib.RandomAddrIPv4(netip.MustParsePrefix(fakeEndpointNet))
 
-	opts.wgconf = fmt.Appendf(opts.wgconf,
+	text := fmt.Sprintf(
 		tmpl,
 		netip.PrefixFrom(ipv4, 32).String()+","+netip.PrefixFrom(ipv6, 128).String(),
 		base64.StdEncoding.WithPadding(base64.StdPadding).EncodeToString(wgpriv[:]),
@@ -596,5 +727,7 @@ AllowedIPs = 0.0.0.0/0,::/0
 		base64.StdEncoding.WithPadding(base64.StdPadding).EncodeToString(wgkey[:]),
 	)
 
-	return opts, nil
+	wgconf.Configs.WireguardConfig.FileContent = &text
+
+	return wgconf, nil
 }
