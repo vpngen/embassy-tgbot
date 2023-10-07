@@ -33,16 +33,18 @@ type DeptOpts struct {
 
 // Config - config.
 type Config struct {
-	Token      string
-	Token2     string
-	UpdateTout int
-	DebugLevel int
-	BotDebug   bool
-	DBDir      string
-	DBKey      []byte
-	SupportURL string
-	ckChatID   int64
-	Dept       DeptOpts
+	Token               string
+	Token2              string
+	UpdateTout          int
+	DebugLevel          int
+	BotDebug            bool
+	DBDir               string
+	DBKey               []byte
+	SupportURL          string
+	ckChatID            int64
+	Dept                DeptOpts
+	MaintenanceModeFull string
+	MaintenanceModeNew  string
 }
 
 // configFromEnv - fill config from environment vars.
@@ -64,6 +66,8 @@ func configFromEnv() Config {
 	ministryIP := os.Getenv("MINISTRY_IP")
 	ministryToken := os.Getenv("MINISTRY_TOKEN")
 	sshKeyPath := os.Getenv("SSHKEY_PATH")
+	maintenanceModeFull := os.Getenv("MAINTENANCE_MODE_FULL_TEXT")
+	mantenanceModeNew := os.Getenv("MAINTENANCE_MODE_NEW_TEXT")
 
 	if dbKey == "" {
 		log.Panic("NO ENCRYPTION KEY")
@@ -143,5 +147,7 @@ func configFromEnv() Config {
 			token:     ministryToken,
 			fake:      sshFake,
 		},
+		MaintenanceModeFull: maintenanceModeFull,
+		MaintenanceModeNew:  mantenanceModeNew,
 	}
 }

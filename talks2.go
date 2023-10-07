@@ -11,7 +11,8 @@ import (
 )
 
 // Handling messages (opposed callback).
-func messageHandler2(opts hOpts, update tgbotapi.Update) {
+// Aware that this bot doesn't read messages from chats.
+func messageHandler2(opts handlerOpts, update tgbotapi.Update) {
 	defer opts.wg.Done()
 
 	ecode := genEcode() // unique e-code
@@ -33,7 +34,7 @@ func messageHandler2(opts hOpts, update tgbotapi.Update) {
 }
 
 // Handling callbacks  (opposed messages).
-func buttonHandler2(opts hOpts, update tgbotapi.Update) {
+func buttonHandler2(opts handlerOpts, update tgbotapi.Update) {
 	var key []byte
 
 	defer opts.wg.Done()
@@ -47,6 +48,10 @@ func buttonHandler2(opts hOpts, update tgbotapi.Update) {
 
 	switch {
 	case strings.HasPrefix(decisionPrefix, acceptReceiptPrefix):
+		if opts.mmf != "" || opts.mmn != "" {
+			return
+		}
+
 		reasonString := strings.TrimPrefix(decisionPrefix, acceptReceiptPrefix)
 
 		reason, err := strconv.Atoi(reasonString)
