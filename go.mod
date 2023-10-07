@@ -7,6 +7,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.2-0.20220419141443-537c005643ad
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
+	github.com/vpngen/keydesk v1.3.4
 	github.com/vpngen/ministry v1.1.3
 	github.com/vpngen/wordsgens v0.0.0-20221214131824-ff06c1f70d47
 	golang.org/x/crypto v0.10.0
@@ -44,7 +45,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/vpngen/keydesk v1.3.4 // indirect
 	github.com/vpngen/realm-admin v1.2.10 // indirect
 	github.com/vpngen/vpngine v0.0.0-20230227215251-3cd9be2d55eb // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect

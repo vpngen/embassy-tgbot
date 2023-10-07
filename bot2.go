@@ -30,14 +30,18 @@ func runBot2(
 	bot2 *tgbotapi.BotAPI,
 	updateTout,
 	debugLevel int,
+	maintenanceModeFull string,
+	maintenanceModeNew string,
 ) {
 	defer waitGroup.Done()
 
-	opts := hOpts{
+	opts := handlerOpts{
 		wg:    waitGroup,
 		db:    dbase,
 		bot:   bot2,
 		debug: debugLevel,
+		mmf:   maintenanceModeFull,
+		mmn:   maintenanceModeNew,
 	}
 
 	u := tgbotapi.NewUpdate(0)

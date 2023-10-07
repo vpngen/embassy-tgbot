@@ -19,6 +19,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vpngen/embassy-tgbot/internal/kdlib"
+	"github.com/vpngen/keydesk/gen/models"
 	"github.com/vpngen/wordsgens/namesgenerator"
 	"github.com/vpngen/wordsgens/seedgenerator"
 	"golang.org/x/crypto/ssh"
@@ -682,6 +683,8 @@ func genGrants(dept DeptOpts) (*ministry.Answer, error) {
 	}
 
 	wgconf.KeydeskIPv6 = kdlib.RandomAddrIPv6(netip.MustParsePrefix(fakeKeydeskPrefix))
+
+	wgconf.Configs.WireguardConfig = &models.NewuserWireguardConfig{}
 
 	numbered := fmt.Sprintf("%03d %s", rand.Int31n(256), fullname)
 	tunname := kdlib.SanitizeFilename(numbered)
