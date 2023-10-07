@@ -39,12 +39,14 @@ const (
 const SlowAnswerTimeout = 3 * time.Second
 
 // handlers options.
-type hOpts struct {
+type handlerOpts struct {
 	wg    *sync.WaitGroup
 	db    *badger.DB
 	bot   *tgbotapi.BotAPI
 	cw    *ChatsWins
 	debug int
+	mmf   string
+	mmn   string
 }
 
 func IsForbiddenError(err error) bool {
@@ -59,7 +61,7 @@ func IsForbiddenError(err error) bool {
 }
 
 // Handling messages (opposed callback).
-func messageHandler(opts hOpts, update tgbotapi.Update, dept DeptOpts) {
+func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 	defer opts.wg.Done()
 
 	ecode := genEcode() // unique e-code
@@ -110,6 +112,10 @@ func messageHandler(opts hOpts, update tgbotapi.Update, dept DeptOpts) {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
 		}
 	case stageMainTrackWaitForApprovement:
+		if checkMaintenanceMode(opts, update.Message.Chat.ID, ecode, false) {
+			return
+		}
+
 		_, err := SendProtectedMessage(opts.bot, update.Message.Chat.ID, update.Message.MessageID, MainTrackWarnWaitForApprovement, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
@@ -121,6 +127,10 @@ func messageHandler(opts hOpts, update tgbotapi.Update, dept DeptOpts) {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("wait msg: %w", err))
 		}
 	case stageMainTrackWaitForBill:
+		if checkMaintenanceMode(opts, update.Message.Chat.ID, ecode, false) {
+			return
+		}
+
 		err := checkBillMessageMessage(opts, update.Message, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
@@ -132,6 +142,10 @@ func messageHandler(opts hOpts, update tgbotapi.Update, dept DeptOpts) {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("bill recv: %w", err))
 		}
 	case stageRestoreTrackStart:
+		if checkMaintenanceMode(opts, update.Message.Chat.ID, ecode, true) {
+			return
+		}
+
 		if err := sendRestoreStartMessage(opts, update.Message.Chat.ID, session.State); err != nil {
 			if IsForbiddenError(err) {
 				setSession(opts.db, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
@@ -142,6 +156,10 @@ func messageHandler(opts hOpts, update tgbotapi.Update, dept DeptOpts) {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("start restore push: %w", err))
 		}
 	case stageRestoreTrackSendName:
+		if checkMaintenanceMode(opts, update.Message.Chat.ID, ecode, true) {
+			return
+		}
+
 		defer func() {
 			if session.OurMsgID == 0 {
 				return
@@ -164,6 +182,10 @@ func messageHandler(opts hOpts, update tgbotapi.Update, dept DeptOpts) {
 			stWrong(opts.bot, update.Message.Chat.ID, ecode, fmt.Errorf("name recv: %w", err))
 		}
 	case stageRestoreTrackSendWords:
+		if checkMaintenanceMode(opts, update.Message.Chat.ID, ecode, true) {
+			return
+		}
+
 		defer func() {
 			if session.OurMsgID == 0 {
 				return
@@ -204,7 +226,7 @@ func messageHandler(opts hOpts, update tgbotapi.Update, dept DeptOpts) {
 }
 
 // Handling callbacks  (opposed messages).
-func buttonHandler(opts hOpts, update tgbotapi.Update) {
+func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 	defer opts.wg.Done()
 
 	ecode := genEcode() // unique error code
@@ -222,6 +244,10 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 
 	switch {
 	case update.CallbackQuery.Data == "started" && session.Stage == stageMainTrackWaitForWanting:
+		if checkMaintenanceMode(opts, update.CallbackQuery.Message.Chat.ID, ecode, false) {
+			return
+		}
+
 		if err := sendQuizMessage(opts, update.CallbackQuery.Message.Chat.ID, ecode); err != nil {
 			if IsForbiddenError(err) {
 				setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
@@ -240,6 +266,10 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 			}
 		}()
 	case update.CallbackQuery.Data == "continue" && (session.Stage == stageMainTrackStart || session.Stage == stageMainTrackWaitForWanting):
+		if checkMaintenanceMode(opts, update.CallbackQuery.Message.Chat.ID, ecode, false) {
+			return
+		}
+
 		err := sendWelcomeMessage(opts, update.CallbackQuery.Message.Chat.ID)
 		if err != nil {
 			if IsForbiddenError(err) {
@@ -251,6 +281,10 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("welcome msg: %w", err))
 		}
 	case update.CallbackQuery.Data == "restore" && session.Stage == stageRestoreTrackStart:
+		if checkMaintenanceMode(opts, update.CallbackQuery.Message.Chat.ID, ecode, true) {
+			return
+		}
+
 		if err := sendRestoreNameMessage(opts, update.CallbackQuery.Message.Chat.ID, ecode, session.State); err != nil {
 			if IsForbiddenError(err) {
 				setSession(opts.db, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
@@ -270,6 +304,10 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 		}()
 	case session.Stage == stageRestoreTrackSendWords &&
 		(update.CallbackQuery.Data == "again" || update.CallbackQuery.Data == "return"):
+		if checkMaintenanceMode(opts, update.CallbackQuery.Message.Chat.ID, ecode, false) {
+			return
+		}
+
 		defer func() {
 			text := RestoreTrackWordsMessage
 
@@ -326,6 +364,10 @@ func buttonHandler(opts hOpts, update tgbotapi.Update) {
 			}
 		}()
 	case update.CallbackQuery.Data == "restore":
+		if checkMaintenanceMode(opts, update.CallbackQuery.Message.Chat.ID, ecode, false) {
+			return
+		}
+
 		prev := 0
 		if session.Stage == stageMainTrackCleanup || session.Stage == stageRestoreTrackStart ||
 			session.Stage == stageRestoreTrackSendName || session.Stage == stageRestoreTrackSendWords ||
@@ -406,7 +448,7 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 }
 
 // Send Welcome message.
-func sendWelcomeMessage(opts hOpts, chatID int64) error {
+func sendWelcomeMessage(opts handlerOpts, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MainTrackWelcomeMessage)
 	msg.ReplyMarkup = WannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -427,7 +469,7 @@ func sendWelcomeMessage(opts hOpts, chatID int64) error {
 }
 
 // Send Quiz message.
-func sendQuizMessage(opts hOpts, chatID int64, ecode string) error {
+func sendQuizMessage(opts handlerOpts, chatID int64, ecode string) error {
 	msg, err := SendProtectedMessage(opts.bot, chatID, 0, MainTrackQuizMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
@@ -442,7 +484,7 @@ func sendQuizMessage(opts hOpts, chatID int64, ecode string) error {
 }
 
 // Check bill message.
-func checkBillMessageMessage(opts hOpts, Message *tgbotapi.Message, ecode string) error {
+func checkBillMessageMessage(opts handlerOpts, Message *tgbotapi.Message, ecode string) error {
 	if len(Message.Photo) == 0 {
 		_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, MainTrackWarnRequiredPhoto, ecode)
 
@@ -496,7 +538,7 @@ func checkChatAutodeleteTimer(bot *tgbotapi.BotAPI, chatID int64) (bool, error) 
 }
 
 // Send Start Restore message.
-func sendRestoreStartMessage(opts hOpts, chatID int64, prev int) error {
+func sendRestoreStartMessage(opts handlerOpts, chatID int64, prev int) error {
 	msg := tgbotapi.NewMessage(chatID, RestoreTrackStartMessage)
 	msg.ReplyMarkup = RestoreStartKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -517,7 +559,7 @@ func sendRestoreStartMessage(opts hOpts, chatID int64, prev int) error {
 }
 
 // Send Name message.
-func sendRestoreNameMessage(opts hOpts, chatID int64, ecode string, prev int) error {
+func sendRestoreNameMessage(opts handlerOpts, chatID int64, ecode string, prev int) error {
 	msg := tgbotapi.NewMessage(chatID, RestoreTrackNameMessage)
 	msg.ReplyMarkup = RestoreNameKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -537,7 +579,7 @@ func sendRestoreNameMessage(opts hOpts, chatID int64, ecode string, prev int) er
 	return nil
 }
 
-func sendRestoreWordsMessage(opts hOpts, chatID int64, prev int, text string) error {
+func sendRestoreWordsMessage(opts handlerOpts, chatID int64, prev int, text string) error {
 	msg := tgbotapi.NewMessage(chatID, RestoreTrackWordsMessage)
 	msg.ReplyMarkup = RestoreWordsKeyboard1
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -557,7 +599,7 @@ func sendRestoreWordsMessage(opts hOpts, chatID int64, prev int, text string) er
 }
 
 // Check restore name message.
-func checkRestoreNameMessageMessage(opts hOpts, Message *tgbotapi.Message, prev int) error {
+func checkRestoreNameMessageMessage(opts handlerOpts, Message *tgbotapi.Message, prev int) error {
 	text := strings.Join(
 		strings.Fields(
 			strings.TrimSpace(
@@ -598,7 +640,7 @@ func checkRestoreNameMessageMessage(opts hOpts, Message *tgbotapi.Message, prev 
 	return nil
 }
 
-func sendWordsFailed(opts hOpts, chatID int64, prev int, text []byte) error {
+func sendWordsFailed(opts handlerOpts, chatID int64, prev int, text []byte) error {
 	msg := tgbotapi.NewMessage(chatID, RestoreTrackBrigadeNotFoundMessage)
 	msg.ReplyMarkup = RestoreWordsKeyboard2
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -618,7 +660,7 @@ func sendWordsFailed(opts hOpts, chatID int64, prev int, text []byte) error {
 }
 
 // Check restore words message.
-func checkRestoreWordsMessageMessage(opts hOpts, Message *tgbotapi.Message, ecode string, prev int, name []byte, dept DeptOpts) error {
+func checkRestoreWordsMessageMessage(opts handlerOpts, Message *tgbotapi.Message, ecode string, prev int, name []byte, dept DeptOpts) error {
 	if name == nil {
 		return sendWordsFailed(opts, Message.Chat.ID, prev, nil)
 	}
@@ -655,7 +697,7 @@ func checkRestoreWordsMessageMessage(opts hOpts, Message *tgbotapi.Message, ecod
 }
 
 // authentificate for dilog.
-func auth(opts hOpts, chatID int64, ut int, ecode string) (*Session, bool) {
+func auth(opts handlerOpts, chatID int64, ut int, ecode string) (*Session, bool) {
 	/// check session.
 	session, err := checkSession(opts.db, chatID)
 	if err != nil {
@@ -684,7 +726,7 @@ func auth(opts hOpts, chatID int64, ut int, ecode string) (*Session, bool) {
 }
 
 // check autodelete.
-func warnAutodeleteSettings(opts hOpts, chatID int64, ut int, ecode string) bool {
+func warnAutodeleteSettings(opts handlerOpts, chatID int64, ut int, ecode string) bool {
 	adSet, err := checkChatAutodeleteTimer(opts.bot, chatID)
 	if err != nil {
 		stWrong(opts.bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
@@ -715,7 +757,7 @@ func getAction() string {
 	return StandardChatActions[ix]
 }
 
-func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, ecode string) error {
+func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Session, ecode string) error {
 	logs.Debugf("[d:%s] stage:  %d\n", ecode, session.Stage)
 
 	command := Message.Command()
@@ -735,6 +777,10 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 
 	switch command {
 	case "restore":
+		if checkMaintenanceMode(opts, Message.Chat.ID, ecode, true) {
+			return nil
+		}
+
 		prev := 0
 		if session.Stage == stageMainTrackCleanup || session.Stage == stageRestoreTrackStart ||
 			session.Stage == stageRestoreTrackSendName || session.Stage == stageRestoreTrackSendWords ||
@@ -759,6 +805,10 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 
 		return nil
 	case "repeat":
+		if checkMaintenanceMode(opts, Message.Chat.ID, ecode, true) {
+			return nil
+		}
+
 		switch session.Stage {
 		case stageMainTrackWaitForBill:
 			if err := sendQuizMessage(opts, Message.Chat.ID, ecode); err != nil {
@@ -779,14 +829,26 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 	default:
 		switch session.Stage {
 		case stageRestoreTrackSendWords:
+			if checkMaintenanceMode(opts, Message.Chat.ID, ecode, true) {
+				return nil
+			}
+
 			if err := sendRestoreWordsMessage(opts, Message.Chat.ID, session.State, string(session.Payload)); err != nil {
 				return fmt.Errorf("send words: %w", err)
 			}
 		case stageRestoreTrackSendName:
+			if checkMaintenanceMode(opts, Message.Chat.ID, ecode, true) {
+				return nil
+			}
+
 			if err := sendRestoreNameMessage(opts, Message.Chat.ID, ecode, session.State); err != nil {
 				return fmt.Errorf("send name: %w", err)
 			}
 		case stageRestoreTrackStart:
+			if checkMaintenanceMode(opts, Message.Chat.ID, ecode, true) {
+				return nil
+			}
+
 			if err := sendRestoreStartMessage(opts, Message.Chat.ID, session.State); err != nil {
 				return fmt.Errorf("restore: %w", err)
 			}
@@ -796,6 +858,10 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 				return fmt.Errorf("end msg: %w", err)
 			}
 		case stageMainTrackWaitForApprovement:
+			if checkMaintenanceMode(opts, Message.Chat.ID, ecode, false) {
+				return nil
+			}
+
 			_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, MainTrackWarnWaitForApprovement, ecode)
 			if err != nil {
 				return fmt.Errorf("wait msg: %w", err)
@@ -807,10 +873,18 @@ func handleCommands(opts hOpts, Message *tgbotapi.Message, session *Session, eco
 				}
 			}
 		case stageMainTrackWaitForBill:
+			if checkMaintenanceMode(opts, Message.Chat.ID, ecode, false) {
+				return nil
+			}
+
 			if err := checkBillMessageMessage(opts, Message, ecode); err != nil {
 				return fmt.Errorf("bill recv: %w", err)
 			}
 		default:
+			if checkMaintenanceMode(opts, Message.Chat.ID, ecode, false) {
+				return nil
+			}
+
 			if _, err := SendProtectedMessage(opts.bot, Message.Chat.ID, 0, InfoUnknownCommandMessage, ecode); err != nil {
 				return fmt.Errorf("unknown cmd: %w", err)
 			}
@@ -860,4 +934,25 @@ func sendMessage(bot *tgbotapi.BotAPI, chatID int64, replyID int, protect bool, 
 	}
 
 	return &newMsg, nil
+}
+
+// checkMaintenanceMode - check maintenance mode.
+func checkMaintenanceMode(opts handlerOpts, chatID int64, ecode string, whenfull bool) bool {
+	if opts.mmf != "" || (opts.mmn != "" && !whenfull) {
+		text := opts.mmn
+		if opts.mmf != "" {
+			text = opts.mmf
+		}
+
+		_, err := SendProtectedMessage(opts.bot, chatID, 0, text, ecode)
+		if err != nil {
+			if IsForbiddenError(err) {
+				setSession(opts.db, chatID, 0, 0, stageMainTrackCleanup, SessionBanOnBan, nil)
+			}
+		}
+
+		return true
+	}
+
+	return false
 }

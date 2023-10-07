@@ -61,12 +61,12 @@ func main() {
 	// run the bot
 	waitGroup.Add(1)
 
-	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Dept)
+	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Dept, cfg.MaintenanceModeFull, cfg.MaintenanceModeNew)
 
 	// run the bot2
 	waitGroup.Add(1)
 
-	go runBot2(waitGroup, stop, dbase, bot2, cfg.UpdateTout, cfg.DebugLevel)
+	go runBot2(waitGroup, stop, dbase, bot2, cfg.UpdateTout, cfg.DebugLevel, cfg.MaintenanceModeFull, cfg.MaintenanceModeNew)
 
 	// run the QRun(2)
 	waitGroup.Add(2)
