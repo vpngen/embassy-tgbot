@@ -45,6 +45,7 @@ type Config struct {
 	Dept                DeptOpts
 	MaintenanceModeFull string
 	MaintenanceModeNew  string
+	LabelStorage        *LabelStorage
 }
 
 // configFromEnv - fill config from environment vars.
@@ -52,6 +53,7 @@ func configFromEnv() Config {
 	var (
 		debug bool
 		key   []byte
+		ls    *LabelStorage
 	)
 
 	token := os.Getenv("EMBASSY_TOKEN")               // Telegram token
@@ -66,6 +68,7 @@ func configFromEnv() Config {
 	ministryIP := os.Getenv("MINISTRY_IP")
 	ministryToken := os.Getenv("MINISTRY_TOKEN")
 	sshKeyPath := os.Getenv("SSHKEY_PATH")
+	labelFilename := os.Getenv("LABEL_FILENAME")
 	maintenanceModeFull := os.Getenv("MAINTENANCE_MODE_FULL_TEXT")
 	mantenanceModeNew := os.Getenv("MAINTENANCE_MODE_NEW_TEXT")
 
@@ -131,6 +134,13 @@ func configFromEnv() Config {
 		)
 	}
 
+	if labelFilename != "" {
+		ls, err = NewLabelStorage(labelFilename)
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
 	return Config{
 		Token:      token,
 		Token2:     token2,
@@ -147,6 +157,7 @@ func configFromEnv() Config {
 			token:     ministryToken,
 			fake:      sshFake,
 		},
+		LabelStorage:        ls,
 		MaintenanceModeFull: maintenanceModeFull,
 		MaintenanceModeNew:  mantenanceModeNew,
 	}
