@@ -33,6 +33,7 @@ func runBot(
 	dept DeptOpts,
 	maintenanceModeFull string,
 	maintenanceModeNew string,
+	labelStorage *LabelStorage,
 ) {
 	defer waitGroup.Done()
 
@@ -42,6 +43,7 @@ func runBot(
 		bot:   bot,
 		cw:    NewChatsWins(),
 		debug: debugLevel,
+		ls:    labelStorage,
 		mmf:   maintenanceModeFull,
 		mmn:   maintenanceModeNew,
 	}

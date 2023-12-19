@@ -45,6 +45,7 @@ type handlerOpts struct {
 	bot   *tgbotapi.BotAPI
 	cw    *ChatsWins
 	debug int
+	ls    *LabelStorage
 	mmf   string
 	mmn   string
 }
@@ -867,6 +868,12 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 				return fmt.Errorf("wait msg: %w", err)
 			}
 		case stageMainTrackStart, stageMainTrackWaitForWanting:
+			if command == "start" && session.Stage == stageMainTrackStart {
+				if err := opts.ls.Update(Message.CommandArguments()); err != nil {
+					return fmt.Errorf("update label: %w", err)
+				}
+			}
+
 			if session.Stage == stageMainTrackWaitForWanting || warnAutodeleteSettings(opts, Message.Chat.ID, Message.Date, ecode) {
 				if err := sendWelcomeMessage(opts, Message.Chat.ID); err != nil {
 					return fmt.Errorf("welcome msg: %w", err)
