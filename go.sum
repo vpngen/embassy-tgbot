@@ -214,7 +214,7 @@ github.com/vpngen/keydesk v1.3.13 h1:QUWONzkWcZMNcvvrwnvD9yVwPWMyzWOYSNOT7fzpF+Y
 github.com/vpngen/keydesk v1.3.13/go.mod h1:2fHZbDKVe5oKpx+dz7jd7RBxYBPTkEbmKaV2sI5s58Y=
 github.com/vpngen/ministry v1.3.4 h1:WjeAye1D9fUdicjKx7ZnNgC+Uk46G8mzQhFKDvAJS50=
 github.com/vpngen/ministry v1.3.4/go.mod h1:Dv6UcZiq4OTlJiPHfQzAgoVDm/ulUnlSlDq3HfzJGuY=
-github.com/vpngen/vpngine v0.0.3 h1:l0S28WoJmyDNia8tLFFYNhfQQE67Oql1QKysvQou3aw=
+github.com/vpngen/vpngine v0.0.3 h1:fBCGIgqn3n6kSi0DZSHNd2PEpHq5WdHP8CdmKlw8BVY=
 github.com/vpngen/vpngine v0.0.3/go.mod h1:6qCkgHFMAeD5prllkFZg6FWbkxeAhPA/qmK+DC5tQEQ=
 github.com/vpngen/wordsgens v1.0.2 h1:VxLk1TW2MRkEp93xIqwCmzVoiAQJ+4+zq/Fp4H5oUBQ=
 github.com/vpngen/wordsgens v1.0.2/go.mod h1:MwR0TzA/9pHCBYy+o0mMZtxPnjlNH8/7KelERM40lp8=
