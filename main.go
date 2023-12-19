@@ -61,7 +61,7 @@ func main() {
 	// run the bot
 	waitGroup.Add(1)
 
-	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Dept, cfg.MaintenanceModeFull, cfg.MaintenanceModeNew)
+	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Dept, cfg.MaintenanceModeFull, cfg.MaintenanceModeNew, cfg.LabelStorage)
 
 	// run the bot2
 	waitGroup.Add(1)
