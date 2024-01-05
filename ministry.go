@@ -304,10 +304,14 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 	return nil
 }
 
-func callMinistry(dept DeptOpts) (*ministry.Answer, error) {
+func callMinistry(dept DeptOpts, label string) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	cmd := fmt.Sprintf("createbrigade -ch -j %s", dept.token)
+
+	if label != "" {
+		cmd += fmt.Sprintf(" -l %q", label)
+	}
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
 
@@ -528,7 +532,7 @@ func callMinistryRestore(dept DeptOpts, name, words string) (*ministry.Answer, e
 }
 
 // GetBrigadier - get brigadier name and config.
-func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts) error {
+func GetBrigadier(bot *tgbotapi.BotAPI, label string, chatID int64, ecode string, dept DeptOpts) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
@@ -536,11 +540,13 @@ func GetBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpt
 
 	switch dept.fake {
 	case false:
-		wgconf, err = callMinistry(dept)
+		wgconf, err = callMinistry(dept, label)
 		if err != nil {
 			return fmt.Errorf("call ministry: %w", err)
 		}
 	case true:
+		fmt.Fprintf(os.Stderr, "FAKE call with label: %s\n", label)
+
 		wgconf, err = genGrants(dept)
 		if err != nil {
 			return fmt.Errorf("gen grants: %w", err)
