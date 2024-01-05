@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -21,11 +22,11 @@ const (
 )
 
 const (
-	SessionStageNone = iota
-	SessionPayloadSomething
-	SessionPayloadBan
-	SessionPayloadSecondary
-	SessionBanOnBan // ban on ban
+	SessionStateNone = iota
+	SessionStatePayloadSomething
+	SessionStatePayloadBan
+	SessionStatePayloadSecondary
+	SessionStateBanOnBan // ban on ban
 )
 
 // Session - session.
@@ -34,6 +35,7 @@ type Session struct {
 	Stage      int    `json:"stage"`
 	UpdateTime int64  `json:"updatetime"`
 	State      int    `json:"state"`
+	StartLabel string `json:"start_label,omitempty"`
 	Payload    []byte `json:"payload"`
 }
 
@@ -48,13 +50,17 @@ func sessionID(chatID int64) []byte {
 	return id
 }
 
-func setSession(dbase *badger.DB, chatID int64, msgID int, update int64, stage int, state int, payload []byte) error {
+func setSession(dbase *badger.DB, label string, chatID int64, msgID int, update int64, stage int, state int, payload []byte) error {
 	session := &Session{
 		OurMsgID:   msgID,
 		Stage:      stage,
+		State:      state,
 		UpdateTime: update,
+		StartLabel: label,
 		Payload:    payload,
 	}
+
+	fmt.Fprintf(os.Stderr, "[session] LABEL: %s\n", session.StartLabel)
 
 	data, err := json.Marshal(session)
 	if err != nil {
