@@ -8,6 +8,7 @@ require (
 	github.com/alexsergivan/transliterator v1.0.0
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.2-0.20220419141443-537c005643ad
+	github.com/google/uuid v1.6.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/vpngen/keydesk v1.4.8
 	github.com/vpngen/ministry v1.3.10
@@ -39,7 +40,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

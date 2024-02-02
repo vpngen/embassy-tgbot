@@ -61,7 +61,7 @@ func main() {
 	// run the bot
 	waitGroup.Add(1)
 
-	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Dept, cfg.MaintenanceModeFull, cfg.MaintenanceModeNew, cfg.LabelStorage)
+	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Dept, cfg.MaintenanceModeFull, cfg.MaintenanceModeNew, cfg.LabelStorage, cfg.sessionSecret, cfg.queueSecret)
 
 	// run the bot2
 	waitGroup.Add(1)
@@ -71,7 +71,7 @@ func main() {
 	// run the QRun(2)
 	waitGroup.Add(2)
 
-	go ReceiptQueueLoop(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID, cfg.Dept)
+	go ReceiptQueueLoop(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID, cfg.Dept, cfg.sessionSecret, cfg.queue2Secret)
 	go ReceiptQueueLoop2(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID)
 
 	// catch exit signals

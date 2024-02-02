@@ -34,6 +34,8 @@ func runBot(
 	maintenanceModeFull string,
 	maintenanceModeNew string,
 	labelStorage *LabelStorage,
+	sessionSecret []byte,
+	queueSecret []byte,
 ) {
 	defer waitGroup.Done()
 
@@ -46,6 +48,9 @@ func runBot(
 		ls:    labelStorage,
 		mmf:   maintenanceModeFull,
 		mmn:   maintenanceModeNew,
+
+		sessionSecret: sessionSecret,
+		queueSecret:   queueSecret,
 	}
 
 	u := tgbotapi.NewUpdate(0)
