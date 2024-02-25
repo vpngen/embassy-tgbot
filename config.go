@@ -46,13 +46,15 @@ type Config struct {
 	MaintenanceModeFull string
 	MaintenanceModeNew  string
 	LabelStorage        *LabelStorage
+	sessionSecret       []byte
+	queueSecret         []byte
+	queue2Secret        []byte
 }
 
 // configFromEnv - fill config from environment vars.
 func configFromEnv() Config {
 	var (
 		debug bool
-		key   []byte
 		ls    *LabelStorage
 	)
 
@@ -71,6 +73,17 @@ func configFromEnv() Config {
 	labelFilename := os.Getenv("LABEL_FILENAME")
 	maintenanceModeFull := os.Getenv("MAINTENANCE_MODE_FULL_TEXT")
 	mantenanceModeNew := os.Getenv("MAINTENANCE_MODE_NEW_TEXT")
+
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	queueSecret := os.Getenv("QUEUE_SECRET")
+
+	if sessionSecret == "" {
+		log.Fatal("NO SESSION SECRET")
+	}
+
+	if queueSecret == "" {
+		log.Fatal("NO QUEUE SECRET")
+	}
 
 	if dbKey == "" {
 		log.Panic("NO ENCRYPTION KEY")
@@ -106,34 +119,6 @@ func configFromEnv() Config {
 
 	ckChatID, _ := strconv.ParseInt(ckChat, 10, 64)
 
-	parts := strings.Split(dbKey, ":")
-	switch len(parts) {
-	case 1:
-		key = pbkdf2.Key(
-			[]byte(dbKey),
-			[]byte(DefaultSalt),
-			DefaultIterations,
-			DefaultKeyLen,
-			sha256.New,
-		)
-	case 2:
-		key = pbkdf2.Key(
-			[]byte(parts[1]),
-			[]byte(parts[0]),
-			DefaultIterations,
-			DefaultKeyLen,
-			sha256.New,
-		)
-	default:
-		key = pbkdf2.Key(
-			[]byte(strings.TrimPrefix(dbKey, parts[0]+":")),
-			[]byte(parts[0]),
-			DefaultIterations,
-			DefaultKeyLen,
-			sha256.New,
-		)
-	}
-
 	if labelFilename != "" {
 		ls, err = NewLabelStorage(labelFilename)
 		if err != nil {
@@ -148,7 +133,7 @@ func configFromEnv() Config {
 		DebugLevel: dbg,
 		BotDebug:   debug,
 		DBDir:      dbDir,
-		DBKey:      key,
+		DBKey:      genKeyFromEnv(dbKey, DefaultIterations, DefaultKeyLen),
 		SupportURL: supportURL,
 		ckChatID:   ckChatID,
 		Dept: DeptOpts{
@@ -160,5 +145,38 @@ func configFromEnv() Config {
 		LabelStorage:        ls,
 		MaintenanceModeFull: maintenanceModeFull,
 		MaintenanceModeNew:  mantenanceModeNew,
+
+		sessionSecret: genKeyFromEnv(sessionSecret, DefaultIterations, DefaultKeyLen),
+		queueSecret:   genKeyFromEnv(queueSecret, DefaultIterations, DefaultKeyLen),
+	}
+}
+
+func genKeyFromEnv(key string, iter, sz int) []byte {
+	parts := strings.Split(key, ":")
+	switch len(parts) {
+	case 1:
+		return pbkdf2.Key(
+			[]byte(key),
+			[]byte(DefaultSalt),
+			iter,
+			sz,
+			sha256.New,
+		)
+	case 2:
+		return pbkdf2.Key(
+			[]byte(parts[1]),
+			[]byte(parts[0]),
+			iter,
+			sz,
+			sha256.New,
+		)
+	default:
+		return pbkdf2.Key(
+			[]byte(strings.TrimPrefix(key, parts[0]+":")),
+			[]byte(parts[0]),
+			iter,
+			sz,
+			sha256.New,
+		)
 	}
 }

@@ -64,7 +64,7 @@ func buttonHandler2(opts handlerOpts, update tgbotapi.Update) {
 		logs.Debugf("[!:%s]accept receipt: %s: %s: %d\n", ecode, id, reasonString, reason)
 		fmt.Sscanf(id, "%x", &key)
 
-		err = UpdateReceipt2(opts.db, key, CkReceiptStageDecision2, true, reason)
+		err = UpdateReceipt2(opts.db, key, CkReceiptStageDecision2, true, reason, nil)
 		if err != nil {
 			logs.Errf("[!:%s] set receipt: %s\n", ecode, err)
 
@@ -96,7 +96,7 @@ func buttonHandler2(opts handlerOpts, update tgbotapi.Update) {
 		logs.Debugf("[!:%s]reject receipt: %s: %s: %s\n", ecode, id, reasonString, reasonString)
 		fmt.Sscanf(id, "%x", &key)
 
-		err = UpdateReceipt2(opts.db, key, CkReceiptStageDecision2, false, reason)
+		err = UpdateReceipt2(opts.db, key, CkReceiptStageDecision2, false, reason, nil)
 		if err != nil {
 			logs.Errf("[!:%s] set receipt: %s\n", ecode, err)
 
