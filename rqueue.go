@@ -7,21 +7,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
-	"golang.org/x/crypto/pbkdf2"
-
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v4"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/google/uuid"
 
 	"github.com/vpngen/embassy-tgbot/logs"
 )
 
 const (
-	receiptqPrefix = "rcpt1q"
-	receiptqKeyLen = 16 - len(receiptqPrefix)
+	receiptqPrefix = "receiptq1_"
 	receiptSalt    = "$WrojOb4"
 	receiptTTL     = 48 * time.Hour
 )
@@ -38,15 +35,16 @@ var ErrKeyConflict = errors.New("key conflict")
 
 // CkReceipt - receipt for manual or auto check.
 type CkReceipt struct {
-	Stage    int    `json:"stage"`    // stage
-	ChatID   int64  `json:"chat_id"`  // user
-	FileID   string `json:"file_id"`  // photo
-	Accepted bool   `json:"accepted"` // status
-	Reason   int    `json:"reason"`   // rejection reason
+	Stage    int    `json:"stage"`     // stage
+	ChatID   int64  `json:"chat_id"`   // user
+	FileID   string `json:"file_id"`   // photo
+	Accepted bool   `json:"accepted"`  // status
+	Reason   int    `json:"reason"`    // rejection reason
+	PhotoSum []byte `json:"photo_sum"` // photo checksum
 }
 
 // PutReceipt - put receipt in the queue.
-func PutReceipt(dbase *badger.DB, chatID int64, fileID string) error {
+func PutReceipt(dbase *badger.DB, secret []byte, chatID int64, fileID string) error {
 	receipt := &CkReceipt{
 		ChatID: chatID,
 		FileID: fileID,
@@ -59,7 +57,7 @@ func PutReceipt(dbase *badger.DB, chatID int64, fileID string) error {
 	}
 
 	err = dbase.Update(func(txn *badger.Txn) error {
-		var key []byte = queueID(chatID)
+		var key []byte = queueID()
 
 		_, err := txn.Get(key)
 		if err != nil {
@@ -79,9 +77,10 @@ func PutReceipt(dbase *badger.DB, chatID int64, fileID string) error {
 
 		// fmt.Printf("*** q1 id: %x\n", key)
 
+		// fmt.Fprintf(os.Stderr, "[receipt put] chat: %x %d %#v\n", key, chatID, receipt)
+
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("update: %w", err)
 	}
@@ -89,20 +88,15 @@ func PutReceipt(dbase *badger.DB, chatID int64, fileID string) error {
 	return nil
 }
 
-func queueID(chatID int64) []byte {
-	key := pbkdf2.Key([]byte(
-		strconv.FormatInt(chatID, 10)),
-		[]byte(receiptSalt),
-		2048,
-		receiptqKeyLen,
-		sha256.New,
-	)
+func queueID() []byte {
+	key := uuid.New()
+	id := append([]byte(receiptqPrefix), key[:]...)
 
-	return append([]byte(receiptqPrefix), key...)
+	return id
 }
 
 // UpdateReceipt - update receipt review status and stage.
-func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool, reason int) error {
+func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool, reason int, sum []byte) error {
 	// fmt.Printf("*** update q1: %x stage=%d\n", id, stage)
 
 	err := dbase.Update(func(txn *badger.Txn) error {
@@ -121,6 +115,9 @@ func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool, reason i
 		receipt.Stage = stage
 		receipt.Accepted = accept
 		receipt.Reason = reason
+		if sum != nil {
+			receipt.PhotoSum = append([]byte{}, sum...)
+		}
 
 		data, err = json.Marshal(receipt)
 		if err != nil {
@@ -204,7 +201,7 @@ func getReceipt(txn *badger.Txn, id []byte) ([]byte, error) {
 }
 
 // ReceiptQueueLoop - recept queue loop.
-func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts) {
+func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts, sessionSecret []byte, queue2Secret []byte) {
 	defer waitGroup.Done()
 
 	timer := time.NewTimer(100 * time.Millisecond)
@@ -215,15 +212,15 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 		case <-stop:
 			return
 		case <-timer.C:
-			rqround(db, bot, bot2, ckChatID, dept)
+			rqround(db, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept)
 			timer.Reset(100 * time.Millisecond)
 		}
 	}
 }
 
 // do round.
-func rqround(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts) {
-	ok, err := catchNewReceipt(db, bot, bot2, ckChatID)
+func rqround(db *badger.DB, sessionSecret []byte, queue2Secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts) {
+	ok, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID)
 	if err != nil {
 		logs.Errf("new receipt: %s\n", err)
 
@@ -231,7 +228,7 @@ func rqround(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept Dep
 	}
 
 	if !ok {
-		_, err = catchReviewedReceipt(db, bot, bot2, ckChatID, dept)
+		_, err = catchReviewedReceipt(db, sessionSecret, bot, bot2, ckChatID, dept)
 		if err != nil {
 			logs.Errf("reviewed receipt: %s\n", err)
 
@@ -241,13 +238,15 @@ func rqround(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept Dep
 }
 
 // catch one new receipt.
-func catchNewReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) (bool, error) {
+func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) (bool, error) {
 	key, receipt, err := catchFirstReceipt(db, CkReceiptStageNone)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
 	}
 
-	if key == nil {
+	// fmt.Printf("*** catchNewReceipt: %x %v\n", key, receipt)
+
+	if key == nil || receipt == nil || receipt.FileID == "" {
 		return false, nil
 	}
 
@@ -261,12 +260,14 @@ func catchNewReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) 
 		return false, fmt.Errorf("download photo: %w", err)
 	}
 
-	err = SendReceipt2(db, bot2, key, ckChatID, photo)
+	err = SendReceipt2(db, bot2, secret, key, ckChatID, photo)
 	if err != nil {
 		return false, fmt.Errorf("send receipt2: %w", err)
 	}
 
-	err = UpdateReceipt(db, key, CkReceiptStageSent, false, decisionUnknown)
+	sum := sha256.Sum256(photo)
+
+	err = UpdateReceipt(db, key, CkReceiptStageSent, false, decisionUnknown, sum[:])
 	if err != nil {
 		return false, fmt.Errorf("receipt sent: %w", err)
 	}
@@ -275,7 +276,7 @@ func catchNewReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) 
 }
 
 // catch reviewed receipt
-func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts) (bool, error) {
+func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts) (bool, error) {
 	key, receipt, err := catchFirstReceipt(db, CkReceiptStageReceived)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
@@ -285,8 +286,10 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 		return false, nil
 	}
 
+	// fmt.Fprintf(os.Stderr, "[receipt reviewed] %x %#v\n", key, receipt)
+
 	// check all dialog conditions.
-	session, err := checkSession(db, receipt.ChatID)
+	session, err := checkSession(db, sessionSecret, receipt.ChatID)
 	if err != nil {
 		return false, fmt.Errorf("check session: %w", err)
 	}
@@ -295,11 +298,13 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 	switch receipt.Accepted {
 	case true:
+		sum := receipt.PhotoSum
+
 		if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode); err != nil {
 				if IsForbiddenError(err) {
 					DeleteReceipt(db, key)
-					setSession(db, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+					setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 					return false, fmt.Errorf("send message: %w", err)
 				}
@@ -313,11 +318,11 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 		}
 
 		if err := GetBrigadier(bot, session.StartLabel, receipt.ChatID, ecode, dept); err != nil {
-			setSession(db, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
+			setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
 
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, MainTrackFailMessage, ecode); err != nil {
 				if IsForbiddenError(err) {
-					setSession(db, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+					setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 					return false, fmt.Errorf("send message: %w", err)
 				}
@@ -328,21 +333,29 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 			return false, fmt.Errorf("creation: %w", err)
 		}
 
-		if err := setSession(db, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStatePayloadSomething, nil); err != nil {
+		if sum != nil {
+			if err := NewUniqPhoto(db, sum); err != nil {
+				return false, fmt.Errorf("new uniq photo: %w", err)
+			}
+		}
+
+		if err := setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStatePayloadSomething, nil); err != nil {
 			return false, fmt.Errorf("update session: %w", err)
 		}
 
 	case false:
 		desc, ok := DecisionComments[receipt.Reason]
-		if !ok {
+		if !ok || desc == "" {
 			desc = RejectMessage
 		}
+
+		// fmt.Fprintf(os.Stderr, "[receipt reject] %d %s %#v\n", receipt.Reason, desc, receipt)
 
 		newMsg, err := SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
 				DeleteReceipt(db, key)
-				setSession(db, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return false, fmt.Errorf("send reject message x: %w", err)
 			}
@@ -352,11 +365,11 @@ func catchReviewedReceipt(db *badger.DB, bot, bot2 *tgbotapi.BotAPI, ckChatID in
 
 		switch receipt.Reason {
 		case decisionRejectUnacceptable:
-			if err = setSession(db, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStatePayloadBan, nil); err != nil {
+			if err = setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStatePayloadBan, nil); err != nil {
 				return false, fmt.Errorf("update session: %w", err)
 			}
 		default:
-			if err = setSession(db, session.StartLabel, receipt.ChatID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForBill, SessionStatePayloadSomething, nil); err != nil {
+			if err = setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForBill, SessionStatePayloadSomething, nil); err != nil {
 				return false, fmt.Errorf("update session: %w", err)
 			}
 		}
@@ -414,6 +427,10 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("get next: %w", err)
 	}
+
+	//if key != nil {
+	//	fmt.Fprintf(os.Stderr, "[receipt first] %x %#v\n", key, receipt)
+	//}
 
 	return key, receipt, nil
 }

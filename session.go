@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
@@ -9,12 +10,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v4"
 )
 
 const (
-	sessionSalt   = "$Rit5"
-	sessionPrefix = "session"
+	sessionSalt   = "7=Swinee"
+	sessionPrefix = "session_"
 )
 
 const (
@@ -39,18 +40,21 @@ type Session struct {
 	Payload    []byte `json:"payload"`
 }
 
-func sessionID(chatID int64) []byte {
-	var int64bytes [8]byte
+func sessionID(secret []byte, chatID int64) []byte {
+	var int64bytes [8 + len(sessionSalt)]byte
 
-	binary.BigEndian.PutUint64(int64bytes[:], uint64(chatID))
+	binary.BigEndian.PutUint64(int64bytes[:8], uint64(chatID))
+	copy(int64bytes[8:], sessionSalt)
 
-	digest := sha256.Sum256(int64bytes[:])
-	id := append([]byte(sessionPrefix), append([]byte(sessionSalt), digest[:]...)...)
+	mac := hmac.New(sha256.New, secret)
+	mac.Write(int64bytes[:])
+
+	id := append([]byte(sessionPrefix), mac.Sum(nil)...)
 
 	return id
 }
 
-func setSession(dbase *badger.DB, label string, chatID int64, msgID int, update int64, stage int, state int, payload []byte) error {
+func setSession(dbase *badger.DB, secret []byte, label string, chatID int64, msgID int, update int64, stage int, state int, payload []byte) error {
 	session := &Session{
 		OurMsgID:   msgID,
 		Stage:      stage,
@@ -67,7 +71,7 @@ func setSession(dbase *badger.DB, label string, chatID int64, msgID int, update 
 		return fmt.Errorf("parse: %w", err)
 	}
 
-	key := sessionID(chatID)
+	key := sessionID(secret, chatID)
 	err = dbase.Update(func(txn *badger.Txn) error {
 		e := badger.NewEntry(key, data).WithTTL(SessionCommonTTL)
 		if err := txn.SetEntry(e); err != nil {
@@ -84,13 +88,13 @@ func setSession(dbase *badger.DB, label string, chatID int64, msgID int, update 
 	return nil
 }
 
-func checkSession(dbase *badger.DB, chatID int64) (*Session, error) {
+func checkSession(dbase *badger.DB, secret []byte, chatID int64) (*Session, error) {
 	var (
 		data    []byte
 		session = &Session{}
 	)
 
-	key := sessionID(chatID)
+	key := sessionID(secret, chatID)
 	err := dbase.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(key)
 		if err != nil {
@@ -128,8 +132,8 @@ func checkSession(dbase *badger.DB, chatID int64) (*Session, error) {
 	return session, nil
 }
 
-func resetSession(dbase *badger.DB, chatID int64) error {
-	key := sessionID(chatID)
+func resetSession(dbase *badger.DB, secret []byte, chatID int64) error {
+	key := sessionID(secret, chatID)
 	err := dbase.Update(func(txn *badger.Txn) error {
 		if err := txn.Delete(key); err != nil {
 			return fmt.Errorf("delete: %w", err)
