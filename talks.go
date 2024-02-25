@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v4"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/vpngen/embassy-tgbot/logs"
@@ -49,6 +49,9 @@ type handlerOpts struct {
 	ls    *LabelStorage
 	mmf   string
 	mmn   string
+
+	sessionSecret []byte
+	queueSecret   []byte
 }
 
 var onlyBase64Symbols = regexp.MustCompile(`[^A-Za-z0-9\-_]`)
@@ -92,7 +95,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 		err := handleCommands(opts, update.Message, session, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -108,7 +111,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 		_, err := SendProtectedMessage(opts.bot, update.Message.Chat.ID, update.Message.MessageID, MainTrackWarnConversationsFinished, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -123,7 +126,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 		_, err := SendProtectedMessage(opts.bot, update.Message.Chat.ID, update.Message.MessageID, MainTrackWarnWaitForApprovement, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -138,7 +141,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 		err := checkBillMessageMessage(opts, session.StartLabel, update.Message, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -152,7 +155,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 
 		if err := sendRestoreStartMessage(opts, session.StartLabel, update.Message.Chat.ID, session.State); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -178,7 +181,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 		err := checkRestoreNameMessageMessage(opts, session.StartLabel, update.Message, session.State)
 		if err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -204,7 +207,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 		err := checkRestoreWordsMessageMessage(opts, session.StartLabel, update.Message, ecode, session.State, session.Payload, dept)
 		if err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -218,7 +221,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 			err := sendWelcomeMessage(opts, session.StartLabel, update.Message.Chat.ID)
 			if err != nil {
 				if IsForbiddenError(err) {
-					setSession(opts.db, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+					setSession(opts.db, opts.sessionSecret, session.StartLabel, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 					return
 				}
@@ -254,7 +257,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 
 		if err := sendQuizMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID, ecode); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -277,7 +280,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 		err := sendWelcomeMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID)
 		if err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -291,7 +294,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 
 		if err := sendRestoreNameMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID, ecode, session.State); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -329,7 +332,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 
 		if err := sendRestoreNameMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID, ecode, session.State); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -341,7 +344,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 			_, err := SendProtectedMessage(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, MainTrackWarnConversationsFinished, ecode)
 			if err != nil {
 				if IsForbiddenError(err) {
-					setSession(opts.db, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+					setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 					return
 				}
@@ -352,7 +355,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 
 		if err := sendWelcomeMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -383,7 +386,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 			_, err := SendProtectedMessage(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, MainTrackWarnConversationsFinished, ecode)
 			if err != nil {
 				if IsForbiddenError(err) {
-					setSession(opts.db, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+					setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 					return
 				}
@@ -396,7 +399,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 
 		if err := sendRestoreStartMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID, prev); err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return
 			}
@@ -464,7 +467,7 @@ func sendWelcomeMessage(opts handlerOpts, label string, chatID int64) error {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(opts.db, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForWanting, SessionStatePayloadSomething, nil)
+	err = setSession(opts.db, opts.sessionSecret, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForWanting, SessionStatePayloadSomething, nil)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -474,12 +477,23 @@ func sendWelcomeMessage(opts handlerOpts, label string, chatID int64) error {
 
 // Send Quiz message.
 func sendQuizMessage(opts handlerOpts, label string, chatID int64, ecode string) error {
-	msg, err := SendProtectedMessage(opts.bot, chatID, 0, MainTrackQuizMessage, ecode)
+	num, _, _ := strings.Cut(label, "_")
+
+	text := MainTrackQuizMessage[num+"_"]
+	if text == "" {
+		for prefix := range MainTrackQuizMessage {
+			text = MainTrackQuizMessage[prefix]
+
+			break
+		}
+	}
+
+	msg, err := SendProtectedMessage(opts.bot, chatID, 0, text, ecode)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(opts.db, label, msg.Chat.ID, msg.MessageID, int64(msg.Date), stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
+	err = setSession(opts.db, opts.sessionSecret, label, msg.Chat.ID, msg.MessageID, int64(msg.Date), stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -505,7 +519,7 @@ func checkBillMessageMessage(opts handlerOpts, label string, Message *tgbotapi.M
 
 	logs.Debugf("photo ID: %s\n", Message.Photo[photoIDX].FileID)
 
-	if err := PutReceipt(opts.db, Message.Chat.ID, Message.Photo[photoIDX].FileID); err != nil {
+	if err := PutReceipt(opts.db, opts.queueSecret, Message.Chat.ID, Message.Photo[photoIDX].FileID); err != nil {
 		return fmt.Errorf("put: %w", err)
 	}
 
@@ -514,7 +528,7 @@ func checkBillMessageMessage(opts handlerOpts, label string, Message *tgbotapi.M
 		return fmt.Errorf("send: %w", err)
 	}
 
-	if err := setSession(opts.db, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForApprovement, SessionStatePayloadSomething, nil); err != nil {
+	if err := setSession(opts.db, opts.sessionSecret, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForApprovement, SessionStatePayloadSomething, nil); err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
 
@@ -554,7 +568,7 @@ func sendRestoreStartMessage(opts handlerOpts, label string, chatID int64, prev 
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(opts.db, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackStart, prev, nil)
+	err = setSession(opts.db, opts.sessionSecret, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackStart, prev, nil)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -575,7 +589,7 @@ func sendRestoreNameMessage(opts handlerOpts, label string, chatID int64, ecode 
 		return fmt.Errorf("send: %w", err)
 	}
 
-	err = setSession(opts.db, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackSendName, prev, nil)
+	err = setSession(opts.db, opts.sessionSecret, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackSendName, prev, nil)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -595,7 +609,7 @@ func sendRestoreWordsMessage(opts handlerOpts, label string, chatID int64, prev 
 		return fmt.Errorf("send: %w", err)
 	}
 
-	if err := setSession(opts.db, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackSendWords, prev, []byte(text)); err != nil {
+	if err := setSession(opts.db, opts.sessionSecret, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackSendWords, prev, []byte(text)); err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
 
@@ -628,7 +642,7 @@ func checkRestoreNameMessageMessage(opts handlerOpts, label string, Message *tgb
 			return fmt.Errorf("send: %w", err)
 		}
 
-		err = setSession(opts.db, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackSendName, prev, nil)
+		err = setSession(opts.db, opts.sessionSecret, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackSendName, prev, nil)
 		if err != nil {
 			return fmt.Errorf("session: %w", err)
 		}
@@ -656,7 +670,7 @@ func sendWordsFailed(opts handlerOpts, label string, chatID int64, prev int, tex
 		return fmt.Errorf("send: %w", err)
 	}
 
-	if err := setSession(opts.db, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackSendWords, prev, text); err != nil {
+	if err := setSession(opts.db, opts.sessionSecret, label, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageRestoreTrackSendWords, prev, text); err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
 
@@ -693,7 +707,7 @@ func checkRestoreWordsMessageMessage(opts handlerOpts, label string, Message *tg
 		return sendWordsFailed(opts, label, Message.Chat.ID, prev, name)
 	}
 
-	if err := setSession(opts.db, label, Message.Chat.ID, 0, 0, stageRestoreTrackCleanup, prev, nil); err != nil {
+	if err := setSession(opts.db, opts.sessionSecret, label, Message.Chat.ID, 0, 0, stageRestoreTrackCleanup, prev, nil); err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
 
@@ -703,7 +717,7 @@ func checkRestoreWordsMessageMessage(opts handlerOpts, label string, Message *tg
 // authentificate for dilog.
 func auth(opts handlerOpts, chatID int64, ut int, ecode string) (*Session, bool) {
 	/// check session.
-	session, err := checkSession(opts.db, chatID)
+	session, err := checkSession(opts.db, opts.sessionSecret, chatID)
 	if err != nil {
 		stWrong(opts.bot, chatID, ecode, fmt.Errorf("check session: %w", err))
 
@@ -767,7 +781,7 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 	command := Message.Command()
 
 	if opts.debug == int(logs.LevelDebug) && command == "vpnregen" {
-		err := resetSession(opts.db, Message.Chat.ID)
+		err := resetSession(opts.db, opts.sessionSecret, Message.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("vpnregen: %w", err)
 		}
@@ -877,13 +891,27 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 			}
 
 			if command == "start" && session.Stage == stageMainTrackStart {
+				x := rand.Intn(len(MainTrackQuizMessage))
+				for prefix := range MainTrackQuizMessage {
+					if x == 0 {
+						label = prefix + label
+						if len(label) > 64 {
+							label = label[:64]
+						}
+
+						break
+					}
+
+					x--
+				}
+
 				if err := opts.ls.Update(label); err != nil {
 					return fmt.Errorf("update label: %w", err)
 				}
 			}
 
 			if session.Stage != stageMainTrackWaitForWanting && !warnAutodeleteSettings(opts, Message.Chat.ID, Message.Date, ecode) {
-				setSession(opts.db, label, Message.Chat.ID, 0, 0, stageMainTrackStart, SessionStatePayloadBan, nil)
+				setSession(opts.db, opts.sessionSecret, label, Message.Chat.ID, 0, 0, stageMainTrackStart, SessionStatePayloadBan, nil)
 
 				return nil
 			}
@@ -966,7 +994,7 @@ func checkMaintenanceMode(opts handlerOpts, label string, chatID int64, ecode st
 		_, err := SendProtectedMessage(opts.bot, chatID, 0, text, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
-				setSession(opts.db, label, chatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(opts.db, opts.sessionSecret, label, chatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 			}
 		}
 

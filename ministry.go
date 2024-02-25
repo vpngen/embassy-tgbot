@@ -88,6 +88,30 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(3 * time.Second)
 
+	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
+		msg = fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
+		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		if err != nil {
+			return fmt.Errorf("send outline config: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
+	}
+
+	if opts.Configs.AmnzOvcConfig != nil &&
+		opts.Configs.AmnzOvcConfig.FileContent != nil &&
+		opts.Configs.AmnzOvcConfig.FileName != nil {
+		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
+		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
+		doc.ParseMode = tgbotapi.ModeMarkdown
+
+		if _, err := bot.Request(doc); err != nil {
+			return fmt.Errorf("send amnezia file config: %w", err)
+		}
+
+		time.Sleep(3 * time.Second)
+	}
+
 	if opts.Configs.WireguardConfig != nil &&
 		opts.Configs.WireguardConfig.FileContent != nil &&
 		opts.Configs.WireguardConfig.FileName != nil &&
@@ -131,20 +155,6 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
-	if opts.Configs.AmnzOvcConfig != nil &&
-		opts.Configs.AmnzOvcConfig.FileContent != nil &&
-		opts.Configs.AmnzOvcConfig.FileName != nil {
-		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
-		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
-		doc.ParseMode = tgbotapi.ModeMarkdown
-
-		if _, err := bot.Request(doc); err != nil {
-			return fmt.Errorf("send amnezia file config: %w", err)
-		}
-
-		time.Sleep(3 * time.Second)
-	}
-
 	if opts.Configs.IPSecL2TPManualConfig != nil &&
 		opts.Configs.IPSecL2TPManualConfig.PSK != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Username != nil &&
@@ -160,16 +170,6 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		if err != nil {
 			return fmt.Errorf("send ipsec l2tp manual config: %w", err)
 		}
-	}
-
-	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
-		msg = fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
-		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
-		if err != nil {
-			return fmt.Errorf("send outline config: %w", err)
-		}
-
-		time.Sleep(2 * time.Second)
 	}
 
 	//	time.Sleep(2 * time.Second)

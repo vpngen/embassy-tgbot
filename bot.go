@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v4"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/vpngen/embassy-tgbot/logs"
@@ -34,6 +34,8 @@ func runBot(
 	maintenanceModeFull string,
 	maintenanceModeNew string,
 	labelStorage *LabelStorage,
+	sessionSecret []byte,
+	queueSecret []byte,
 ) {
 	defer waitGroup.Done()
 
@@ -46,6 +48,9 @@ func runBot(
 		ls:    labelStorage,
 		mmf:   maintenanceModeFull,
 		mmn:   maintenanceModeNew,
+
+		sessionSecret: sessionSecret,
+		queueSecret:   queueSecret,
 	}
 
 	u := tgbotapi.NewUpdate(0)
