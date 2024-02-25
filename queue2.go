@@ -8,19 +8,17 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/crypto/pbkdf2"
-
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v4"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/google/uuid"
 
 	"github.com/vpngen/embassy-tgbot/logs"
 )
 
 const (
-	receiptqPrefix2 = "rcpt2q"
-	receiptqKeyLen2 = 16 - len(receiptqPrefix2)
-	receiptSalt2    = "Lewm)Ow6"
-	receiptTTL2     = 48 * time.Hour
+	receiptqPrefix2     = "receiptq2_" // <= 16
+	maxReceiptsButtoLen = 64
+	receiptTTL2         = 48 * time.Hour
 )
 
 // Check receipt stages
@@ -36,11 +34,12 @@ type CkReceipt2 struct {
 	ReceiptQueueID []byte `json:"receiptq_id"`
 	Accept         bool   `json:"accept"`
 	Reason         int    `json:"reason"` // rejection reason
+	PhotoSum       []byte `json:"photo_sum,omitempty"`
 }
 
 // PutReceipt2 - put receipt in the queue
-func PutReceipt2(dbase *badger.DB, receiptQID []byte) ([]byte, error) {
-	key := queueID2(receiptQID)
+func PutReceipt2(dbase *badger.DB, secret []byte, receiptQID []byte) ([]byte, error) {
+	key := queueID2()
 
 	receipt := &CkReceipt2{
 		Stage:          CkReceiptStageNone2,
@@ -74,27 +73,27 @@ func PutReceipt2(dbase *badger.DB, receiptQID []byte) ([]byte, error) {
 		return nil, fmt.Errorf("update: %w", err)
 	}
 
-	// fmt.Printf("*** q2 id (q1 id): %x (%x)\n", key, receiptQID)
+	// fmt.Fprintf(os.Stderr, "[receipt put 2] put: %x %#v\n", key, receipt)
 
 	return key, nil
 }
 
 // UpdateReceipt2 - .
-func UpdateReceipt2(dbase *badger.DB, id []byte, stage int, accept bool, reason int) error {
-	// fmt.Printf("*** update q2: %x stage=%d\n", id, stage)
+func UpdateReceipt2(dbase *badger.DB, key []byte, stage int, accept bool, reason int, sum []byte) error {
+	// fmt.Fprintf(os.Stderr, "*** UpdateReceipt2: %s\n", string(key))
 
 	err := dbase.Update(func(txn *badger.Txn) error {
-		data, err := getReceipt2(txn, id)
+		data, err := getReceipt2(txn, key)
 		if err != nil {
 			return fmt.Errorf("get receipt: %w", err)
 		}
 
-		data, err = updateReceipt2(data, stage, accept, reason)
+		data, err = updateReceipt2(data, stage, accept, reason, sum)
 		if err != nil {
 			return fmt.Errorf("marshal: %w", err)
 		}
 
-		e := badger.NewEntry(id, data).WithTTL(receiptTTL2)
+		e := badger.NewEntry(key, data).WithTTL(receiptTTL2)
 		if err := txn.SetEntry(e); err != nil {
 			return fmt.Errorf("set: %w", err)
 		}
@@ -108,7 +107,7 @@ func UpdateReceipt2(dbase *badger.DB, id []byte, stage int, accept bool, reason 
 	return nil
 }
 
-func updateReceipt2(data []byte, stage int, accept bool, reason int) ([]byte, error) {
+func updateReceipt2(data []byte, stage int, accept bool, reason int, sum []byte) ([]byte, error) {
 	receipt := &CkReceipt2{}
 
 	err := json.Unmarshal(data, receipt)
@@ -119,6 +118,11 @@ func updateReceipt2(data []byte, stage int, accept bool, reason int) ([]byte, er
 	receipt.Stage = stage
 	receipt.Accept = accept
 	receipt.Reason = reason
+	if sum != nil {
+		receipt.PhotoSum = sum
+	}
+
+	// fmt.Fprintf(os.Stderr, "[receipt update 2] update: %#v\n", receipt)
 
 	data, err = json.Marshal(receipt)
 	if err != nil {
@@ -128,10 +132,12 @@ func updateReceipt2(data []byte, stage int, accept bool, reason int) ([]byte, er
 	return data, nil
 }
 
-func queueID2(id []byte) []byte {
-	key := pbkdf2.Key(id, []byte(receiptSalt2), 2048, receiptqKeyLen2, sha256.New)
+func queueID2() []byte {
+	key := uuid.New()
 
-	return append([]byte(receiptqPrefix2), key...)
+	id := append([]byte(receiptqPrefix2), key[:]...)
+
+	return id
 }
 
 // DeleteReceipt2 - .
@@ -196,16 +202,14 @@ func qround2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 		return
 	}
 
-	// fmt.Printf("*** qround2 rcpt:%x %v\n", key, receipt)
+	// fmt.Fprintf(os.Stderr, "*** qround2 rcpt:%x %v\n", key, receipt)
 
-	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason); err != nil {
-		logs.Errf("update receipt2: %s", err)
-
+	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason, receipt.PhotoSum); err != nil {
 		return
 	}
 
 	if err := DeleteReceipt2(db, key); err != nil {
-		logs.Errf("delete receipt2: %s", err)
+		logs.Errf("delete receipt2: %s\n", err)
 
 		return
 	}
@@ -235,6 +239,8 @@ func catchFirstReceipt2(db *badger.DB, stage int) ([]byte, *CkReceipt2, error) {
 			if err != nil {
 				return err
 			}
+
+			// fmt.Fprintf(os.Stderr, "*** catchFirstReceipt2 KEY %s, DATA: %s\n", string(key), string(data))
 
 			err = json.Unmarshal(data, receipt)
 			if err != nil {
@@ -266,24 +272,58 @@ func catchFirstReceipt2(db *badger.DB, stage int) ([]byte, *CkReceipt2, error) {
 }
 
 // SendReceipt2 - .
-func SendReceipt2(db *badger.DB, bot2 *tgbotapi.BotAPI, receiptQID []byte, ckChatID int64, data []byte) error {
-	id, err := PutReceipt2(db, receiptQID)
+func SendReceipt2(db *badger.DB, bot2 *tgbotapi.BotAPI, secret []byte, receiptQID []byte, ckChatID int64, data []byte) error {
+	id, err := PutReceipt2(db, secret, receiptQID)
 	if err != nil {
 		return fmt.Errorf("put receipt2: %w", err)
 	}
 
 	photo := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileBytes{Name: "фотка", Bytes: data})
 	// msg.ReplyMarkup = WannabeKeyboard
-	// msg.ParseMode = tgbotapi.ModeMarkdown
 	// photo.Caption =
-	photo.ReplyMarkup = makeCheckReceiptKeyboard(fmt.Sprintf("%x", id))
+
+	// Ingmund: 24.02.2024
+	// photo.ReplyMarkup = makeCheckReceiptKeyboard(fmt.Sprintf("%x", id))
+	photo.ParseMode = tgbotapi.ModeMarkdown
+
+	sum := sha256.Sum256(data)
+
+	ok, err := IsNoUniqPhoto(db, sum[:])
+	if err != nil {
+		return fmt.Errorf("uniq photo: %w", err)
+	}
+
+	reason := decisionRejectUnverifiable
+	decision := false
+
+	switch ok {
+	case true:
+		reason = decisionAcceptGeneral
+		photo.Caption = fmt.Sprintf(
+			"\U00002705"+` *Accept receipt*`+"\nAction: %s\nAction date: *%s*\nBy bot self",
+			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, buttons[reason]),
+			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, time.Now().Format(time.RFC3339)),
+		)
+
+		decision = true
+	default:
+		reason = decisionRejectDoubled
+		photo.Caption = fmt.Sprintf(
+			"\U0000274C"+` *Reject receipt*`+"\nAction: %s\nAction date: *%s*\nBy bot self",
+			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, buttons[reason]),
+			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, time.Now().Format(time.RFC3339)),
+		)
+	}
+
 	// photo.ProtectContent = true // Oleg Basisty request
 
 	if _, err := bot2.Request(photo); err != nil {
 		return fmt.Errorf("request2: %w", err)
 	}
 
-	err = UpdateReceipt2(db, id, CkReceiptStageSend2, false, decisionUnknown)
+	// Ingmund: 24.02.2024
+	// err = UpdateReceipt2(db, id, CkReceiptStageSend2, false, decisionUnknown)
+	err = UpdateReceipt2(db, id, CkReceiptStageDecision2, decision, reason, sum[:])
 	if err != nil {
 		return fmt.Errorf("update receipt send2: %w", err)
 	}
