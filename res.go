@@ -67,8 +67,8 @@ const (
 Чтобы узнавать о возможностях, проблемах и в целом о развитии проекта, обязательно подпишись на [@vpngen](https://t.me/vpngen). Инструкция как быть бригадиром - [тут](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/)
 `
 
-	// mainTrackQuizMessage - quiz message.
-	mainTrackQuizMessage = `Сейчас будет немного странное. Мы очень не хотим брать ни твой телефон, ни имейл на случай, если к нам придут злые дяди в форме и заберут эти данные. А потом как начнут их обогащать содержимым госуслуг и прочих утечек, и будет грустно. 
+	// mainTrackQuizMessage_zero - quiz message.
+	mainTrackQuizMessage_zero = `Сейчас будет немного странное. Мы очень не хотим брать ни твой телефон, ни имейл на случай, если к нам придут злые дяди в форме и заберут эти данные. А потом как начнут их обогащать содержимым госуслуг и прочих утечек, и будет грустно. 
 
 Но нам нужно понять, что ты живой нормальный человек, а не тролль из-под моста. Поэтому тебе придется:
 	
@@ -80,6 +80,13 @@ const (
 
 Ждем фоточку чека и мы дадим тебе твой VPN!
 
+_Если у тебя есть вопросы, почему твой чек отклонен — напиши в_ [поддержку](%s), _мы расскажем_ ` + "\U0000263A."
+
+	// mainTrackQuizMessage_one
+	mainTrackQuizMessage_one = `*Круто, что ты решил воспользоваться VPN Generator! Он у нас бесплатный, и  нам не нужны твои телефон и емайл.*
+
+Но мы хотим понять, что ты живой нормальный человек, а не троль из-под моста, поэтому пришли, *пожалуйста, любую картинку в этот чат и жди наших инструкций*.
+	
 _Если у тебя есть вопросы, почему твой чек отклонен — напиши в_ [поддержку](%s), _мы расскажем_ ` + "\U0000263A."
 
 	// MainTrackSendForAttestationMessage - receipt have accepted.
@@ -191,7 +198,7 @@ var (
 	MainTrackFailMessage string
 
 	// MainTrackQuizMessage - quiz message.
-	MainTrackQuizMessage string
+	MainTrackQuizMessage map[string]string = map[string]string{} //nolint
 
 	// WannabeKeyboard - wanna keyboard.
 	WannabeKeyboard tgbotapi.InlineKeyboardMarkup //nolint
@@ -245,6 +252,7 @@ var (
 		decisionRejectAmountMismatch: "",
 		decisionRejectTooOld:         "",
 		decisionRejectWithCallback:   "",
+		decisionRejectDoubled:        "",
 	}
 
 	// decisionCommentsTemplate - descriptive text on check decidion.
@@ -260,6 +268,7 @@ var (
 		decisionRejectAmountMismatch: "Похоже что-то серьезно не так с суммой чека. Пришли пожалуйста другой! " + extraSupportText,
 		decisionRejectTooOld:         "Похоже чек устарел. Пришли пожалуйста тот, что не старше недели. " + extraSupportText,
 		decisionRejectWithCallback:   "Похоже что-то не так с чеком и нам нужно поговорить. Свяжись пожалуйста с [нами](%s).",
+		decisionRejectDoubled:        "Похоже такую картинку нам уже присылали. Пришли пожалуйста другую. " + extraSupportText,
 	}
 )
 
@@ -315,7 +324,8 @@ func SetSupportMessages(url string) {
 	)
 
 	MainTrackFailMessage = fmt.Sprintf(mainTrackFailMessage, link)
-	MainTrackQuizMessage = fmt.Sprintf(mainTrackQuizMessage, link)
+	MainTrackQuizMessage["0_"] = fmt.Sprintf(mainTrackQuizMessage_zero, link)
+	MainTrackQuizMessage["1_"] = fmt.Sprintf(mainTrackQuizMessage_one, link)
 	FatalSomeThingWrong = fmt.Sprintf(fatalSomeThingWrong, link)
 	InfoUnknownCommandMessage = fmt.Sprintf(infoUnknownCommandMessage, link)
 	RejectMessage = fmt.Sprintf(rejectMessage, link)
@@ -335,4 +345,5 @@ func SetSupportMessages(url string) {
 	DecisionComments[decisionRejectAmountMismatch] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectAmountMismatch], link)
 	DecisionComments[decisionRejectTooOld] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectTooOld], link)
 	DecisionComments[decisionRejectWithCallback] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectWithCallback], link)
+	DecisionComments[decisionRejectDoubled] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectDoubled], link)
 }

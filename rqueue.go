@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,11 +35,12 @@ var ErrKeyConflict = errors.New("key conflict")
 
 // CkReceipt - receipt for manual or auto check.
 type CkReceipt struct {
-	Stage    int    `json:"stage"`    // stage
-	ChatID   int64  `json:"chat_id"`  // user
-	FileID   string `json:"file_id"`  // photo
-	Accepted bool   `json:"accepted"` // status
-	Reason   int    `json:"reason"`   // rejection reason
+	Stage    int    `json:"stage"`     // stage
+	ChatID   int64  `json:"chat_id"`   // user
+	FileID   string `json:"file_id"`   // photo
+	Accepted bool   `json:"accepted"`  // status
+	Reason   int    `json:"reason"`    // rejection reason
+	PhotoSum []byte `json:"photo_sum"` // photo checksum
 }
 
 // PutReceipt - put receipt in the queue.
@@ -94,7 +96,7 @@ func queueID() []byte {
 }
 
 // UpdateReceipt - update receipt review status and stage.
-func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool, reason int) error {
+func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool, reason int, sum []byte) error {
 	// fmt.Printf("*** update q1: %x stage=%d\n", id, stage)
 
 	err := dbase.Update(func(txn *badger.Txn) error {
@@ -113,6 +115,9 @@ func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool, reason i
 		receipt.Stage = stage
 		receipt.Accepted = accept
 		receipt.Reason = reason
+		if sum != nil {
+			receipt.PhotoSum = append([]byte{}, sum...)
+		}
 
 		data, err = json.Marshal(receipt)
 		if err != nil {
@@ -260,7 +265,9 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 		return false, fmt.Errorf("send receipt2: %w", err)
 	}
 
-	err = UpdateReceipt(db, key, CkReceiptStageSent, false, decisionUnknown)
+	sum := sha256.Sum256(photo)
+
+	err = UpdateReceipt(db, key, CkReceiptStageSent, false, decisionUnknown, sum[:])
 	if err != nil {
 		return false, fmt.Errorf("receipt sent: %w", err)
 	}
@@ -291,6 +298,8 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot, bot2 *tgbota
 
 	switch receipt.Accepted {
 	case true:
+		sum := receipt.PhotoSum
+
 		if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode); err != nil {
 				if IsForbiddenError(err) {
@@ -322,6 +331,12 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot, bot2 *tgbota
 			}
 
 			return false, fmt.Errorf("creation: %w", err)
+		}
+
+		if sum != nil {
+			if err := NewUniqPhoto(db, sum); err != nil {
+				return false, fmt.Errorf("new uniq photo: %w", err)
+			}
 		}
 
 		if err := setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStatePayloadSomething, nil); err != nil {

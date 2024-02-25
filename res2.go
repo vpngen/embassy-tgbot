@@ -1,11 +1,5 @@
 package main
 
-import (
-	"fmt"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-)
-
 const (
 	acceptReceiptPrefix = "a"
 	rejectReceiptPrefix = "r"
@@ -25,24 +19,26 @@ const (
 	decisionRejectAmountMismatch
 	decisionRejectTooOld
 	decisionRejectWithCallback
+	decisionRejectDoubled
 )
 
-var (
-	buttons = map[int]string{
-		decisionUnknown:              "\U0001f937 Не знаю",
-		decisionAcceptGeneral:        "\U0001f44d Подтвердить",
-		decisionAcceptCats:           "\U0001f63b Котики",
-		decisionRejectUnacceptable:   "\U0001f595 Бан", //\U0000274c
-		decisionRejectUnreadable:     "\U0001f576 Нечит.",
-		decisionRejectBankCard:       "\U0001F4B3 Безнал",
-		decisionRejectElectronic:     "\U0001f4f1 Эл-ый",
-		decisionRejectIncomplete:     "\U0001f313 Неполн.",
-		decisionRejectUnverifiable:   "\U0001f46e Непров.",
-		decisionRejectAmountMismatch: "\U0001f4b5 Сумма",
-		decisionRejectTooOld:         "\U0001f4c5 Старый",
-		decisionRejectWithCallback:   "\u260e\ufe0f Свяжитесь",
-	}
-)
+var buttons = map[int]string{
+	decisionUnknown:              "\U0001f937 Не знаю",
+	decisionAcceptGeneral:        "\U0001f44d Подтвердить",
+	decisionAcceptCats:           "\U0001f63b Котики",
+	decisionRejectUnacceptable:   "\U0001f595 Бан", //\U0000274c
+	decisionRejectUnreadable:     "\U0001f576 Нечит.",
+	decisionRejectBankCard:       "\U0001F4B3 Безнал",
+	decisionRejectElectronic:     "\U0001f4f1 Эл-ый",
+	decisionRejectIncomplete:     "\U0001f313 Неполн.",
+	decisionRejectUnverifiable:   "\U0001f46e Непров.",
+	decisionRejectAmountMismatch: "\U0001f4b5 Сумма",
+	decisionRejectTooOld:         "\U0001f4c5 Старый",
+	decisionRejectWithCallback:   "\u260e\ufe0f Свяжитесь",
+	decisionRejectDoubled:        "\u270c\ufe0f Повтор",
+}
+
+/*
 
 func makeKeyboardButton(reason int, id string, accept bool) tgbotapi.InlineKeyboardButton {
 	var payload string
@@ -84,3 +80,5 @@ func makeCheckReceiptKeyboard(id string) tgbotapi.InlineKeyboardMarkup {
 		),
 	)
 }
+
+*/

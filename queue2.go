@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,6 +34,7 @@ type CkReceipt2 struct {
 	ReceiptQueueID []byte `json:"receiptq_id"`
 	Accept         bool   `json:"accept"`
 	Reason         int    `json:"reason"` // rejection reason
+	PhotoSum       []byte `json:"photo_sum,omitempty"`
 }
 
 // PutReceipt2 - put receipt in the queue
@@ -77,7 +79,7 @@ func PutReceipt2(dbase *badger.DB, secret []byte, receiptQID []byte) ([]byte, er
 }
 
 // UpdateReceipt2 - .
-func UpdateReceipt2(dbase *badger.DB, key []byte, stage int, accept bool, reason int) error {
+func UpdateReceipt2(dbase *badger.DB, key []byte, stage int, accept bool, reason int, sum []byte) error {
 	// fmt.Fprintf(os.Stderr, "*** UpdateReceipt2: %s\n", string(key))
 
 	err := dbase.Update(func(txn *badger.Txn) error {
@@ -86,7 +88,7 @@ func UpdateReceipt2(dbase *badger.DB, key []byte, stage int, accept bool, reason
 			return fmt.Errorf("get receipt: %w", err)
 		}
 
-		data, err = updateReceipt2(data, stage, accept, reason)
+		data, err = updateReceipt2(data, stage, accept, reason, sum)
 		if err != nil {
 			return fmt.Errorf("marshal: %w", err)
 		}
@@ -105,7 +107,7 @@ func UpdateReceipt2(dbase *badger.DB, key []byte, stage int, accept bool, reason
 	return nil
 }
 
-func updateReceipt2(data []byte, stage int, accept bool, reason int) ([]byte, error) {
+func updateReceipt2(data []byte, stage int, accept bool, reason int, sum []byte) ([]byte, error) {
 	receipt := &CkReceipt2{}
 
 	err := json.Unmarshal(data, receipt)
@@ -116,6 +118,9 @@ func updateReceipt2(data []byte, stage int, accept bool, reason int) ([]byte, er
 	receipt.Stage = stage
 	receipt.Accept = accept
 	receipt.Reason = reason
+	if sum != nil {
+		receipt.PhotoSum = sum
+	}
 
 	// fmt.Fprintf(os.Stderr, "[receipt update 2] update: %#v\n", receipt)
 
@@ -199,9 +204,7 @@ func qround2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 
 	// fmt.Fprintf(os.Stderr, "*** qround2 rcpt:%x %v\n", key, receipt)
 
-	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason); err != nil {
-		logs.Errf("update receipt2: %s\n", err)
-
+	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason, receipt.PhotoSum); err != nil {
 		return
 	}
 
@@ -277,16 +280,50 @@ func SendReceipt2(db *badger.DB, bot2 *tgbotapi.BotAPI, secret []byte, receiptQI
 
 	photo := tgbotapi.NewPhoto(ckChatID, tgbotapi.FileBytes{Name: "фотка", Bytes: data})
 	// msg.ReplyMarkup = WannabeKeyboard
-	// msg.ParseMode = tgbotapi.ModeMarkdown
 	// photo.Caption =
-	photo.ReplyMarkup = makeCheckReceiptKeyboard(fmt.Sprintf("%x", id))
+
+	// Ingmund: 24.02.2024
+	// photo.ReplyMarkup = makeCheckReceiptKeyboard(fmt.Sprintf("%x", id))
+	photo.ParseMode = tgbotapi.ModeMarkdown
+
+	sum := sha256.Sum256(data)
+
+	ok, err := IsNoUniqPhoto(db, sum[:])
+	if err != nil {
+		return fmt.Errorf("uniq photo: %w", err)
+	}
+
+	reason := decisionRejectUnverifiable
+	decision := false
+
+	switch ok {
+	case true:
+		reason = decisionAcceptGeneral
+		photo.Caption = fmt.Sprintf(
+			"\U00002705"+` *Accept receipt*`+"\nAction: %s\nAction date: *%s*\nBy bot self",
+			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, buttons[reason]),
+			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, time.Now().Format(time.RFC3339)),
+		)
+
+		decision = true
+	default:
+		reason = decisionRejectDoubled
+		photo.Caption = fmt.Sprintf(
+			"\U0000274C"+` *Reject receipt*`+"\nAction: %s\nAction date: *%s*\nBy bot self",
+			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, buttons[reason]),
+			tgbotapi.EscapeText(tgbotapi.ModeMarkdown, time.Now().Format(time.RFC3339)),
+		)
+	}
+
 	// photo.ProtectContent = true // Oleg Basisty request
 
 	if _, err := bot2.Request(photo); err != nil {
 		return fmt.Errorf("request2: %w", err)
 	}
 
-	err = UpdateReceipt2(db, id, CkReceiptStageSend2, false, decisionUnknown)
+	// Ingmund: 24.02.2024
+	// err = UpdateReceipt2(db, id, CkReceiptStageSend2, false, decisionUnknown)
+	err = UpdateReceipt2(db, id, CkReceiptStageDecision2, decision, reason, sum[:])
 	if err != nil {
 		return fmt.Errorf("update receipt send2: %w", err)
 	}

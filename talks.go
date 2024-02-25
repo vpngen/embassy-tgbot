@@ -477,7 +477,18 @@ func sendWelcomeMessage(opts handlerOpts, label string, chatID int64) error {
 
 // Send Quiz message.
 func sendQuizMessage(opts handlerOpts, label string, chatID int64, ecode string) error {
-	msg, err := SendProtectedMessage(opts.bot, chatID, 0, MainTrackQuizMessage, ecode)
+	num, _, _ := strings.Cut(label, "_")
+
+	text := MainTrackQuizMessage[num+"_"]
+	if text == "" {
+		for prefix := range MainTrackQuizMessage {
+			text = MainTrackQuizMessage[prefix]
+
+			break
+		}
+	}
+
+	msg, err := SendProtectedMessage(opts.bot, chatID, 0, text, ecode)
 	if err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
@@ -880,6 +891,20 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 			}
 
 			if command == "start" && session.Stage == stageMainTrackStart {
+				x := rand.Intn(len(MainTrackQuizMessage))
+				for prefix := range MainTrackQuizMessage {
+					if x == 0 {
+						label = prefix + label
+						if len(label) > 64 {
+							label = label[:64]
+						}
+
+						break
+					}
+
+					x--
+				}
+
 				if err := opts.ls.Update(label); err != nil {
 					return fmt.Errorf("update label: %w", err)
 				}
