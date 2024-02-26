@@ -29,7 +29,7 @@ func NewLabelStorage(filename string) (*LabelStorage, error) {
 		filename: filename,
 	}
 
-	w, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE|os.O_TRUNC, filePerm)
+	w, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, filePerm)
 	if err != nil {
 		return nil, fmt.Errorf("create file: %w", err)
 	}
