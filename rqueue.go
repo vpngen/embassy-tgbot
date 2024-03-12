@@ -228,7 +228,7 @@ func rqround(db *badger.DB, sessionSecret []byte, queue2Secret []byte, bot, bot2
 	}
 
 	if !ok {
-		_, err = catchReviewedReceipt(db, sessionSecret, bot, bot2, ckChatID, dept)
+		_, err = catchReviewedReceipt(db, sessionSecret, bot, dept)
 		if err != nil {
 			logs.Errf("reviewed receipt: %s\n", err)
 
@@ -276,7 +276,7 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 }
 
 // catch reviewed receipt
-func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept DeptOpts) (bool, error) {
+func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.BotAPI, dept DeptOpts) (bool, error) {
 	key, receipt, err := catchFirstReceipt(db, CkReceiptStageReceived)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)

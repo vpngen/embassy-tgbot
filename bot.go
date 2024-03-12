@@ -10,7 +10,7 @@ import (
 	"github.com/vpngen/embassy-tgbot/logs"
 )
 
-func createBot(token string, debug bool) (*tgbotapi.BotAPI, error) {
+func createBot(token string) (*tgbotapi.BotAPI, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, fmt.Errorf("create bot: %w", err)
