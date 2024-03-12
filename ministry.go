@@ -3,29 +3,39 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http/httputil"
 	"net/netip"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/btcsuite/btcd/btcutil/base58"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/google/uuid"
 	"github.com/vpngen/embassy-tgbot/internal/kdlib"
 	"github.com/vpngen/keydesk/gen/models"
+	"github.com/vpngen/keydesk/keydesk"
 	"github.com/vpngen/wordsgens/namesgenerator"
 	"github.com/vpngen/wordsgens/seedgenerator"
 	"golang.org/x/crypto/ssh"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
 	"github.com/vpngen/ministry"
+
+	crand "crypto/rand"
+
+	klib "github.com/vpngen/keydesk/kdlib"
 )
 
 const (
@@ -555,7 +565,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, label string, chatID int64, ecode string
 	case true:
 		fmt.Fprintf(os.Stderr, "FAKE call with label: %s\n", label)
 
-		wgconf, err = genGrants(dept)
+		wgconf, err = genGrantsV2()
 		if err != nil {
 			return fmt.Errorf("gen grants: %w", err)
 		}
@@ -663,7 +673,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Dep
 		}
 
 	case true:
-		wgconf, err = genGrants(dept)
+		wgconf, err = genGrantsV2()
 		if err != nil {
 			return fmt.Errorf("gen grants: %w", err)
 		}
@@ -679,6 +689,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Dep
 	return nil
 }
 
+/*
 func genGrants(_ DeptOpts) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 	wgconf := &ministry.Answer{}
@@ -745,6 +756,159 @@ AllowedIPs = 0.0.0.0/0,::/0
 	)
 
 	wgconf.Configs.WireguardConfig.FileContent = &text
+
+	return wgconf, nil
+}
+*/
+
+func genGrantsV2() (*ministry.Answer, error) {
+	// opts := &grantPkg{}
+	wgconf := &ministry.Answer{}
+
+	fullname, person, err := namesgenerator.PhysicsAwardeeShort()
+	if err != nil {
+		return nil, fmt.Errorf("physics gen: %w", err)
+	}
+
+	wgconf.Name = fullname
+	wgconf.Person = person
+
+	wgconf.Mnemo, _, _, err = seedgenerator.Seed(seedgenerator.ENT64, fakeSeedPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("gen seed6: %w", err)
+	}
+
+	wgconf.KeydeskIPv6 = klib.RandomAddrIPv6(netip.MustParsePrefix(fakeKeydeskPrefix))
+
+	numbered := fmt.Sprintf("%03d %s", rand.Int31n(256), fullname)
+	tunname := kdlib.SanitizeFilename(numbered)
+	filename := tunname + ".conf"
+
+	wgconf.Configs = models.Newuser{
+		UserName: &numbered,
+		WireguardConfig: &models.NewuserWireguardConfig{
+			FileName:   &filename,
+			TonnelName: &tunname,
+		},
+	}
+
+	wgkey, err := wgtypes.GenerateKey()
+	if err != nil {
+		return nil, fmt.Errorf("gen wg psk: %w", err)
+	}
+
+	wgpriv, err := wgtypes.GeneratePrivateKey()
+	if err != nil {
+		return nil, fmt.Errorf("gen wg psk: %w", err)
+	}
+
+	wgpub := wgpriv.PublicKey()
+
+	tmpl := `[Interface]
+Address = %s
+PrivateKey = %s
+DNS = %s
+
+[Peer]
+Endpoint = %s:51820
+PublicKey = %s
+PresharedKey = %s
+AllowedIPs = 0.0.0.0/0,::/0
+`
+
+	ipv4 := klib.RandomAddrIPv4(netip.MustParsePrefix(fakeCGNAT))
+	ipv6 := klib.RandomAddrIPv6(netip.MustParsePrefix(fakeULA))
+	ep := klib.RandomAddrIPv4(netip.MustParsePrefix(fakeEndpointNet))
+
+	text := fmt.Sprintf(
+		tmpl,
+		netip.PrefixFrom(ipv4, 32).String()+","+netip.PrefixFrom(ipv6, 128).String(),
+		base64.StdEncoding.WithPadding(base64.StdPadding).EncodeToString(wgpriv[:]),
+		ipv4.String()+","+ipv6.String(),
+		ep.String(),
+		base64.StdEncoding.WithPadding(base64.StdPadding).EncodeToString(wgpub[:]),
+		base64.StdEncoding.WithPadding(base64.StdPadding).EncodeToString(wgkey[:]),
+	)
+
+	wgconf.Configs.WireguardConfig.FileContent = &text
+
+	secretRand := make([]byte, keydesk.OutlineSecretLen)
+	if _, err := crand.Read(secretRand); err != nil {
+		return nil, fmt.Errorf("secret rand: %w", err)
+	}
+
+	outlineSecret := base58.Encode(secretRand)
+
+	if len(outlineSecret) < keydesk.IPSecPasswordLen {
+		return nil, fmt.Errorf("encoded len err")
+	}
+
+	outlineSecret = outlineSecret[:keydesk.OutlineSecretLen]
+
+	accessKey := "ss://" + base64.StdEncoding.WithPadding(base64.NoPadding).EncodeToString(
+		fmt.Appendf([]byte{}, "chacha20-ietf-poly1305:%s@%s:%d", outlineSecret, ep, 46789),
+	) + "#" + url.QueryEscape(numbered)
+	wgconf.Configs.OutlineConfig = &models.NewuserOutlineConfig{
+		AccessKey: &accessKey,
+	}
+
+	cloakByPassUID := uuid.New()
+
+	cloakConfig, err := keydesk.NewCloackConfig(
+		ep.String(),
+		base64.StdEncoding.WithPadding(base64.StdPadding).EncodeToString(wgpub[:]),
+		base64.StdEncoding.WithPadding(base64.StdPadding).EncodeToString(cloakByPassUID[:]),
+		"chrome",
+		"openvpn",
+		"vk.com",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("marshal cloak config: %w", err)
+	}
+
+	certOvcCA, _, err := klib.NewOvCA()
+	if err != nil {
+		return nil, fmt.Errorf("ov new ca: %w", err)
+	}
+
+	certOvcU, keyOvcU, err := klib.NewOvCA()
+	if err != nil {
+		return nil, fmt.Errorf("ov new user: %w", err)
+	}
+
+	keyOvcUPKCS8, err := x509.MarshalPKCS8PrivateKey(keyOvcU)
+	if err != nil {
+		return nil, fmt.Errorf("marshal key: %w", err)
+	}
+
+	openvpnConfig, err := keydesk.NewOpenVPNConfigJson(
+		"10.0.0.1",
+		ep.String(),
+		string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certOvcCA})),
+		string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certOvcU})),
+		string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyOvcUPKCS8})),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("marshal openvpn config: %w", err)
+	}
+
+	amneziaConfig := keydesk.NewAmneziaConfig(ep.String(), numbered, "1.1.1.1,8.8.8.8")
+	amneziaConfig.AddContainer(keydesk.NewAmneziaContainerWithOvc(cloakConfig, openvpnConfig, "{}"))
+	amneziaConfig.SetDefaultContainer("amnezia-openvpn-cloak")
+
+	amnzConf, err := amneziaConfig.Marshal()
+	if err != nil {
+		return nil, fmt.Errorf("amnz marshal: %w", err)
+	}
+
+	amneziaConfString := string(amnzConf)
+	afilename := tunname + ".vpn"
+
+	wgconf.Configs.AmnzOvcConfig = &models.NewuserAmnzOvcConfig{
+		FileContent: &amneziaConfString,
+		TonnelName:  &numbered,
+		FileName:    &afilename,
+	}
 
 	return wgconf, nil
 }
