@@ -6,6 +6,7 @@ toolchain go1.21.0
 
 require (
 	github.com/alexsergivan/transliterator v1.0.0
+	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.2-0.20220419141443-537c005643ad
 	github.com/google/uuid v1.6.0
@@ -18,7 +19,6 @@ require (
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
-	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
