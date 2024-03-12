@@ -68,7 +68,6 @@ func PutReceipt2(dbase *badger.DB, secret []byte, receiptQID []byte) ([]byte, er
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("update: %w", err)
 	}
@@ -190,13 +189,13 @@ func ReceiptQueueLoop2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan str
 		case <-stop:
 			return
 		case <-timer.C:
-			qround2(db, bot2, ckChatID)
+			qround2(db)
 			timer.Reset(100 * time.Millisecond)
 		}
 	}
 }
 
-func qround2(db *badger.DB, bot2 *tgbotapi.BotAPI, ckChatID int64) {
+func qround2(db *badger.DB) {
 	key, receipt, err := catchFirstReceipt2(db, CkReceiptStageDecision2)
 	if err != nil || key == nil {
 		return
