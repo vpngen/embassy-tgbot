@@ -73,7 +73,7 @@ func buttonHandler2(opts handlerOpts, update tgbotapi.Update) {
 
 		// ResetReceipt2(opts.db, key)
 
-		if err := saveDecision(opts.bot, *update.CallbackQuery, reason, decisionAdminAccept, ecode); err != nil {
+		if err := saveDecision(opts.bot, *update.CallbackQuery, reason, decisionAdminAccept); err != nil {
 			logs.Errf("[!:%s] repost photo: %s\n", ecode, err)
 		}
 
@@ -105,7 +105,7 @@ func buttonHandler2(opts handlerOpts, update tgbotapi.Update) {
 
 		// ResetReceipt2(opts.db, key)
 
-		if err := saveDecision(opts.bot, *update.CallbackQuery, reason, decisionAdminReject, ecode); err != nil {
+		if err := saveDecision(opts.bot, *update.CallbackQuery, reason, decisionAdminReject); err != nil {
 			logs.Errf("[!:%s] repost photo: %s\n", ecode, err)
 		}
 
@@ -131,7 +131,7 @@ Admin: [%s](tg://user?id=%d)`
 	decisionAdminAccept = "\U00002705" + ` *Accept receipt*` + decisionAdminComment
 )
 
-func saveDecision(bot *tgbotapi.BotAPI, cbq tgbotapi.CallbackQuery, reason int, comment, ecode string) error {
+func saveDecision(bot *tgbotapi.BotAPI, cbq tgbotapi.CallbackQuery, reason int, comment string) error {
 	if len(cbq.Message.Photo) > 0 {
 		photo := tgbotapi.NewPhoto(cbq.Message.Chat.ID, tgbotapi.FileID(cbq.Message.Photo[0].FileID))
 		// msg.ReplyMarkup = WannabeKeyboard

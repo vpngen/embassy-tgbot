@@ -27,13 +27,13 @@ func main() {
 	logs.SetLogLevel(int32(cfg.DebugLevel))
 
 	// create a bot
-	bot, err := createBot(cfg.Token, cfg.BotDebug)
+	bot, err := createBot(cfg.Token)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	// create a bot2
-	bot2, err := createBot2(cfg.Token2, cfg.BotDebug)
+	bot2, err := createBot2(cfg.Token2)
 	if err != nil {
 		log.Panic(err)
 	}

@@ -217,7 +217,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
 	case stageMainTrackWaitForWanting:
 		fallthrough
 	default:
-		if warnAutodeleteSettings(opts, update.Message.Chat.ID, update.Message.Date, ecode) {
+		if warnAutodeleteSettings(opts, update.Message.Chat.ID, ecode) {
 			err := sendWelcomeMessage(opts, session.StartLabel, update.Message.Chat.ID)
 			if err != nil {
 				if IsForbiddenError(err) {
@@ -292,7 +292,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 			return
 		}
 
-		if err := sendRestoreNameMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID, ecode, session.State); err != nil {
+		if err := sendRestoreNameMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID, session.State); err != nil {
 			if IsForbiddenError(err) {
 				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
@@ -330,7 +330,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 			}
 		}()
 
-		if err := sendRestoreNameMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID, ecode, session.State); err != nil {
+		if err := sendRestoreNameMessage(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID, session.State); err != nil {
 			if IsForbiddenError(err) {
 				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
@@ -577,7 +577,7 @@ func sendRestoreStartMessage(opts handlerOpts, label string, chatID int64, prev 
 }
 
 // Send Name message.
-func sendRestoreNameMessage(opts handlerOpts, label string, chatID int64, ecode string, prev int) error {
+func sendRestoreNameMessage(opts handlerOpts, label string, chatID int64, prev int) error {
 	msg := tgbotapi.NewMessage(chatID, RestoreTrackNameMessage)
 	msg.ReplyMarkup = RestoreNameKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
@@ -744,7 +744,7 @@ func auth(opts handlerOpts, chatID int64, ut int, ecode string) (*Session, bool)
 }
 
 // check autodelete.
-func warnAutodeleteSettings(opts handlerOpts, chatID int64, ut int, ecode string) bool {
+func warnAutodeleteSettings(opts handlerOpts, chatID int64, ecode string) bool {
 	adSet, err := checkChatAutodeleteTimer(opts.bot, chatID)
 	if err != nil {
 		stWrong(opts.bot, chatID, ecode, fmt.Errorf("check autodelete: %w", err))
@@ -859,7 +859,7 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 				return nil
 			}
 
-			if err := sendRestoreNameMessage(opts, session.StartLabel, Message.Chat.ID, ecode, session.State); err != nil {
+			if err := sendRestoreNameMessage(opts, session.StartLabel, Message.Chat.ID, session.State); err != nil {
 				return fmt.Errorf("send name: %w", err)
 			}
 		case stageRestoreTrackStart:
@@ -910,7 +910,7 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 				}
 			}
 
-			if session.Stage != stageMainTrackWaitForWanting && !warnAutodeleteSettings(opts, Message.Chat.ID, Message.Date, ecode) {
+			if session.Stage != stageMainTrackWaitForWanting && !warnAutodeleteSettings(opts, Message.Chat.ID, ecode) {
 				setSession(opts.db, opts.sessionSecret, label, Message.Chat.ID, 0, 0, stageMainTrackStart, SessionStatePayloadBan, nil)
 
 				return nil
