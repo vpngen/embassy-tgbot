@@ -62,7 +62,7 @@ var ErrBrigadeNotFound = errors.New("brigade not found")
 // SendBrigadierGrants - send grants messages.
 func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *ministry.Answer) error {
 	msg := fmt.Sprintf(MainTrackGrantMessage, opts.Name)
-	_, err := SendOpenMessage(bot, chatID, 0, msg, ecode)
+	_, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send grant message: %w", err)
 	}
@@ -74,14 +74,14 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		strings.Trim(string(opts.Person.Desc), " \r\n\t"),
 		tgbotapi.EscapeText(tgbotapi.ModeMarkdown, strings.Trim(string(opts.Person.URL), " \r\n\t")),
 	)
-	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, true, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send person message: %w", err)
 	}
 
 	time.Sleep(2 * time.Second)
 
-	_, err = SendOpenMessage(bot, chatID, 0, MainTrackSeedDescMessage, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, false, MainTrackSeedDescMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send seed message: %w", err)
 	}
@@ -89,14 +89,14 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 	time.Sleep(2 * time.Second)
 
 	msg = fmt.Sprintf(MainTrackWordsMessage, strings.Trim(opts.Mnemo, " \r\n\t"))
-	_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send words message: %w", err)
 	}
 
 	time.Sleep(3 * time.Second)
 
-	if opts.Configs.IPSecL2TPManualConfig != nil &&
+	/* if opts.Configs.IPSecL2TPManualConfig != nil &&
 		opts.Configs.IPSecL2TPManualConfig.PSK != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Username != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Password != nil &&
@@ -113,7 +113,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		}
 
 		time.Sleep(2 * time.Second)
-	}
+	} */
 
 	if opts.Configs.AmnzOvcConfig != nil &&
 		opts.Configs.AmnzOvcConfig.FileContent != nil &&
@@ -131,7 +131,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
 		msg = fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
-		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		_, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode)
 		if err != nil {
 			return fmt.Errorf("send outline config: %w", err)
 		}
@@ -179,7 +179,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 	}
 	*/
 
-	_, err = SendOpenMessage(bot, chatID, 0, MainTrackConfigsMessage, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
@@ -196,7 +196,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 // SendRestoredBrigadierGrants - send grants messages.
 func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *ministry.Answer) error {
-	_, err := SendOpenMessage(bot, chatID, 0, RestoreTrackGrantMessage, ecode)
+	_, err := SendOpenMessage(bot, chatID, 0, false, RestoreTrackGrantMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send restore grant message: %w", err)
 	}
@@ -269,7 +269,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 	}
 	*/
 
-	if opts.Configs.IPSecL2TPManualConfig != nil &&
+	/* if opts.Configs.IPSecL2TPManualConfig != nil &&
 		opts.Configs.IPSecL2TPManualConfig.PSK != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Username != nil &&
 		opts.Configs.IPSecL2TPManualConfig.Password != nil &&
@@ -280,13 +280,13 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 			*opts.Configs.IPSecL2TPManualConfig.Password,
 			*opts.Configs.IPSecL2TPManualConfig.Server,
 		)
-		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		_, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode)
 		if err != nil {
 			return fmt.Errorf("send ipsec l2tp manual config: %w", err)
 		}
 
 		time.Sleep(2 * time.Second)
-	}
+	} */
 
 	if opts.Configs.AmnzOvcConfig != nil &&
 		opts.Configs.AmnzOvcConfig.FileContent != nil &&
@@ -304,7 +304,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
 		msg := fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
-		_, err = SendOpenMessage(bot, chatID, 0, msg, ecode)
+		_, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode)
 		if err != nil {
 			return fmt.Errorf("send outline config: %w", err)
 		}
@@ -312,7 +312,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		time.Sleep(2 * time.Second)
 	}
 
-	_, err = SendOpenMessage(bot, chatID, 0, MainTrackConfigsMessage, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode)
 	if err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
