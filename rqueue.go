@@ -301,7 +301,7 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 		sum := receipt.PhotoSum
 
 		if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
-			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode); err != nil {
+			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, desc, ecode); err != nil {
 				if IsForbiddenError(err) {
 					DeleteReceipt(db, key)
 					setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
@@ -320,7 +320,7 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 		if err := GetBrigadier(bot, session.StartLabel, receipt.ChatID, ecode, dept); err != nil {
 			setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
 
-			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, MainTrackFailMessage, ecode); err != nil {
+			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, MainTrackFailMessage, ecode); err != nil {
 				if IsForbiddenError(err) {
 					setSession(db, sessionSecret, session.StartLabel, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
@@ -351,7 +351,7 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 
 		// fmt.Fprintf(os.Stderr, "[receipt reject] %d %s %#v\n", receipt.Reason, desc, receipt)
 
-		newMsg, err := SendProtectedMessage(bot, receipt.ChatID, 0, desc, ecode)
+		newMsg, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, desc, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
 				DeleteReceipt(db, key)
