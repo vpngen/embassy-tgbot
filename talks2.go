@@ -27,7 +27,7 @@ func messageHandler2(opts handlerOpts, update tgbotapi.Update) {
 
 	if update.Message.ForwardFrom != nil ||
 		update.Message.ForwardFromChat != nil {
-		SendProtectedMessage(opts.bot, update.Message.Chat.ID, 0, InfoForbidForwardsMessage, ecode)
+		SendProtectedMessage(opts.bot, update.Message.Chat.ID, 0, false, InfoForbidForwardsMessage, ecode)
 
 		return
 	}
