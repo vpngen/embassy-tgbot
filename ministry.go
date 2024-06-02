@@ -179,8 +179,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 	}
 	*/
 
-	_, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode)
-	if err != nil {
+	if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode); err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
@@ -314,6 +313,10 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 
 	_, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode)
 	if err != nil {
+		return fmt.Errorf("send keydesk message: %w", err)
+	}
+
+	if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode); err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
