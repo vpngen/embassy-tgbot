@@ -183,6 +183,10 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
+	if err = sendDownloadOutlineMessage(bot, chatID); err != nil {
+		return fmt.Errorf("send keydesk message: %w", err)
+	}
+
 	//	time.Sleep(2 * time.Second)
 
 	//	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackKeydeskIPv6Message, opts.keydesk), ecode)
@@ -316,7 +320,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
-	if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode); err != nil {
+	if err = sendDownloadOutlineMessage(bot, chatID); err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 

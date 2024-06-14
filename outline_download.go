@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	getOutlineForAndroid = "Скачать для Android"
-	getOutlineForIOS     = "Скачать для iOS"
-	getOutlineForChrome  = "Скачать для Chrome"
-	getOutlineForWindows = "Скачать для Windows"
-	getOutlineForMacOS   = "Скачать для macOS"
-	getOutlineForLinux   = "Скачать для Linux"
+	getOutlineForAndroid = "для Android"
+	getOutlineForIOS     = "для iOS"
+	getOutlineForChrome  = "для Chrome"
+	getOutlineForWindows = "для Windows"
+	getOutlineForMacOS   = "для macOS"
+	getOutlineForLinux   = "для Linux"
 )
 
 var outlineDownloadURLMap = map[string]string{
@@ -34,26 +34,40 @@ var outlineDownloadArray = []string{
 }
 
 var outlineDownloadKeyboard = func() tgbotapi.InlineKeyboardMarkup {
-	var buttons []tgbotapi.InlineKeyboardButton
+	/*var rows [][]tgbotapi.InlineKeyboardButton
 
 	for _, title := range outlineDownloadArray {
-		buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonURL(title, outlineDownloadURLMap[title]))
+		rows = append(rows,
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL(title, outlineDownloadURLMap[title]),
+			),
+		)
 	}
 
-	return tgbotapi.NewInlineKeyboardMarkup(buttons)
+	return tgbotapi.NewInlineKeyboardMarkup(rows...) */
+
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL(getOutlineForAndroid, outlineDownloadURLMap[getOutlineForAndroid]),
+			tgbotapi.NewInlineKeyboardButtonURL(getOutlineForIOS, outlineDownloadURLMap[getOutlineForIOS]),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("для других платформ", "outline_download_urls"),
+		),
+	)
 }()
 
 const outlineDownloadMessage = `Для использования Outline скачай и установи приложение для своей платформы:`
 
 // SendDownloadOutlineMessage - send message with download links for Outline.
-func sendDownloadOutlineMessage(opts handlerOpts, chatID int64) error {
+func sendDownloadOutlineMessage(bot *tgbotapi.BotAPI, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, outlineDownloadMessage)
 	msg.ReplyMarkup = outlineDownloadKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
 	msg.ProtectContent = false
 
-	if _, err := opts.bot.Send(msg); err != nil {
+	if _, err := bot.Send(msg); err != nil {
 		return fmt.Errorf("send: %w", err)
 	}
 
