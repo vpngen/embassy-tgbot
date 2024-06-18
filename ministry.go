@@ -121,6 +121,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
 		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
 		doc.ParseMode = tgbotapi.ModeMarkdown
+		doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
 
 		if _, err := bot.Request(doc); err != nil {
 			return fmt.Errorf("send amnezia file config: %w", err)
