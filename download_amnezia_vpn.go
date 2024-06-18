@@ -52,7 +52,8 @@ var amneziaVPNDownloadKeyboardShort = func() tgbotapi.InlineKeyboardMarkup {
 	)
 }()
 
-const amneziaVPNDownloadMessage = `Для использования AmneziaVPN скачай и установи приложение для своей платформы:`
+const amneziaVPNDownloadMessage = `Для использования AmneziaVPN скачай и установи приложение для своей платформы
+` + "\u2139\ufe0f" + ` [@vpngen](http://t.me/vpngen)`
 
 // SendDownloadAmmneziaVPNMessage - send message with download links for Outline.
 func sendDownloadAmneziaVPNMessage(bot *tgbotapi.BotAPI, chatID int64) error {

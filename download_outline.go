@@ -60,7 +60,8 @@ var outlineDownloadKeyboardShort = func() tgbotapi.InlineKeyboardMarkup {
 	)
 }()
 
-const outlineDownloadMessage = `Для использования Outline скачай и установи приложение для своей платформы:`
+const outlineDownloadMessage = `Для использования Outline скачай и установи приложение для своей платформы
+` + "\u2139\ufe0f" + ` [@vpngen](http://t.me/vpngen)`
 
 // SendDownloadOutlineMessage - send message with download links for Outline.
 func sendDownloadOutlineMessage(bot *tgbotapi.BotAPI, chatID int64) error {
