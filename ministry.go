@@ -136,9 +136,13 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 		time.Sleep(2 * time.Second)
 
-		msg = fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
+		if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackOutlineAccessMessage, ecode); err != nil {
+			return fmt.Errorf("send outline message: %w", err)
+		}
+
+		msg := fmt.Sprintf("`%s`", *opts.Configs.OutlineConfig.AccessKey)
 		if _, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
-			return fmt.Errorf("send outline config: %w", err)
+			return fmt.Errorf("send outline key: %w", err)
 		}
 
 		time.Sleep(2 * time.Second)
@@ -313,9 +317,13 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 
 		time.Sleep(2 * time.Second)
 
-		msg := fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
+		if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackOutlineAccessMessage, ecode); err != nil {
+			return fmt.Errorf("send outline message: %w", err)
+		}
+
+		msg := fmt.Sprintf("`%s`", *opts.Configs.OutlineConfig.AccessKey)
 		if _, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
-			return fmt.Errorf("send outline config: %w", err)
+			return fmt.Errorf("send outline key: %w", err)
 		}
 
 		time.Sleep(2 * time.Second)

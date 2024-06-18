@@ -112,8 +112,8 @@ _Если у тебя появятся вопросы — напиши нам в
 	// MainTrackConfigFormatTextTemplate - config text template.
 	MainTrackConfigFormatTextTemplate = "Твоя *личная* конфигурация Wireguard текстом:\n```\n%s```"
 
-	// MainTrackOutlineAccessKeyTemplate - config text template.
-	MainTrackOutlineAccessKeyTemplate = "*Шаг 2.* Твой *личный* ключ Outline. Обязательно нажми кнопку «Подключить».\n`%s`"
+	// MainTrackOutlineAccessMessage - config text template.
+	MainTrackOutlineAccessMessage = "*Шаг 2.* Твой *личный* ключ Outline. Скопируй его, открой Outline и вставь. Затем обязательно нажми кнопку «Подключить»"
 
 	// MainTrackIPSecL2TPManualConfigTemplate - config text template.
 	MainTrackIPSecL2TPManualConfigTemplate = "Твоя *личная* конфигурация IPSec/L2TP:\nPreshared Key: `%s`\nUsername: `%s`\nPassword: `%s`\nServer: `%s`"
