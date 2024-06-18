@@ -74,7 +74,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		strings.Trim(string(opts.Person.Desc), " \r\n\t"),
 		tgbotapi.EscapeText(tgbotapi.ModeMarkdown, strings.Trim(string(opts.Person.URL), " \r\n\t")),
 	)
-	_, err = SendOpenMessage(bot, chatID, 0, true, msg, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send person message: %w", err)
 	}
@@ -130,9 +130,14 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 	}
 
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
+		if err = sendDownloadOutlineMessageShort(bot, chatID); err != nil {
+			return fmt.Errorf("send outline download message: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
+
 		msg = fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
-		_, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode)
-		if err != nil {
+		if _, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
 			return fmt.Errorf("send outline config: %w", err)
 		}
 
@@ -180,10 +185,6 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 	*/
 
 	if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode); err != nil {
-		return fmt.Errorf("send keydesk message: %w", err)
-	}
-
-	if err = sendDownloadOutlineMessage(bot, chatID); err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
@@ -306,21 +307,21 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 	}
 
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
+		if err = sendDownloadOutlineMessageShort(bot, chatID); err != nil {
+			return fmt.Errorf("send outline download short message: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
+
 		msg := fmt.Sprintf(MainTrackOutlineAccessKeyTemplate, *opts.Configs.OutlineConfig.AccessKey)
-		_, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode)
-		if err != nil {
+		if _, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
 			return fmt.Errorf("send outline config: %w", err)
 		}
 
 		time.Sleep(2 * time.Second)
 	}
 
-	_, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode)
-	if err != nil {
-		return fmt.Errorf("send keydesk message: %w", err)
-	}
-
-	if err = sendDownloadOutlineMessage(bot, chatID); err != nil {
+	if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode); err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 

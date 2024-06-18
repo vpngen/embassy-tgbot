@@ -34,7 +34,7 @@ var outlineDownloadArray = []string{
 }
 
 var outlineDownloadKeyboard = func() tgbotapi.InlineKeyboardMarkup {
-	/*var rows [][]tgbotapi.InlineKeyboardButton
+	var rows [][]tgbotapi.InlineKeyboardButton
 
 	for _, title := range outlineDownloadArray {
 		rows = append(rows,
@@ -44,12 +44,15 @@ var outlineDownloadKeyboard = func() tgbotapi.InlineKeyboardMarkup {
 		)
 	}
 
-	return tgbotapi.NewInlineKeyboardMarkup(rows...) */
+	return tgbotapi.NewInlineKeyboardMarkup(rows...)
+}()
 
+var outlineDownloadKeyboardShort = func() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonURL(getOutlineForAndroid, outlineDownloadURLMap[getOutlineForAndroid]),
 			tgbotapi.NewInlineKeyboardButtonURL(getOutlineForIOS, outlineDownloadURLMap[getOutlineForIOS]),
+			tgbotapi.NewInlineKeyboardButtonURL(getOutlineForWindows, outlineDownloadURLMap[getOutlineForWindows]),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("для других платформ", "outline_download_urls"),
@@ -63,6 +66,24 @@ const outlineDownloadMessage = `Для использования Outline ска
 func sendDownloadOutlineMessage(bot *tgbotapi.BotAPI, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, outlineDownloadMessage)
 	msg.ReplyMarkup = outlineDownloadKeyboard
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.DisableWebPagePreview = true
+	msg.ProtectContent = false
+
+	if _, err := bot.Send(msg); err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	return nil
+}
+
+var outlineDownloadMessageShort = `Осталось три простых шага до свободного интернета! 
+*Шаг 1.* Скачай и установи Outline.`
+
+// SendDownloadOutlineMessageShort - send message with download links for Outline.
+func sendDownloadOutlineMessageShort(bot *tgbotapi.BotAPI, chatID int64) error {
+	msg := tgbotapi.NewMessage(chatID, outlineDownloadMessageShort)
+	msg.ReplyMarkup = outlineDownloadKeyboardShort
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
 	msg.ProtectContent = false
