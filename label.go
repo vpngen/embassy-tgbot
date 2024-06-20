@@ -1,12 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"sync"
-	"time"
 )
 
 const (
@@ -15,8 +12,8 @@ const (
 )
 
 type LabelStorage struct {
-	mu       sync.Mutex
-	filename string
+	mu      sync.Mutex
+	logname string
 }
 
 type LabelMap struct {
@@ -26,12 +23,16 @@ type LabelMap struct {
 
 func NewLabelStorage(filename string) (*LabelStorage, error) {
 	ls := &LabelStorage{
-		filename: filename,
+		logname: filename,
 	}
 
-	w, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, filePerm)
+	if ls.logname == "" {
+		return ls, nil
+	}
+
+	w, err := os.OpenFile(ls.logname, os.O_APPEND|os.O_WRONLY|os.O_CREATE, filePerm)
 	if err != nil {
-		return nil, fmt.Errorf("create file: %w", err)
+		return nil, fmt.Errorf("create json file: %w", err)
 	}
 
 	defer w.Close()
@@ -39,7 +40,7 @@ func NewLabelStorage(filename string) (*LabelStorage, error) {
 	return ls, nil
 }
 
-func (ls *LabelStorage) Update(label string) error {
+func (ls *LabelStorage) Update(label SessionLabel) error {
 	if ls == nil {
 		return nil
 	}
@@ -50,64 +51,19 @@ func (ls *LabelStorage) Update(label string) error {
 	return ls.updateLabel(label)
 }
 
-func (ls *LabelStorage) updateLabel(label string) error {
-	if ls.filename == "" {
+func (ls *LabelStorage) updateLabel(label SessionLabel) error {
+	if ls.logname == "" {
 		return nil
 	}
 
-	tmpFilename := ls.filename + labelTempSuffix
-
-	w, err := os.OpenFile(tmpFilename, os.O_APPEND|os.O_WRONLY|os.O_CREATE|os.O_TRUNC, filePerm)
+	w, err := os.OpenFile(ls.logname, os.O_APPEND|os.O_WRONLY|os.O_CREATE, filePerm)
 	if err != nil {
 		return fmt.Errorf("open file: %w", err)
 	}
+
+	fmt.Fprintf(w, "%d|%s|%s\n", label.Time.Unix(), label.ID, label.Label)
 
 	defer w.Close()
-
-	r, err := os.OpenFile(ls.filename, os.O_RDONLY|os.O_CREATE, filePerm)
-	if err != nil {
-		return fmt.Errorf("open file: %w", err)
-	}
-
-	defer r.Close()
-
-	lm := LabelMap{}
-
-	if err := json.NewDecoder(r).Decode(&lm); err != nil &&
-		err != io.ErrUnexpectedEOF &&
-		err != io.EOF {
-		return fmt.Errorf("decode: %w", err)
-	}
-
-	if lm.LabelCounts == nil {
-		lm.LabelCounts = make(map[string]int64)
-	}
-
-	lm.LabelCounts[label]++
-	lm.UpdateTime = time.Now().Unix()
-
-	e := json.NewEncoder(w)
-	e.SetIndent("", "  ")
-
-	if err := e.Encode(lm); err != nil {
-		return fmt.Errorf("encode: %w", err)
-	}
-
-	if err := w.Sync(); err != nil {
-		return fmt.Errorf("sync: %w", err)
-	}
-
-	if err := os.Remove(ls.filename); err != nil {
-		return fmt.Errorf("remove main: %w", err)
-	}
-
-	if err := os.Link(tmpFilename, ls.filename); err != nil {
-		return fmt.Errorf("rename temp to name: %w", err)
-	}
-
-	if err := os.Remove(tmpFilename); err != nil {
-		return fmt.Errorf("remove temp: %w", err)
-	}
 
 	return nil
 }

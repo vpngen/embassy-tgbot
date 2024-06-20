@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/google/uuid"
 )
 
 const (
@@ -30,14 +31,22 @@ const (
 	SessionStateBanOnBan // ban on ban
 )
 
+// SessionLabel - session label.
+type SessionLabel struct {
+	ID    uuid.UUID `json:"id"`
+	Label string    `json:"label"`
+	Time  time.Time `json:"time"`
+}
+
 // Session - session.
 type Session struct {
-	OurMsgID   int    `json:"our_message_id"`
-	Stage      int    `json:"stage"`
-	UpdateTime int64  `json:"updatetime"`
-	State      int    `json:"state"`
-	StartLabel string `json:"start_label,omitempty"`
-	Payload    []byte `json:"payload"`
+	OurMsgID   int          `json:"our_message_id"`
+	Stage      int          `json:"stage"`
+	UpdateTime int64        `json:"updatetime"`
+	State      int          `json:"state"`
+	Label      SessionLabel `json:"label,omitempty"`
+	StartLabel string       `json:"start_label,omitempty"`
+	Payload    []byte       `json:"payload"`
 }
 
 func sessionID(secret []byte, chatID int64) []byte {
@@ -54,17 +63,17 @@ func sessionID(secret []byte, chatID int64) []byte {
 	return id
 }
 
-func setSession(dbase *badger.DB, secret []byte, label string, chatID int64, msgID int, update int64, stage int, state int, payload []byte) error {
+func setSession(dbase *badger.DB, secret []byte, label SessionLabel, chatID int64, msgID int, update int64, stage int, state int, payload []byte) error {
 	session := &Session{
 		OurMsgID:   msgID,
 		Stage:      stage,
 		State:      state,
 		UpdateTime: update,
-		StartLabel: label,
+		Label:      label,
 		Payload:    payload,
 	}
 
-	fmt.Fprintf(os.Stderr, "[session] LABEL: %s\n", session.StartLabel)
+	fmt.Fprintf(os.Stderr, "[session] TIME:  %s LABEL: %s\n", session.Label.Time, session.Label.Label)
 
 	data, err := json.Marshal(session)
 	if err != nil {
@@ -80,7 +89,6 @@ func setSession(dbase *badger.DB, secret []byte, label string, chatID int64, msg
 
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("update: %w", err)
 	}
@@ -124,6 +132,10 @@ func checkSession(dbase *badger.DB, secret []byte, chatID int64) (*Session, erro
 		err := json.Unmarshal(data, session)
 		if err != nil {
 			return session, fmt.Errorf("unmarhal: %w", err)
+		}
+
+		if session.StartLabel != "" && session.Label.Label == "" {
+			session.Label.Label = session.StartLabel
 		}
 
 		return session, nil
