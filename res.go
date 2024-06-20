@@ -106,8 +106,8 @@ _Если у тебя появятся вопросы — напиши нам в
 
 	// MainTrackConfigFormatFileCaption - config file caption.
 	MainTrackConfigFormatFileCaption = "Твоя *личная* конфигурация Wireguard файлом"
-	// MainTrackAmneziaOvcConfigFormatFileCaption - config file caption.
-	MainTrackAmneziaOvcConfigFormatFileCaption = "Твоя *личная* конфигурация AmneziaVPN файлом на случай массовых блокировок"
+	// mainTrackAmneziaOvcConfigFormatFileCaption - config file caption.
+	mainTrackAmneziaOvcConfigFormatFileCaption = "На всякий случай твоя *личная* конфигурация AmneziaVPN файлом. Используй её только в случае, если ничего не работает. Если не работает и она — пиши в [поддержку](%s)."
 
 	// MainTrackConfigFormatTextTemplate - config text template.
 	MainTrackConfigFormatTextTemplate = "Твоя *личная* конфигурация Wireguard текстом:\n```\n%s```"
@@ -242,6 +242,8 @@ var (
 	MainTrackWarnConversationsFinished string
 	// RepeatTrackWarnConversationsFinished - answer to /repeat after the end.
 	RepeatTrackWarnConversationsFinished string
+	// MainTrackAmneziaOvcConfigFormatFileCaption - config file caption.
+	MainTrackAmneziaOvcConfigFormatFileCaption string
 
 	// RejectMessage - we are shame you.
 	RejectMessage string
@@ -343,6 +345,7 @@ func SetSupportMessages(url string) {
 	MainTrackWarnWaitForApprovement = fmt.Sprintf(mainTrackWarnWaitForApprovement, link)
 	MainTrackWarnConversationsFinished = fmt.Sprintf(mainTrackWarnConversationsFinished, link)
 	RepeatTrackWarnConversationsFinished = fmt.Sprintf(repeatTrackWarnConversationsFinished, link)
+	MainTrackAmneziaOvcConfigFormatFileCaption = fmt.Sprintf(mainTrackAmneziaOvcConfigFormatFileCaption, link)
 
 	DecisionComments[decisionUnknown] = fmt.Sprintf(decisionCommentsTemplate[decisionUnknown], link)
 	DecisionComments[decisionAcceptCats] = decisionCommentsTemplate[decisionAcceptCats]
