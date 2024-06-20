@@ -31,13 +31,13 @@ const (
 
 	RestoreTrackInvalidNameMessage = `Это не похоже на имя, попробуй еще раз. Будь внимателен(-на), тебе нужно ввести прилагательное и фамилию лауреата, например “Веселый Эйнштейн” или “Потрясающая Кюри”.  
 
-Если ты не помнишь имя — возможно стоит начать сначала и идти за чеком.`
+Если ты не помнишь имя — возможно стоит начать сначала и идти за новой картинкой.`
 
 	RestoreTrackBrigadeNotFoundMessage = `Сим-сим не открылся, с именем или словами что-то не так. Будь внимателен(-на), имя состоит из прилагательного и фамилии лауреата, например “Веселый Эйнштейн” или “Потрясающая Кюри”. А шесть слов должны быть ровно в той последовательности, в которой мы тебе их отдали!
 
-Если ты не помнишь имя и/или волшебные слова — возможно стоит начать сначала и идти за чеком.
+Если ты не помнишь имя и/или волшебные слова — возможно стоит начать сначала и идти за новой картинкой.
 
-А еще вспомни, когда ты в последний раз пользовался нашим VPN? Если это было давно - мы тебя удалили и пора идти за новым чеком.`
+А еще вспомни, когда ты в последний раз пользовался нашим VPN? Если это было давно - мы тебя удалили и пора идти за новой картинкой.`
 
 	RestoreTrackGrantMessage = `Мы узнали тебя, держи свой конфиг!`
 
@@ -102,18 +102,18 @@ _Если у тебя появятся вопросы — напиши нам в
 	MainTrackGrantMessage = "Поздравляю! Ты — бригадир! Вот полная [инструкция пользования](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/) сервисом.\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
 
 	// MainTrackPersonDescriptionMessage - brief on name.
-	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n%s\n\n"
+	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n\U0001F449 [статья на wikipedia](%s)\n\n"
 
 	// MainTrackConfigFormatFileCaption - config file caption.
 	MainTrackConfigFormatFileCaption = "Твоя *личная* конфигурация Wireguard файлом"
 	// MainTrackAmneziaOvcConfigFormatFileCaption - config file caption.
-	MainTrackAmneziaOvcConfigFormatFileCaption = "Твоя *личная* конфигурация Amnezia файлом"
+	MainTrackAmneziaOvcConfigFormatFileCaption = "Твоя *личная* конфигурация AmneziaVPN файлом на случай массовых блокировок"
 
 	// MainTrackConfigFormatTextTemplate - config text template.
 	MainTrackConfigFormatTextTemplate = "Твоя *личная* конфигурация Wireguard текстом:\n```\n%s```"
 
-	// MainTrackOutlineAccessKeyTemplate - config text template.
-	MainTrackOutlineAccessKeyTemplate = "Твой *личный* ключ Outline:\n`%s`"
+	// MainTrackOutlineAccessMessage - config text template.
+	MainTrackOutlineAccessMessage = "*Шаг 2.* Твой *личный* ключ Outline ниже. Скопируй его, открой Outline и вставь. Затем обязательно нажми кнопку «Подключить»"
 
 	// MainTrackIPSecL2TPManualConfigTemplate - config text template.
 	MainTrackIPSecL2TPManualConfigTemplate = "Твоя *личная* конфигурация IPSec/L2TP:\nPreshared Key: `%s`\nUsername: `%s`\nPassword: `%s`\nServer: `%s`"
@@ -136,9 +136,11 @@ _Если у тебя появятся вопросы — напиши нам в
 	P.S. Ты можешь закинуть свой конфиг в сохраненки, это достаточно безопасно.`
 	*/
 
-	MainTrackConfigsMessage = `Выше — твои *личные* конфигурации VPN разных технологий. Выбери конфигурацию и добавь её на устройстве, с которого будешь потом управлять VPN-ом и *обязательно* зайди в ключницу *с включённым VPN* по ссылке [http://vpn.works/](http://vpn.works/) *в течение 24 часов* для активации бригады.
-	
-	P.S. Ты можешь закинуть свой конфиг в сохраненки, это достаточно безопасно.`
+	//MainTrackConfigsMessage = `Выше — твои *личные* конфигурации VPN разных технологий. Выбери конфигурацию и добавь её на устройстве, с которого будешь потом управлять VPN-ом и *обязательно* зайди в ключницу *с включённым VPN* по ссылке [http://vpn.works/](http://vpn.works/) *в течение 24 часов* для активации бригады.
+	//
+	// P.S. Ты можешь закинуть свой конфиг в сохраненки, это достаточно безопасно.`
+
+	MainTrackConfigsMessage = `*Шаг 3.* Подключился? Тогда *обязательно* перейди по ссылке [http://vpn.works/](http://vpn.works/) *в течение 24 часов*, чтобы активировать VPN и свою бригаду.`
 
 	// MainTrackKeydeskIPv6Message - message with ipv6 keydesk address.
 	MainTrackKeydeskIPv6Message = "\U0001f510 " + `Возможно ты тоже энтузиаст(-ка) безопасности и у тебя установлен защищённый DNS в системе или в браузере. Тогда ссылка на ключницу не будет работать, потому что она существует только в нашем DNS. Безопасность требует жертв и тебе придётся в ключницу напрямую по IPv6-адресу: ` + "`http://[%s]/`" +
@@ -163,7 +165,7 @@ P.S. К сожалению, этот способ не будет работат
 	MainTrackResetSuccessfull = `Диалог сброшен`
 
 	// mainTrackFailMessage - something wrong during creation time.
-	mainTrackFailMessage = `Что-то сломалось. Попробуй ещё раз отослать чек позже. ` + extraSupportText
+	mainTrackFailMessage = `Что-то сломалось. Попробуй ещё раз отослать картинку позже. ` + extraSupportText
 
 	// InfoGroupsNotAllowedMessage - this bot is only private.
 	InfoGroupsNotAllowedMessage = `Извини, в групповых чатах я не общаюсь.`
@@ -278,6 +280,8 @@ var (
 	}
 )
 
+const newTrack = "Пойду за картинкой"
+
 // SetSupportMessages - set wanna keyboard.
 func SetSupportMessages(url string) {
 	link := tgbotapi.EscapeText(tgbotapi.ModeMarkdown, url)
@@ -287,7 +291,7 @@ func SetSupportMessages(url string) {
 			tgbotapi.NewInlineKeyboardButtonData("Попробовать ещё раз", "return"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
+			tgbotapi.NewInlineKeyboardButtonData(newTrack, "reset"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
 	)
@@ -297,14 +301,14 @@ func SetSupportMessages(url string) {
 			tgbotapi.NewInlineKeyboardButtonData("Попробовать ещё раз", "again"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
+			tgbotapi.NewInlineKeyboardButtonData(newTrack, "reset"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
 	)
 
 	RestoreNameKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
+			tgbotapi.NewInlineKeyboardButtonData(newTrack, "reset"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
 	)
@@ -314,7 +318,7 @@ func SetSupportMessages(url string) {
 			tgbotapi.NewInlineKeyboardButtonData("Начать", "restore"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Пойду за чеком", "reset"),
+			tgbotapi.NewInlineKeyboardButtonData(newTrack, "reset"),
 			tgbotapi.NewInlineKeyboardButtonURL("Задать вопрос", url),
 		),
 	)

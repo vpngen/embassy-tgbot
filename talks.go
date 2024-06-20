@@ -370,6 +370,26 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 				logs.Errf("[!:%s] remove: %s\n", ecode, err)
 			}
 		}()
+	case update.CallbackQuery.Data == "outline_download_urls":
+		if err := sendDownloadOutlineMessage(opts.bot, update.CallbackQuery.Message.Chat.ID); err != nil {
+			if IsForbiddenError(err) {
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+
+				return
+			}
+
+			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
+		}
+	case update.CallbackQuery.Data == "amnezia_vpn_download_urls":
+		if err := sendDownloadAmneziaVPNMessage(opts.bot, update.CallbackQuery.Message.Chat.ID); err != nil {
+			if IsForbiddenError(err) {
+				setSession(opts.db, opts.sessionSecret, session.StartLabel, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+
+				return
+			}
+
+			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
+		}
 	case update.CallbackQuery.Data == "restore":
 		if checkMaintenanceMode(opts, session.StartLabel, update.CallbackQuery.Message.Chat.ID, ecode, false) {
 			return
