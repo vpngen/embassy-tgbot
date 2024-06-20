@@ -115,7 +115,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		time.Sleep(2 * time.Second)
 	} */
 
-	if opts.Configs.AmnzOvcConfig != nil &&
+	/*if opts.Configs.AmnzOvcConfig != nil &&
 		opts.Configs.AmnzOvcConfig.FileContent != nil &&
 		opts.Configs.AmnzOvcConfig.FileName != nil {
 		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
@@ -128,7 +128,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		}
 
 		time.Sleep(2 * time.Second)
-	}
+	}*/
 
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
 		if err = sendDownloadOutlineMessageShort(bot, chatID); err != nil {
@@ -297,19 +297,20 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		time.Sleep(2 * time.Second)
 	} */
 
-	if opts.Configs.AmnzOvcConfig != nil &&
+	/*if opts.Configs.AmnzOvcConfig != nil &&
 		opts.Configs.AmnzOvcConfig.FileContent != nil &&
 		opts.Configs.AmnzOvcConfig.FileName != nil {
 		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
 		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
 		doc.ParseMode = tgbotapi.ModeMarkdown
+		doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
 
 		if _, err := bot.Request(doc); err != nil {
 			return fmt.Errorf("send file config: %w", err)
 		}
 
 		time.Sleep(2 * time.Second)
-	}
+	}*/
 
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
 		if err = sendDownloadOutlineMessageShort(bot, chatID); err != nil {

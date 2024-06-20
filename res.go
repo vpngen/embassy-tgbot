@@ -102,7 +102,7 @@ _Если у тебя появятся вопросы — напиши нам в
 	MainTrackGrantMessage = "Поздравляю! Ты — бригадир! Вот полная [инструкция пользования](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/) сервисом.\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
 
 	// MainTrackPersonDescriptionMessage - brief on name.
-	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n%s\n\n"
+	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n\U0001F449 [статья на wikipedia](%s)\n\n"
 
 	// MainTrackConfigFormatFileCaption - config file caption.
 	MainTrackConfigFormatFileCaption = "Твоя *личная* конфигурация Wireguard файлом"
