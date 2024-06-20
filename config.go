@@ -119,11 +119,9 @@ func configFromEnv() Config {
 
 	ckChatID, _ := strconv.ParseInt(ckChat, 10, 64)
 
-	if labelFilename != "" {
-		ls, err = NewLabelStorage(labelFilename)
-		if err != nil {
-			log.Panic(err)
-		}
+	ls, err = NewLabelStorage(labelFilename)
+	if err != nil {
+		log.Panic(err)
 	}
 
 	return Config{
