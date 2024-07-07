@@ -342,8 +342,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 		}
 	case update.CallbackQuery.Data == "reset":
 		if session.State == SessionStatePayloadSecondary {
-			_, err := SendProtectedMessage(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, false, MainTrackWarnConversationsFinished, ecode)
-			if err != nil {
+			if _, err := SendProtectedMessage(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, false, MainTrackWarnConversationsFinished, ecode); err != nil {
 				if IsForbiddenError(err) {
 					setSession(opts.db, opts.sessionSecret, session.Label, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
@@ -351,6 +350,34 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 				}
 
 				stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
+
+				return
+			}
+		}
+
+		if session.Label.Label == "" &&
+			(!session.Label.Time.IsZero()) &&
+			session.Label.ID == uuid.Nil {
+
+			label := ""
+			x := rand.Intn(len(MainTrackQuizMessage))
+			for prefix := range MainTrackQuizMessage {
+				if x == 0 {
+					label = prefix + label
+					if len(label) > 64 {
+						label = label[:64]
+					}
+
+					break
+				}
+
+				x--
+			}
+
+			session.Label = SessionLabel{
+				Label: label,
+				Time:  time.Now(),
+				ID:    uuid.New(),
 			}
 		}
 
@@ -362,6 +389,8 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 			}
 
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("reset push: %w", err))
+
+			return
 		}
 
 		// delete our previous message.
@@ -915,6 +944,12 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 				Label: label,
 				Time:  time.Now(),
 				ID:    uuid.New(),
+			}
+
+			if session.Label.Label != "" &&
+				(!session.Label.Time.IsZero()) &&
+				session.Label.ID != uuid.Nil {
+				sessionLabel = session.Label
 			}
 
 			if command == "start" && session.Stage == stageMainTrackStart {

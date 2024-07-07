@@ -345,7 +345,7 @@ func callMinistry(dept DeptOpts, label SessionLabel) (*ministry.Answer, error) {
 
 	cmd := "createbrigade -ch -j"
 
-	cmd += fmt.Sprintf(" -l %q -lt %d -lu %s", label.Label, label.Time.Unix(), label.ID.String())
+	cmd += fmt.Sprintf(" -l %s -lt %d -lu %s", label.Label, label.Time.Unix(), label.ID.String())
 
 	cmd += fmt.Sprintf(" %s", dept.token)
 
