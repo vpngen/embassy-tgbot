@@ -340,12 +340,12 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 	return nil
 }
 
-func callMinistry(dept DeptOpts, label SessionLabel) (*ministry.Answer, error) {
+func callMinistry(dept MinistryOpts, label SessionLabel) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	cmd := "createbrigade -ch -j"
 
-	cmd += fmt.Sprintf(" -l %q -lt %d -lu %s", label.Label, label.Time.Unix(), label.ID.String())
+	cmd += fmt.Sprintf(" -l %s -lt %d -lu %s", label.Label, label.Time.Unix(), label.ID.String())
 
 	cmd += fmt.Sprintf(" %s", dept.token)
 
@@ -471,7 +471,7 @@ func callMinistry(dept DeptOpts, label SessionLabel) (*ministry.Answer, error) {
 	return wgconf, nil
 }
 
-func callMinistryRestore(dept DeptOpts, name, words string) (*ministry.Answer, error) {
+func callMinistryRestore(dept MinistryOpts, name, words string) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	base64name := base64.StdEncoding.EncodeToString([]byte(name))
@@ -568,7 +568,7 @@ func callMinistryRestore(dept DeptOpts, name, words string) (*ministry.Answer, e
 }
 
 // GetBrigadier - get brigadier name and config.
-func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode string, dept DeptOpts) error {
+func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode string, dept MinistryOpts) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
@@ -646,7 +646,7 @@ func replaceRuneAt(s string, index, size int, replacement string) string {
 }
 
 // RestoreBrigadier - restore brigadier  config.
-func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts, name, words string) error {
+func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept MinistryOpts, name, words string) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
