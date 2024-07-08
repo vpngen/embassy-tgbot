@@ -69,7 +69,7 @@ func IsForbiddenError(err error) bool {
 }
 
 // Handling messages (opposed callback).
-func messageHandler(opts handlerOpts, update tgbotapi.Update, dept DeptOpts) {
+func messageHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) {
 	defer opts.wg.Done()
 
 	ecode := genEcode() // unique e-code
@@ -728,7 +728,7 @@ func sendWordsFailed(opts handlerOpts, label SessionLabel, chatID int64, prev in
 }
 
 // Check restore words message.
-func checkRestoreWordsMessageMessage(opts handlerOpts, label SessionLabel, Message *tgbotapi.Message, ecode string, prev int, name []byte, dept DeptOpts) error {
+func checkRestoreWordsMessageMessage(opts handlerOpts, label SessionLabel, Message *tgbotapi.Message, ecode string, prev int, name []byte, dept MinistryOpts) error {
 	if name == nil {
 		return sendWordsFailed(opts, label, Message.Chat.ID, prev, nil)
 	}
