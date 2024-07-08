@@ -63,10 +63,12 @@ func sendLogs(labelStorage *LabelStorage, ministry MinistryOpts) error {
 			continue
 		}
 
-		filename := entry.Name()
-		if !strings.HasSuffix(filename, completeLabelSuffix) {
+		name := entry.Name()
+		if !strings.HasSuffix(name, completeLabelSuffix) {
 			continue
 		}
+
+		filename := filepath.Join(labelStorage.logDirname, name)
 
 		info, err := entry.Info()
 		if err != nil {
