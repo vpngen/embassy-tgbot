@@ -30,7 +30,7 @@ func runBot(
 	bot *tgbotapi.BotAPI,
 	updateTout,
 	debugLevel int,
-	dept DeptOpts,
+	ministry MinistryOpts,
 	maintenanceModeFull string,
 	maintenanceModeNew string,
 	labelStorage *LabelStorage,
@@ -68,7 +68,7 @@ func runBot(
 
 					waitGroup.Add(1)
 
-					go messageHandler(opts, update, dept)
+					go messageHandler(opts, update, ministry)
 
 					break
 				}
