@@ -119,7 +119,7 @@ func sendLog(ministry MinistryOpts, name string) error {
 
 	basename := filepath.Base(name)
 
-	cmd := fmt.Sprintf("synclabels -ch %s", basename)
+	cmd := fmt.Sprintf("synclabels -ch -name %q -token %s", basename, ministry.token)
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, ministry.controlIP, cmd)
 
