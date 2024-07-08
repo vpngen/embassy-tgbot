@@ -23,8 +23,8 @@ const (
 	DefaultKeyLen = 32
 )
 
-// DeptOpts - opts to ministry conn
-type DeptOpts struct {
+// MinistryOpts - opts to ministry conn
+type MinistryOpts struct {
 	sshConfig *ssh.ClientConfig
 	controlIP string
 	token     string
@@ -42,7 +42,7 @@ type Config struct {
 	DBKey               []byte
 	SupportURL          string
 	ckChatID            int64
-	Dept                DeptOpts
+	Ministry            MinistryOpts
 	MaintenanceModeFull string
 	MaintenanceModeNew  string
 	LabelStorage        *LabelStorage
@@ -119,11 +119,9 @@ func configFromEnv() Config {
 
 	ckChatID, _ := strconv.ParseInt(ckChat, 10, 64)
 
-	if labelFilename != "" {
-		ls, err = NewLabelStorage(labelFilename)
-		if err != nil {
-			log.Panic(err)
-		}
+	ls, err = NewLabelStorage(labelFilename)
+	if err != nil {
+		log.Panic(err)
 	}
 
 	return Config{
@@ -136,7 +134,7 @@ func configFromEnv() Config {
 		DBKey:      genKeyFromEnv(dbKey, DefaultIterations, DefaultKeyLen),
 		SupportURL: supportURL,
 		ckChatID:   ckChatID,
-		Dept: DeptOpts{
+		Ministry: MinistryOpts{
 			controlIP: ministryIP,
 			sshConfig: sshconf,
 			token:     ministryToken,

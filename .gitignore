@@ -1,6 +1,7 @@
 *.yaml
 *.json
 *.log
+*.log.current
 *.tmp
 *~
 *.swp

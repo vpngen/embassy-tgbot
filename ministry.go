@@ -115,21 +115,6 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		time.Sleep(2 * time.Second)
 	} */
 
-	/*if opts.Configs.AmnzOvcConfig != nil &&
-		opts.Configs.AmnzOvcConfig.FileContent != nil &&
-		opts.Configs.AmnzOvcConfig.FileName != nil {
-		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
-		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
-		doc.ParseMode = tgbotapi.ModeMarkdown
-		doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
-
-		if _, err := bot.Request(doc); err != nil {
-			return fmt.Errorf("send amnezia file config: %w", err)
-		}
-
-		time.Sleep(2 * time.Second)
-	}*/
-
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
 		if err = sendDownloadOutlineMessageShort(bot, chatID); err != nil {
 			return fmt.Errorf("send outline download message: %w", err)
@@ -193,7 +178,22 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
-	//	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
+
+	if opts.Configs.AmnzOvcConfig != nil &&
+		opts.Configs.AmnzOvcConfig.FileContent != nil &&
+		opts.Configs.AmnzOvcConfig.FileName != nil {
+		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
+		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
+		doc.ParseMode = tgbotapi.ModeMarkdown
+		doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
+
+		if _, err := bot.Request(doc); err != nil {
+			return fmt.Errorf("send amnezia file config: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
+	}
 
 	//	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackKeydeskIPv6Message, opts.keydesk), ecode)
 	//	if err != nil {
@@ -297,21 +297,6 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		time.Sleep(2 * time.Second)
 	} */
 
-	/*if opts.Configs.AmnzOvcConfig != nil &&
-		opts.Configs.AmnzOvcConfig.FileContent != nil &&
-		opts.Configs.AmnzOvcConfig.FileName != nil {
-		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
-		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
-		doc.ParseMode = tgbotapi.ModeMarkdown
-		doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
-
-		if _, err := bot.Request(doc); err != nil {
-			return fmt.Errorf("send file config: %w", err)
-		}
-
-		time.Sleep(2 * time.Second)
-	}*/
-
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
 		if err = sendDownloadOutlineMessageShort(bot, chatID); err != nil {
 			return fmt.Errorf("send outline download short message: %w", err)
@@ -335,17 +320,32 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
+	time.Sleep(3 * time.Second)
+
+	if opts.Configs.AmnzOvcConfig != nil &&
+		opts.Configs.AmnzOvcConfig.FileContent != nil &&
+		opts.Configs.AmnzOvcConfig.FileName != nil {
+		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
+		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
+		doc.ParseMode = tgbotapi.ModeMarkdown
+		doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
+
+		if _, err := bot.Request(doc); err != nil {
+			return fmt.Errorf("send file config: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
+	}
+
 	return nil
 }
 
-func callMinistry(dept DeptOpts, label string) (*ministry.Answer, error) {
+func callMinistry(dept MinistryOpts, label SessionLabel) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	cmd := "createbrigade -ch -j"
 
-	if label != "" {
-		cmd += fmt.Sprintf(" -l %q", label)
-	}
+	cmd += fmt.Sprintf(" -l %s -lt %d -lu %s", label.Label, label.Time.Unix(), label.ID.String())
 
 	cmd += fmt.Sprintf(" %s", dept.token)
 
@@ -471,7 +471,7 @@ func callMinistry(dept DeptOpts, label string) (*ministry.Answer, error) {
 	return wgconf, nil
 }
 
-func callMinistryRestore(dept DeptOpts, name, words string) (*ministry.Answer, error) {
+func callMinistryRestore(dept MinistryOpts, name, words string) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	base64name := base64.StdEncoding.EncodeToString([]byte(name))
@@ -568,7 +568,7 @@ func callMinistryRestore(dept DeptOpts, name, words string) (*ministry.Answer, e
 }
 
 // GetBrigadier - get brigadier name and config.
-func GetBrigadier(bot *tgbotapi.BotAPI, label string, chatID int64, ecode string, dept DeptOpts) error {
+func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode string, dept MinistryOpts) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
@@ -646,7 +646,7 @@ func replaceRuneAt(s string, index, size int, replacement string) string {
 }
 
 // RestoreBrigadier - restore brigadier  config.
-func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept DeptOpts, name, words string) error {
+func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept MinistryOpts, name, words string) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
