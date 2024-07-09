@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -139,4 +141,31 @@ func (ls *LabelStorage) rotate() error {
 	}
 
 	return fmt.Errorf("rotate: %w: %d", ErrMaxRenameAttemptsExceeded, maxRenameAttempts)
+}
+
+func setLabel(l SessionLabel) SessionLabel {
+	if l.Label == "" && l.Time.IsZero() && l.ID == uuid.Nil {
+		label := ""
+		x := rand.Intn(len(MainTrackQuizMessage))
+		for prefix := range MainTrackQuizMessage {
+			if x == 0 {
+				label = prefix + label
+				if len(label) > 64 {
+					label = label[:64]
+				}
+
+				break
+			}
+
+			x--
+		}
+
+		return SessionLabel{
+			Label: label,
+			Time:  time.Now(),
+			ID:    uuid.New(),
+		}
+	}
+
+	return l
 }
