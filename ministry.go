@@ -576,6 +576,10 @@ func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode 
 		err    error
 	)
 
+	fmt.Fprintf(os.Stderr, "empty label: %#v\n", label)
+
+	label = setLabel(label, MarkerEmptyLabel)
+
 	switch dept.fake {
 	case false:
 		wgconf, err = callMinistry(dept, label)
