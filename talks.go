@@ -357,31 +357,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 
 		fmt.Fprintf(os.Stderr, "reset session: %#v\n", session)
 
-		if session.Label.Label == "" &&
-			(!session.Label.Time.IsZero()) &&
-			session.Label.ID == uuid.Nil {
-
-			label := ""
-			x := rand.Intn(len(MainTrackQuizMessage))
-			for prefix := range MainTrackQuizMessage {
-				if x == 0 {
-					label = prefix + label
-					if len(label) > 64 {
-						label = label[:64]
-					}
-
-					break
-				}
-
-				x--
-			}
-
-			session.Label = SessionLabel{
-				Label: label,
-				Time:  time.Now(),
-				ID:    uuid.New(),
-			}
-		}
+		session.Label = setLabel(session.Label)
 
 		if err := sendWelcomeMessage(opts, session.Label, update.CallbackQuery.Message.Chat.ID); err != nil {
 			if IsForbiddenError(err) {
