@@ -21,6 +21,11 @@ const (
 	maxRenameAttempts   = 5
 )
 
+const (
+	MarkerResetLabel = "MarkerResetLabel"
+	MarkerEmptyLabel = "MarkerEmptyLabel"
+)
+
 var ErrMaxRenameAttemptsExceeded = fmt.Errorf("max rename attempts exceeded")
 
 type LabelStorage struct {
@@ -143,9 +148,9 @@ func (ls *LabelStorage) rotate() error {
 	return fmt.Errorf("rotate: %w: %d", ErrMaxRenameAttemptsExceeded, maxRenameAttempts)
 }
 
-func setLabel(l SessionLabel) SessionLabel {
+func setLabel(l SessionLabel, marker string) SessionLabel {
 	if l.Label == "" && l.Time.IsZero() && l.ID == uuid.Nil {
-		label := ""
+		label := marker
 		x := rand.Intn(len(MainTrackQuizMessage))
 		for prefix := range MainTrackQuizMessage {
 			if x == 0 {

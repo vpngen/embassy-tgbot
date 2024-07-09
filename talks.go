@@ -219,6 +219,11 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts)
 		fallthrough
 	default:
 		if warnAutodeleteSettings(opts, update.Message.Chat.ID, ecode) {
+
+			fmt.Fprintf(os.Stderr, "new session: %#v\n", session)
+
+			session.Label = setLabel(session.Label, MarkerEmptyLabel)
+
 			err := sendWelcomeMessage(opts, session.Label, update.Message.Chat.ID)
 			if err != nil {
 				if IsForbiddenError(err) {
@@ -357,7 +362,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 
 		fmt.Fprintf(os.Stderr, "reset session: %#v\n", session)
 
-		session.Label = setLabel(session.Label)
+		session.Label = setLabel(session.Label, MarkerResetLabel)
 
 		if err := sendWelcomeMessage(opts, session.Label, update.CallbackQuery.Message.Chat.ID); err != nil {
 			if IsForbiddenError(err) {
