@@ -355,6 +355,8 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 			}
 		}
 
+		fmt.Fprintf(os.Stderr, "reset session: %#v\n", session)
+
 		if session.Label.Label == "" &&
 			(!session.Label.Time.IsZero()) &&
 			session.Label.ID == uuid.Nil {
