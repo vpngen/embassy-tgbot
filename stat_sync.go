@@ -50,6 +50,10 @@ func statSyncLoop(wg *sync.WaitGroup, stop <-chan struct{}, labelStorage *LabelS
 }
 
 func sendLogs(labelStorage *LabelStorage, ministry MinistryOpts) error {
+	if labelStorage.notConfigured() {
+		return nil
+	}
+
 	entries, err := os.ReadDir(labelStorage.logDirname)
 	if err != nil {
 		return fmt.Errorf("read dir: %w", err)
