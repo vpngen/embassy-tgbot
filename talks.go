@@ -958,6 +958,10 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 			}
 
 			if session.Stage != stageMainTrackWaitForWanting && !warnAutodeleteSettings(opts, Message.Chat.ID, ecode) {
+				fmt.Fprintf(os.Stderr, "new session: %#v\n", session)
+
+				session.Label = setLabel(session.Label, MarkerEmptyLabel)
+
 				setSession(opts.db, opts.sessionSecret, sessionLabel, Message.Chat.ID, 0, 0, stageMainTrackStart, SessionStatePayloadBan, nil)
 
 				return nil
