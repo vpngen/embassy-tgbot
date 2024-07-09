@@ -219,6 +219,11 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts)
 		fallthrough
 	default:
 		if warnAutodeleteSettings(opts, update.Message.Chat.ID, ecode) {
+
+			fmt.Fprintf(os.Stderr, "new session: %#v\n", session)
+
+			session.Label = setLabel(session.Label, MarkerEmptyLabel)
+
 			err := sendWelcomeMessage(opts, session.Label, update.Message.Chat.ID)
 			if err != nil {
 				if IsForbiddenError(err) {
@@ -355,31 +360,9 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 			}
 		}
 
-		if session.Label.Label == "" &&
-			(!session.Label.Time.IsZero()) &&
-			session.Label.ID == uuid.Nil {
+		fmt.Fprintf(os.Stderr, "reset session: %#v\n", session)
 
-			label := ""
-			x := rand.Intn(len(MainTrackQuizMessage))
-			for prefix := range MainTrackQuizMessage {
-				if x == 0 {
-					label = prefix + label
-					if len(label) > 64 {
-						label = label[:64]
-					}
-
-					break
-				}
-
-				x--
-			}
-
-			session.Label = SessionLabel{
-				Label: label,
-				Time:  time.Now(),
-				ID:    uuid.New(),
-			}
-		}
+		session.Label = setLabel(session.Label, MarkerResetLabel)
 
 		if err := sendWelcomeMessage(opts, session.Label, update.CallbackQuery.Message.Chat.ID); err != nil {
 			if IsForbiddenError(err) {
@@ -975,6 +958,10 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 			}
 
 			if session.Stage != stageMainTrackWaitForWanting && !warnAutodeleteSettings(opts, Message.Chat.ID, ecode) {
+				fmt.Fprintf(os.Stderr, "new session: %#v\n", session)
+
+				session.Label = setLabel(session.Label, MarkerEmptyLabel)
+
 				setSession(opts.db, opts.sessionSecret, sessionLabel, Message.Chat.ID, 0, 0, stageMainTrackStart, SessionStatePayloadBan, nil)
 
 				return nil

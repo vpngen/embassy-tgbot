@@ -180,20 +180,22 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts 
 
 	time.Sleep(3 * time.Second)
 
-	if opts.Configs.AmnzOvcConfig != nil &&
-		opts.Configs.AmnzOvcConfig.FileContent != nil &&
-		opts.Configs.AmnzOvcConfig.FileName != nil {
-		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
-		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
-		doc.ParseMode = tgbotapi.ModeMarkdown
-		doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
+	/*
+		if opts.Configs.AmnzOvcConfig != nil &&
+			opts.Configs.AmnzOvcConfig.FileContent != nil &&
+			opts.Configs.AmnzOvcConfig.FileName != nil {
+			doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
+			doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
+			doc.ParseMode = tgbotapi.ModeMarkdown
+			doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
 
-		if _, err := bot.Request(doc); err != nil {
-			return fmt.Errorf("send amnezia file config: %w", err)
+			if _, err := bot.Request(doc); err != nil {
+				return fmt.Errorf("send amnezia file config: %w", err)
+			}
+
+			time.Sleep(2 * time.Second)
 		}
-
-		time.Sleep(2 * time.Second)
-	}
+	*/
 
 	//	_, err = SendOpenMessage(bot, chatID, 0, fmt.Sprintf(MainTrackKeydeskIPv6Message, opts.keydesk), ecode)
 	//	if err != nil {
@@ -573,6 +575,10 @@ func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode 
 		wgconf *ministry.Answer
 		err    error
 	)
+
+	fmt.Fprintf(os.Stderr, "empty label: %#v\n", label)
+
+	label = setLabel(label, MarkerEmptyLabel)
 
 	switch dept.fake {
 	case false:
