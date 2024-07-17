@@ -342,10 +342,16 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 	return nil
 }
 
+const LabdelUnknown = "1_DaChtoJeEtoTakoe"
+
 func callMinistry(dept MinistryOpts, label SessionLabel) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	cmd := "createbrigade -ch -j"
+
+	if label.Label == "" {
+		label.Label = LabdelUnknown
+	}
 
 	cmd += fmt.Sprintf(" -l %s -lt %d -lu %s", label.Label, label.Time.Unix(), label.ID.String())
 
