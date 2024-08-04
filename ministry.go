@@ -342,10 +342,16 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 	return nil
 }
 
-func callMinistry(dept MinistryOpts, label SessionLabel) (*ministry.Answer, error) {
+const LabdelUnknown = "1_DaChtoJeEtoTakoe"
+
+func callMinistry(dept MinistryOpts, label SessionLabel, mnt *Maintenance) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	cmd := "createbrigade -ch -j"
+
+	if label.Label == "" {
+		label.Label = LabdelUnknown
+	}
 
 	cmd += fmt.Sprintf(" -l %s -lt %d -lu %s", label.Label, label.Time.Unix(), label.ID.String())
 
@@ -470,10 +476,12 @@ func callMinistry(dept MinistryOpts, label SessionLabel) (*ministry.Answer, erro
 		return nil, fmt.Errorf("chunk read: %w", err)
 	}*/
 
+	mnt.CheckFree(wgconf.FreeSlots, wgconf.FreeSlots)
+
 	return wgconf, nil
 }
 
-func callMinistryRestore(dept MinistryOpts, name, words string) (*ministry.Answer, error) {
+func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	base64name := base64.StdEncoding.EncodeToString([]byte(name))
@@ -566,11 +574,13 @@ func callMinistryRestore(dept MinistryOpts, name, words string) (*ministry.Answe
 		return nil, fmt.Errorf("wgconf read: %w", err)
 	}*/
 
+	// mnt.CheckFree(wgconf.FreeSlots, wgconf.FreeSlots)
+
 	return wgconf, nil
 }
 
 // GetBrigadier - get brigadier name and config.
-func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode string, dept MinistryOpts) error {
+func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode string, dept MinistryOpts, mnt *Maintenance) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
@@ -582,7 +592,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode 
 
 	switch dept.fake {
 	case false:
-		wgconf, err = callMinistry(dept, label)
+		wgconf, err = callMinistry(dept, label, mnt)
 		if err != nil {
 			return fmt.Errorf("call ministry: %w", err)
 		}
@@ -652,7 +662,7 @@ func replaceRuneAt(s string, index, size int, replacement string) string {
 }
 
 // RestoreBrigadier - restore brigadier  config.
-func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept MinistryOpts, name, words string) error {
+func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept MinistryOpts, mnt *Maintenance, name, words string) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
@@ -660,7 +670,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 
 	switch dept.fake {
 	case false:
-		wgconf, err = callMinistryRestore(dept, name, words)
+		wgconf, err = callMinistryRestore(dept, mnt, name, words)
 		if err == nil {
 			break
 		}
@@ -669,7 +679,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
-		wgconf, err = callMinistryRestore(dept, name, words)
+		wgconf, err = callMinistryRestore(dept, mnt, name, words)
 		if err == nil {
 			break
 		}
@@ -678,7 +688,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
-		wgconf, err = callMinistryRestore(dept, name, words)
+		wgconf, err = callMinistryRestore(dept, mnt, name, words)
 		if err == nil {
 			break
 		}
@@ -686,7 +696,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 		for _, name := range generateCombinations(name, maxEYoCombinations) {
 			fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
-			wgconf, err = callMinistryRestore(dept, name, words)
+			wgconf, err = callMinistryRestore(dept, mnt, name, words)
 			if err == nil {
 				break
 			}

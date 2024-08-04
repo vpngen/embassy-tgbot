@@ -48,7 +48,7 @@ func buttonHandler2(opts handlerOpts, update tgbotapi.Update) {
 
 	switch {
 	case strings.HasPrefix(decisionPrefix, acceptReceiptPrefix):
-		if opts.mmf != "" || opts.mmn != "" {
+		if mntFull, mntNewreg := opts.mnt.Check(); mntFull != "" || mntNewreg != "" {
 			return
 		}
 
