@@ -734,7 +734,7 @@ func checkRestoreWordsMessageMessage(opts handlerOpts, label SessionLabel, Messa
 		return sendWordsFailed(opts, label, Message.Chat.ID, prev, name)
 	}
 
-	err := RestoreBrigadier(opts.bot, Message.Chat.ID, ecode, dept, string(name), words)
+	err := RestoreBrigadier(opts.bot, Message.Chat.ID, ecode, dept, opts.mnt, string(name), words)
 	if err != nil {
 		return sendWordsFailed(opts, label, Message.Chat.ID, prev, name)
 	}

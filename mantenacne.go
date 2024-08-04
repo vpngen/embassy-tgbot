@@ -29,6 +29,12 @@ const (
 
 	// stateReportInterval is the interval between reports of the maintenance state.
 	stateReportInterval = time.Hour
+
+	// minimumSlotsForNewUsers is the minimum number of slots for new users.
+	minimumSlotsForNewUsers = 100
+
+	// minimumSlotsForWork is the minimum number of slots for work.
+	minimumSlotsForWork = 0
 )
 
 type MantenanceState struct {
@@ -39,6 +45,8 @@ type MantenanceState struct {
 }
 
 type Maintenance struct {
+	sync.Mutex
+
 	dir string
 
 	full    *MantenanceState
@@ -57,7 +65,10 @@ func NewMantenance(dir string) *Maintenance {
 	}
 
 	return &Maintenance{
-		dir:     dir,
+		Mutex: sync.Mutex{},
+
+		dir: dir,
+
 		full:    NewMantenanceState(filepath.Join(dir, maintenanceFullFilename)),
 		newregs: NewMantenanceState(filepath.Join(dir, maintenanceNewFilename)),
 	}
@@ -74,6 +85,9 @@ func (m *Maintenance) CheckFiles() (bool, bool, string, string, error) {
 	if m == nil {
 		return false, false, "", "", nil
 	}
+
+	m.Lock()
+	defer m.Unlock()
 
 	oldfull := m.full.state
 	if err := m.full.checkState(); err != nil {
@@ -116,6 +130,9 @@ func (m *Maintenance) Check() (string, string) {
 	if m == nil {
 		return "", ""
 	}
+
+	m.Lock()
+	defer m.Unlock()
 
 	if m.full.state {
 		return m.full.text, ""
@@ -253,5 +270,36 @@ func checkMantenance(wg *sync.WaitGroup, stop <-chan struct{}, bot *tgbotapi.Bot
 		case <-stop:
 			return
 		}
+	}
+}
+
+func (m *Maintenance) CheckFree(slots int, domains int) {
+	if m == nil {
+		return
+	}
+
+	m.Lock()
+	defer m.Unlock()
+
+	if m.full.state {
+		return
+	}
+
+	if slots <= minimumSlotsForWork || domains <= minimumSlotsForWork {
+		// full maintenance mode is activated.
+		if err := os.Symlink(m.full.filename+"_tmpl", m.full.filename); err != nil {
+			fmt.Fprintf(os.Stderr, "symlink: %v\n", err)
+		}
+
+		return
+	}
+
+	if slots < minimumSlotsForNewUsers || domains < minimumSlotsForNewUsers {
+		// new users registration maintenance mode is activated.
+		if err := os.Symlink(m.newregs.filename+"_tmpl", m.newregs.filename); err != nil {
+			fmt.Fprintf(os.Stderr, "symlink: %v\n", err)
+		}
+
+		return
 	}
 }
