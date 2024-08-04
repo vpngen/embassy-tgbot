@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -58,20 +59,28 @@ func main() {
 
 	go badgerGC(waitGroup, stop, dbase)
 
+	// run the maintenance check
+	if cfg.Maintenance != nil {
+		fmt.Fprintf(os.Stderr, "[i] Maintenance check is enabled\n")
+
+		waitGroup.Add(1)
+
+		go checkMantenance(waitGroup, stop, bot2, cfg.ckChatID, cfg.Maintenance)
+	}
 	// run the bot
 	waitGroup.Add(1)
 
-	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Ministry, cfg.MaintenanceModeFull, cfg.MaintenanceModeNew, cfg.LabelStorage, cfg.sessionSecret, cfg.queueSecret)
+	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Ministry, cfg.Maintenance, cfg.LabelStorage, cfg.sessionSecret, cfg.queueSecret)
 
 	// run the bot2
 	waitGroup.Add(1)
 
-	go runBot2(waitGroup, stop, dbase, bot2, cfg.UpdateTout, cfg.DebugLevel, cfg.MaintenanceModeFull, cfg.MaintenanceModeNew)
+	go runBot2(waitGroup, stop, dbase, bot2, cfg.UpdateTout, cfg.DebugLevel, cfg.Maintenance)
 
 	// run the QRun(2)
 	waitGroup.Add(2)
 
-	go ReceiptQueueLoop(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID, cfg.Ministry, cfg.sessionSecret, cfg.queue2Secret)
+	go ReceiptQueueLoop(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID, cfg.Ministry, cfg.sessionSecret, cfg.queue2Secret, cfg.Maintenance)
 	go ReceiptQueueLoop2(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID)
 
 	// run the stat sync

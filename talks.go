@@ -48,8 +48,7 @@ type handlerOpts struct {
 	cw    *ChatsWins
 	debug int
 	ls    *LabelStorage
-	mmf   string
-	mmn   string
+	mnt   *Maintenance
 
 	sessionSecret []byte
 	queueSecret   []byte
@@ -735,7 +734,7 @@ func checkRestoreWordsMessageMessage(opts handlerOpts, label SessionLabel, Messa
 		return sendWordsFailed(opts, label, Message.Chat.ID, prev, name)
 	}
 
-	err := RestoreBrigadier(opts.bot, Message.Chat.ID, ecode, dept, string(name), words)
+	err := RestoreBrigadier(opts.bot, Message.Chat.ID, ecode, dept, opts.mnt, string(name), words)
 	if err != nil {
 		return sendWordsFailed(opts, label, Message.Chat.ID, prev, name)
 	}
@@ -1037,10 +1036,11 @@ func sendMessage(bot *tgbotapi.BotAPI, chatID int64, replyID int, protect, previ
 
 // checkMaintenanceMode - check maintenance mode.
 func checkMaintenanceMode(opts handlerOpts, label SessionLabel, chatID int64, ecode string, whenfull bool) bool {
-	if opts.mmf != "" || (opts.mmn != "" && !whenfull) {
-		text := opts.mmn
-		if opts.mmf != "" {
-			text = opts.mmf
+	mntFull, mntNewreg := opts.mnt.Check()
+	if mntFull != "" || (mntNewreg != "" && !whenfull) {
+		text := mntNewreg
+		if mntFull != "" {
+			text = mntFull
 		}
 
 		_, err := SendProtectedMessage(opts.bot, chatID, 0, false, text, ecode)
