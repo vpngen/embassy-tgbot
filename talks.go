@@ -403,7 +403,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("end msg: %w", err))
 		}
 	case update.CallbackQuery.Data == "restore":
-		if checkMaintenanceMode(opts, session.Label, update.CallbackQuery.Message.Chat.ID, ecode, false) {
+		if checkMaintenanceMode(opts, session.Label, update.CallbackQuery.Message.Chat.ID, ecode, true) {
 			return
 		}
 
@@ -1037,6 +1037,9 @@ func sendMessage(bot *tgbotapi.BotAPI, chatID int64, replyID int, protect, previ
 // checkMaintenanceMode - check maintenance mode.
 func checkMaintenanceMode(opts handlerOpts, label SessionLabel, chatID int64, ecode string, whenfull bool) bool {
 	mntFull, mntNewreg := opts.mnt.Check()
+
+	fmt.Fprintf(os.Stderr, "mntFull: %v mntNewreg: %v, whenfull: %v\n", mntFull != "", mntNewreg != "", whenfull)
+
 	if mntFull != "" || (mntNewreg != "" && !whenfull) {
 		text := mntNewreg
 		if mntFull != "" {

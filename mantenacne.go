@@ -113,12 +113,12 @@ func (m *Maintenance) CheckFiles() (bool, bool, string, string, error) {
 		}
 
 		return false, false, m.full.text, "", nil
-	default:
+	case false:
 		if m.full.state {
 			return true, false, m.full.text, "", nil
 		}
 
-		if !m.full.state && (m.newregs.state != oldnewreg) {
+		if m.newregs.state != oldnewreg {
 			return false, true, "", m.newregs.text, nil
 		}
 	}
@@ -216,7 +216,7 @@ func checkMantenance(wg *sync.WaitGroup, stop <-chan struct{}, bot *tgbotapi.Bot
 				continue
 			}
 
-			fmt.Fprintf(os.Stderr, "checkMantenance: full=%v fullText=%v newreg=%v newregText=%v\n", chFull, chNewreg, full != "", newreg != "")
+			fmt.Fprintf(os.Stderr, "checkMantenance: full=%v fullText=%v newreg=%v newregText=%v\n", chFull, full != "", chNewreg, newreg != "")
 
 			if firstCycle {
 				firstCycle = false
