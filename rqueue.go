@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -212,6 +213,14 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 		case <-stop:
 			return
 		case <-timer.C:
+			if full, _ := mnt.Check(); full != "" {
+				timer.Reset(3 * time.Minute)
+
+				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: fullMode=%v\n", full != "")
+
+				continue
+			}
+
 			rqround(db, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
 			timer.Reset(100 * time.Millisecond)
 		}
