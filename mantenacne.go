@@ -134,6 +134,8 @@ func (m *Maintenance) Check() (string, string) {
 	m.Lock()
 	defer m.Unlock()
 
+	fmt.Fprintf(os.Stderr, "Check: full=%v newregs=%v\n", m.full.state, m.newregs.state)
+
 	if m.full.state {
 		return m.full.text, ""
 	}
@@ -214,8 +216,7 @@ func checkMantenance(wg *sync.WaitGroup, stop <-chan struct{}, bot *tgbotapi.Bot
 				continue
 			}
 
-			// fmt.Fprintf(os.Stderr, "checkMantenance: full=%v newreg=%v\n", chFull, chNewreg)
-			// fmt.Fprintf(os.Stderr, "checkMantenance: fullText=%v newregText=%v\n", full != "", newreg != "")
+			fmt.Fprintf(os.Stderr, "checkMantenance: full=%v fullText=%v newreg=%v newregText=%v\n", chFull, chNewreg, full != "", newreg != "")
 
 			if firstCycle {
 				firstCycle = false
@@ -291,14 +292,18 @@ func (m *Maintenance) CheckFree(slots int, domains int) {
 			fmt.Fprintf(os.Stderr, "symlink: %v\n", err)
 		}
 
+		fmt.Fprintf(os.Stderr, "full maintenance mode is activated: free_slots=%d free_domains=%d\n", slots, domains)
+
 		return
 	}
 
-	if slots < minimumSlotsForNewUsers || domains < minimumSlotsForNewUsers {
+	if slots <= minimumSlotsForNewUsers || domains <= minimumSlotsForNewUsers {
 		// new users registration maintenance mode is activated.
 		if err := os.Symlink(m.newregs.filename+"_tmpl", m.newregs.filename); err != nil {
 			fmt.Fprintf(os.Stderr, "symlink: %v\n", err)
 		}
+
+		fmt.Fprintf(os.Stderr, "new users registration maintenance mode is activated: free_slots=%d free_domains=%d\n", slots, domains)
 
 		return
 	}
