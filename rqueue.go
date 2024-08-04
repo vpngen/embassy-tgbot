@@ -213,10 +213,16 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 		case <-stop:
 			return
 		case <-timer.C:
-			if full, _ := mnt.Check(); full != "" {
+			if full, newreg := mnt.Check(); full != "" || newreg != "" {
 				timer.Reset(3 * time.Minute)
 
-				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: fullMode=%v\n", full != "")
+				if full != "" {
+					fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: fullMode=%v\n", full != "")
+
+					continue
+				}
+
+				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: newregMode=%v\n", newreg != "")
 
 				continue
 			}
