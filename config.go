@@ -33,22 +33,21 @@ type MinistryOpts struct {
 
 // Config - config.
 type Config struct {
-	Token               string
-	Token2              string
-	UpdateTout          int
-	DebugLevel          int
-	BotDebug            bool
-	DBDir               string
-	DBKey               []byte
-	SupportURL          string
-	ckChatID            int64
-	Ministry            MinistryOpts
-	MaintenanceModeFull string
-	MaintenanceModeNew  string
-	LabelStorage        *LabelStorage
-	sessionSecret       []byte
-	queueSecret         []byte
-	queue2Secret        []byte
+	Token         string
+	Token2        string
+	UpdateTout    int
+	DebugLevel    int
+	BotDebug      bool
+	DBDir         string
+	DBKey         []byte
+	SupportURL    string
+	ckChatID      int64
+	Ministry      MinistryOpts
+	Maintenance   *Maintenance
+	LabelStorage  *LabelStorage
+	sessionSecret []byte
+	queueSecret   []byte
+	queue2Secret  []byte
 }
 
 // configFromEnv - fill config from environment vars.
@@ -71,8 +70,7 @@ func configFromEnv() Config {
 	ministryToken := os.Getenv("MINISTRY_TOKEN")
 	sshKeyPath := os.Getenv("SSHKEY_PATH")
 	labelFilename := os.Getenv("LABEL_FILENAME")
-	maintenanceModeFull := os.Getenv("MAINTENANCE_MODE_FULL_TEXT")
-	mantenanceModeNew := os.Getenv("MAINTENANCE_MODE_NEW_TEXT")
+	maintenanceStateFilesDir := os.Getenv("MAINTENANCE_STATE_FILES_DIR")
 
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	queueSecret := os.Getenv("QUEUE_SECRET")
@@ -140,9 +138,9 @@ func configFromEnv() Config {
 			token:     ministryToken,
 			fake:      sshFake,
 		},
-		LabelStorage:        ls,
-		MaintenanceModeFull: maintenanceModeFull,
-		MaintenanceModeNew:  mantenanceModeNew,
+		LabelStorage: ls,
+
+		Maintenance: NewMantenance(maintenanceStateFilesDir),
 
 		sessionSecret: genKeyFromEnv(sessionSecret, DefaultIterations, DefaultKeyLen),
 		queueSecret:   genKeyFromEnv(queueSecret, DefaultIterations, DefaultKeyLen),
