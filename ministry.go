@@ -481,7 +481,7 @@ func callMinistry(dept MinistryOpts, label SessionLabel, mnt *Maintenance) (*min
 	return wgconf, nil
 }
 
-func callMinistryRestore(dept MinistryOpts, mnt *Maintenance, name, words string) (*ministry.Answer, error) {
+func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	base64name := base64.StdEncoding.EncodeToString([]byte(name))
@@ -574,7 +574,7 @@ func callMinistryRestore(dept MinistryOpts, mnt *Maintenance, name, words string
 		return nil, fmt.Errorf("wgconf read: %w", err)
 	}*/
 
-	mnt.CheckFree(wgconf.FreeSlots, wgconf.FreeSlots)
+	// mnt.CheckFree(wgconf.FreeSlots, wgconf.FreeSlots)
 
 	return wgconf, nil
 }
