@@ -20,6 +20,7 @@ const (
 	decisionRejectTooOld
 	decisionRejectWithCallback
 	decisionRejectDoubled
+	decisionRejectBusy
 )
 
 var buttons = map[int]string{
@@ -36,6 +37,7 @@ var buttons = map[int]string{
 	decisionRejectTooOld:         "\U0001f4c5 Старый",
 	decisionRejectWithCallback:   "\u260e\ufe0f Свяжитесь",
 	decisionRejectDoubled:        "\u270c\ufe0f Повтор",
+	decisionRejectBusy:           "\U0001f4a3 Занят",
 }
 
 /*

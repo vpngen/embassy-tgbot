@@ -251,7 +251,7 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 
 // do round.
 func rqround(db *badger.DB, sessionSecret []byte, queue2Secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, mnt *Maintenance) {
-	ok, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID)
+	ok, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID, mnt)
 	if err != nil {
 		logs.Errf("new receipt: %s\n", err)
 
@@ -269,8 +269,8 @@ func rqround(db *badger.DB, sessionSecret []byte, queue2Secret []byte, bot, bot2
 }
 
 // catch one new receipt.
-func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) (bool, error) {
-	key, receipt, _, err := catchFirstReceipt(db, CkReceiptStageNone)
+func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, mnt *Maintenance) (bool, error) {
+	key, receipt, count, err := catchFirstReceipt(db, CkReceiptStageNone)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
 	}
@@ -279,6 +279,14 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 
 	if key == nil || receipt == nil || receipt.FileID == "" {
 		return false, nil
+	}
+
+	if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
+		if err := UpdateReceipt(db, key, CkReceiptStageReceived, false, decisionRejectBusy, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}); err != nil {
+			return false, fmt.Errorf("update receipt: %w", err)
+		}
+
+		return true, nil
 	}
 
 	url, err := bot.GetFileDirectURL(receipt.FileID)
