@@ -543,7 +543,7 @@ func checkBillMessageMessage(opts handlerOpts, label SessionLabel, Message *tgbo
 		return err
 	}
 
-	_, _, count, err := catchFirstReceipt(opts.db, 0)
+	_, _, count, err := catchFirstReceipt(opts.db, CkReceiptStageNone)
 	if err != nil {
 		return fmt.Errorf("catch: %w", err)
 	}
