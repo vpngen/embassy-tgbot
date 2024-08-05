@@ -234,19 +234,19 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 
 			timer.Reset(3 * time.Second)
 		case <-timerDebug.C:
-			_, _, count, err := catchFirstReceipt(db, CkReceiptStageNone) // debug printing
+			_, _, countNone, err := catchFirstReceipt(db, CkReceiptStageNone) // debug printing
 			if err == nil {
-				fmt.Fprintf(os.Stderr, "New receipt queue size: %d\n", count)
+				fmt.Fprintf(os.Stderr, "New receipt queue size: %d\n", countNone)
 			}
 
-			_, _, count, err = catchFirstReceipt(db, CkReceiptStageSent) // debug printing
+			_, _, countSent, err := catchFirstReceipt(db, CkReceiptStageSent) // debug printing
 			if err == nil {
-				fmt.Fprintf(os.Stderr, "Sended receipt queue size: %d\n", count)
+				fmt.Fprintf(os.Stderr, "Sended receipt queue size: %d\n", countSent)
 			}
 
-			_, _, count, err = catchFirstReceipt(db, CkReceiptStageReceived) // debug printing
+			_, _, countReceived, err := catchFirstReceipt(db, CkReceiptStageReceived) // debug printing
 			if err == nil {
-				fmt.Fprintf(os.Stderr, "Approved receipt queue size: %d\n", count)
+				fmt.Fprintf(os.Stderr, "Approved receipt queue size: %d\n", countReceived)
 			}
 
 			timerDebug.Reset(30 * time.Second)
@@ -288,6 +288,8 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 
 	if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
 		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: fullMode=%v\n", full != "")
+		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: key=%x\n", key)
+		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: %#v\n", receipt)
 
 		fakeSum := sha256.Sum256([]byte("xxx"))
 		if err := UpdateReceipt(db, key, CkReceiptStageReceived, false, decisionRejectBusy, fakeSum[:]); err != nil {
