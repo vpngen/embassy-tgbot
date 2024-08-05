@@ -181,7 +181,7 @@ func getReceipt2(txn *badger.Txn, id []byte) ([]byte, error) {
 func ReceiptQueueLoop2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) {
 	defer waitGroup.Done()
 
-	timer := time.NewTimer(100 * time.Millisecond)
+	timer := time.NewTimer(time.Second)
 	defer timer.Stop()
 
 	for {
@@ -190,7 +190,7 @@ func ReceiptQueueLoop2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan str
 			return
 		case <-timer.C:
 			qround2(db)
-			timer.Reset(100 * time.Millisecond)
+			timer.Reset(3 * time.Second)
 		}
 	}
 }

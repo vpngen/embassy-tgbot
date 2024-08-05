@@ -533,12 +533,25 @@ func sendQuizMessage(opts handlerOpts, label SessionLabel, chatID int64, ecode s
 	return nil
 }
 
+const MainTrackWeAreSoBusy = `Прости нас, неимоверная нагрузка на ресурсы. Сами расстроены. Повтори попытку позже 🤷‍♂️`
+
 // Check bill message.
 func checkBillMessageMessage(opts handlerOpts, label SessionLabel, Message *tgbotapi.Message, ecode string) error {
 	if len(Message.Photo) == 0 {
 		_, err := SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, false, MainTrackWarnRequiredPhoto, ecode)
 
 		return err
+	}
+
+	_, _, count, err := catchFirstReceipt(opts.db, 0)
+	if err != nil {
+		return fmt.Errorf("catch: %w", err)
+	}
+
+	if count > 10 {
+		SendProtectedMessage(opts.bot, Message.Chat.ID, Message.MessageID, false, MainTrackWeAreSoBusy, ecode)
+
+		return nil
 	}
 
 	photoIDX := 0
