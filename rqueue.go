@@ -205,15 +205,20 @@ func getReceipt(txn *badger.Txn, id []byte) ([]byte, error) {
 func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, sessionSecret []byte, queue2Secret []byte, mnt *Maintenance) {
 	defer waitGroup.Done()
 
-	timer := time.NewTimer(100 * time.Millisecond)
+	timer := time.NewTimer(time.Second)
 	defer timer.Stop()
+
+	timerDebug := time.NewTimer(time.Second)
+	defer timerDebug.Stop()
 
 	for {
 		select {
 		case <-stop:
 			return
 		case <-timer.C:
-			if full, newreg := mnt.Check(); full != "" || newreg != "" {
+			rqround(db, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
+
+			/*if full, newreg := mnt.Check(); full != "" || newreg != "" {
 				timer.Reset(3 * time.Minute)
 
 				if full != "" {
@@ -225,17 +230,33 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: newregMode=%v\n", newreg != "")
 
 				continue
+			}*/
+
+			timer.Reset(3 * time.Second)
+		case <-timerDebug.C:
+			_, _, count, err := catchFirstReceipt(db, CkReceiptStageNone) // debug printing
+			if err == nil {
+				fmt.Fprintf(os.Stderr, "New receipt queue size: %d\n", count)
 			}
 
-			rqround(db, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
-			timer.Reset(100 * time.Millisecond)
+			_, _, count, err = catchFirstReceipt(db, CkReceiptStageSent) // debug printing
+			if err == nil {
+				fmt.Fprintf(os.Stderr, "Sended receipt queue size: %d\n", count)
+			}
+
+			_, _, count, err = catchFirstReceipt(db, CkReceiptStageReceived) // debug printing
+			if err == nil {
+				fmt.Fprintf(os.Stderr, "Approved receipt queue size: %d\n", count)
+			}
+
+			timerDebug.Reset(30 * time.Second)
 		}
 	}
 }
 
 // do round.
 func rqround(db *badger.DB, sessionSecret []byte, queue2Secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, mnt *Maintenance) {
-	ok, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID)
+	ok, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID, mnt)
 	if err != nil {
 		logs.Errf("new receipt: %s\n", err)
 
@@ -253,8 +274,8 @@ func rqround(db *badger.DB, sessionSecret []byte, queue2Secret []byte, bot, bot2
 }
 
 // catch one new receipt.
-func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) (bool, error) {
-	key, receipt, err := catchFirstReceipt(db, CkReceiptStageNone)
+func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, mnt *Maintenance) (bool, error) {
+	key, receipt, count, err := catchFirstReceipt(db, CkReceiptStageNone)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
 	}
@@ -263,6 +284,17 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 
 	if key == nil || receipt == nil || receipt.FileID == "" {
 		return false, nil
+	}
+
+	if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
+		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: fullMode=%v\n", full != "")
+
+		fakeSum := sha256.Sum256([]byte("xxx"))
+		if err := UpdateReceipt(db, key, CkReceiptStageReceived, false, decisionRejectBusy, fakeSum[:]); err != nil {
+			return false, fmt.Errorf("update receipt: %w", err)
+		}
+
+		return true, nil
 	}
 
 	url, err := bot.GetFileDirectURL(receipt.FileID)
@@ -290,9 +322,14 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 	return true, nil
 }
 
+var (
+	ErrFullMaintenanceMode   = errors.New("full maintenance mode")
+	ErrNewRegMaintenanceMode = errors.New("newreg maintenance mode")
+)
+
 // catch reviewed receipt
 func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.BotAPI, dept MinistryOpts, mnt *Maintenance) (bool, error) {
-	key, receipt, err := catchFirstReceipt(db, CkReceiptStageReceived)
+	key, receipt, count, err := catchFirstReceipt(db, CkReceiptStageReceived)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
 	}
@@ -313,6 +350,22 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 
 	switch receipt.Accepted {
 	case true:
+		if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
+			if err := DeleteReceipt(db, key); err != nil {
+				return false, fmt.Errorf("cleanup: %w", err)
+			}
+
+			if full != "" {
+				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: fullMode=%v\n", full != "")
+
+				return false, fmt.Errorf("%w: %d", ErrFullMaintenanceMode, count)
+			}
+
+			fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: newregMode=%v\n", newreg != "")
+
+			return false, fmt.Errorf("%w: %d", ErrNewRegMaintenanceMode, count)
+		}
+
 		sum := receipt.PhotoSum
 
 		if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
@@ -397,19 +450,26 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 	return true, nil
 }
 
-func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
-	var key []byte
+func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error) {
+	var (
+		key   []byte
+		count int
+	)
 
-	receipt := &CkReceipt{}
+	receipt := CkReceipt{}
+	buf := CkReceipt{}
 
 	err := db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
 
 		defer it.Close()
 
+		first := true
+
 		prefix := []byte(receiptqPrefix)
 
 		var data []byte
+
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
 			key = item.Key()
@@ -422,32 +482,34 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
 				return err
 			}
 
-			err = json.Unmarshal(data, receipt)
+			err = json.Unmarshal(data, &buf)
 			if err != nil {
 				return fmt.Errorf("unmarhal: %w", err)
 			}
 
 			if receipt.Stage != stage {
-				key = nil
-				data = nil
-
 				continue
 			}
 
-			break
+			if first {
+				first = false
+				receipt = buf
+			}
+
+			count++
 		}
 
 		return nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("get next: %w", err)
+		return nil, nil, count, fmt.Errorf("get next: %w", err)
 	}
 
 	//if key != nil {
 	//	fmt.Fprintf(os.Stderr, "[receipt first] %x %#v\n", key, receipt)
 	//}
 
-	return key, receipt, nil
+	return key, &receipt, count, nil
 }
 
 func downloadPhoto(url string) ([]byte, error) {

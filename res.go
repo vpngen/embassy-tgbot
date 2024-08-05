@@ -263,6 +263,7 @@ var (
 		decisionRejectTooOld:         "",
 		decisionRejectWithCallback:   "",
 		decisionRejectDoubled:        "",
+		decisionRejectBusy:           "",
 	}
 
 	// decisionCommentsTemplate - descriptive text on check decidion.
@@ -279,6 +280,7 @@ var (
 		decisionRejectTooOld:         "Похоже чек устарел. Пришли пожалуйста тот, что не старше недели. " + extraSupportText,
 		decisionRejectWithCallback:   "Похоже что-то не так с чеком и нам нужно поговорить. Свяжись пожалуйста с [нами](%s).",
 		decisionRejectDoubled:        "Похоже такую картинку нам уже присылали. Пришли пожалуйста другую. " + extraSupportText,
+		decisionRejectBusy:           "Прости нас, очень много работы. Попробуй пожалуйста позже ",
 	}
 )
 
