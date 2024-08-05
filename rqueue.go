@@ -234,14 +234,19 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 
 			timer.Reset(3 * time.Second)
 		case <-timerDebug.C:
-			_, _, count, err := catchFirstReceipt(db, CkReceiptStageReceived) // debug printing
-			if err == nil {
-				fmt.Fprintf(os.Stderr, "Approved receipt queue size: %d\n", count)
-			}
-
-			_, _, count, err = catchFirstReceipt(db, CkReceiptStageNone) // debug printing
+			_, _, count, err := catchFirstReceipt(db, CkReceiptStageNone) // debug printing
 			if err == nil {
 				fmt.Fprintf(os.Stderr, "New receipt queue size: %d\n", count)
+			}
+
+			_, _, count, err = catchFirstReceipt(db, CkReceiptStageSent) // debug printing
+			if err == nil {
+				fmt.Fprintf(os.Stderr, "Sended receipt queue size: %d\n", count)
+			}
+
+			_, _, count, err = catchFirstReceipt(db, CkReceiptStageReceived) // debug printing
+			if err == nil {
+				fmt.Fprintf(os.Stderr, "Approved receipt queue size: %d\n", count)
 			}
 
 			timerDebug.Reset(30 * time.Second)
@@ -459,6 +464,8 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 
 		defer it.Close()
 
+		first := true
+
 		prefix := []byte(receiptqPrefix)
 
 		var data []byte
@@ -484,7 +491,8 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 				continue
 			}
 
-			if receipt.FileID == "" {
+			if first {
+				first = false
 				receipt = buf
 			}
 
