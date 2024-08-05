@@ -208,6 +208,9 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 	timer := time.NewTimer(100 * time.Millisecond)
 	defer timer.Stop()
 
+	timerDebug := time.NewTimer(time.Second)
+	defer timerDebug.Stop()
+
 	for {
 		select {
 		case <-stop:
@@ -229,6 +232,10 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 
 			rqround(db, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
 			timer.Reset(100 * time.Millisecond)
+		case <-timerDebug.C:
+			catchFirstReceipt(db, CkReceiptStageNone) // debug printing
+
+			timerDebug.Reset(30 * time.Second)
 		}
 	}
 }
