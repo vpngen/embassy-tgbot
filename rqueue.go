@@ -282,7 +282,10 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 	}
 
 	if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
-		if err := UpdateReceipt(db, key, CkReceiptStageReceived, false, decisionRejectBusy, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}); err != nil {
+		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: fullMode=%v\n", full != "")
+
+		fakeSum := sha256.Sum256([]byte("xxx"))
+		if err := UpdateReceipt(db, key, CkReceiptStageReceived, false, decisionRejectBusy, fakeSum[:]); err != nil {
 			return false, fmt.Errorf("update receipt: %w", err)
 		}
 
