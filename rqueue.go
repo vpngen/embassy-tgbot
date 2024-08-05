@@ -98,7 +98,7 @@ func queueID() []byte {
 
 // UpdateReceipt - update receipt review status and stage.
 func UpdateReceipt(dbase *badger.DB, id []byte, stage int, accept bool, reason int, sum []byte) error {
-	// fmt.Printf("*** update q1: %x stage=%d\n", id, stage)
+	fmt.Printf("*** update q1: %x stage=%d\n", id, stage)
 
 	err := dbase.Update(func(txn *badger.Txn) error {
 		receipt := &CkReceipt{}
