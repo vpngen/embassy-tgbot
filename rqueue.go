@@ -234,7 +234,10 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 
 			timer.Reset(100 * time.Millisecond)
 		case <-timerDebug.C:
-			catchFirstReceipt(db, CkReceiptStageNone) // debug printing
+			_, _, count, err := catchFirstReceipt(db, CkReceiptStageNone) // debug printing
+			if err == nil {
+				fmt.Fprintf(os.Stderr, "Approved receipt queue size: %d\n", count)
+			}
 
 			timerDebug.Reset(30 * time.Second)
 		}
@@ -262,7 +265,7 @@ func rqround(db *badger.DB, sessionSecret []byte, queue2Secret []byte, bot, bot2
 
 // catch one new receipt.
 func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64) (bool, error) {
-	key, receipt, err := catchFirstReceipt(db, CkReceiptStageNone)
+	key, receipt, _, err := catchFirstReceipt(db, CkReceiptStageNone)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
 	}
@@ -298,9 +301,14 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 	return true, nil
 }
 
+var (
+	ErrFullMaintenanceMode   = errors.New("full maintenance mode")
+	ErrNewRegMaintenanceMode = errors.New("newreg maintenance mode")
+)
+
 // catch reviewed receipt
 func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.BotAPI, dept MinistryOpts, mnt *Maintenance) (bool, error) {
-	key, receipt, err := catchFirstReceipt(db, CkReceiptStageReceived)
+	key, receipt, count, err := catchFirstReceipt(db, CkReceiptStageReceived)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
 	}
@@ -321,39 +329,39 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 
 	switch receipt.Accepted {
 	case true:
-		full, newreg := mnt.Check()
+		if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
+			if err := DeleteReceipt(db, key); err != nil {
+				return false, fmt.Errorf("cleanup: %w", err)
+			}
+
+			if full != "" {
+				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: fullMode=%v\n", full != "")
+
+				return false, fmt.Errorf("%w: %d", ErrFullMaintenanceMode, count)
+			}
+
+			fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: newregMode=%v\n", newreg != "")
+
+			return false, fmt.Errorf("%w: %d", ErrNewRegMaintenanceMode, count)
+		}
 
 		sum := receipt.PhotoSum
 
-		if full == "" && newreg == "" {
-			if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
-				if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, desc, ecode); err != nil {
-					if IsForbiddenError(err) {
-						DeleteReceipt(db, key)
-						setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
-
-						return false, fmt.Errorf("send message: %w", err)
-					}
+		if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
+			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, desc, ecode); err != nil {
+				if IsForbiddenError(err) {
+					DeleteReceipt(db, key)
+					setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 					return false, fmt.Errorf("send message: %w", err)
 				}
+
+				return false, fmt.Errorf("send message: %w", err)
 			}
 		}
 
 		if err := DeleteReceipt(db, key); err != nil {
 			return false, fmt.Errorf("cleanup: %w", err)
-		}
-
-		if full != "" || newreg != "" {
-			if full != "" {
-				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: fullMode=%v\n", full != "")
-
-				return false, fmt.Errorf("full maintenance: %w", err)
-			}
-
-			fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: newregMode=%v\n", newreg != "")
-
-			return false, fmt.Errorf("newreg maintenace: %w", err)
 		}
 
 		if err := GetBrigadier(bot, session.Label, receipt.ChatID, ecode, dept, mnt); err != nil {
@@ -421,7 +429,7 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 	return true, nil
 }
 
-func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
+func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error) {
 	var (
 		key   []byte
 		count int
@@ -471,16 +479,14 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("get next: %w", err)
+		return nil, nil, count, fmt.Errorf("get next: %w", err)
 	}
 
 	//if key != nil {
 	//	fmt.Fprintf(os.Stderr, "[receipt first] %x %#v\n", key, receipt)
 	//}
 
-	fmt.Fprintf(os.Stderr, ">>> receipt count: %d\n", count)
-
-	return key, receipt, nil
+	return key, receipt, count, nil
 }
 
 func downloadPhoto(url string) ([]byte, error) {
