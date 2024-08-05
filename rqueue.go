@@ -216,7 +216,9 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 		case <-stop:
 			return
 		case <-timer.C:
-			if full, newreg := mnt.Check(); full != "" || newreg != "" {
+			rqround(db, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
+
+			/*if full, newreg := mnt.Check(); full != "" || newreg != "" {
 				timer.Reset(3 * time.Minute)
 
 				if full != "" {
@@ -228,9 +230,8 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: newregMode=%v\n", newreg != "")
 
 				continue
-			}
+			}*/
 
-			rqround(db, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
 			timer.Reset(100 * time.Millisecond)
 		case <-timerDebug.C:
 			catchFirstReceipt(db, CkReceiptStageNone) // debug printing
@@ -320,23 +321,39 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 
 	switch receipt.Accepted {
 	case true:
+		full, newreg := mnt.Check()
+
 		sum := receipt.PhotoSum
 
-		if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
-			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, desc, ecode); err != nil {
-				if IsForbiddenError(err) {
-					DeleteReceipt(db, key)
-					setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+		if full == "" && newreg == "" {
+			if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
+				if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, desc, ecode); err != nil {
+					if IsForbiddenError(err) {
+						DeleteReceipt(db, key)
+						setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+
+						return false, fmt.Errorf("send message: %w", err)
+					}
 
 					return false, fmt.Errorf("send message: %w", err)
 				}
-
-				return false, fmt.Errorf("send message: %w", err)
 			}
 		}
 
 		if err := DeleteReceipt(db, key); err != nil {
 			return false, fmt.Errorf("cleanup: %w", err)
+		}
+
+		if full != "" || newreg != "" {
+			if full != "" {
+				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: fullMode=%v\n", full != "")
+
+				return false, fmt.Errorf("full maintenance: %w", err)
+			}
+
+			fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: newregMode=%v\n", newreg != "")
+
+			return false, fmt.Errorf("newreg maintenace: %w", err)
 		}
 
 		if err := GetBrigadier(bot, session.Label, receipt.ChatID, ecode, dept, mnt); err != nil {
