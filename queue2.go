@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -201,7 +202,7 @@ func qround2(db *badger.DB) {
 		return
 	}
 
-	// fmt.Fprintf(os.Stderr, "*** qround2 rcpt:%x %v\n", key, receipt)
+	fmt.Fprintf(os.Stderr, "*** qround2 rcpt:%x %v\n", key, receipt)
 
 	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason, receipt.PhotoSum); err != nil {
 		return
