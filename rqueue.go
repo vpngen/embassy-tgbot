@@ -208,6 +208,9 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 	timer := time.NewTimer(100 * time.Millisecond)
 	defer timer.Stop()
 
+	timerDebug := time.NewTimer(time.Second)
+	defer timerDebug.Stop()
+
 	for {
 		select {
 		case <-stop:
@@ -229,6 +232,10 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 
 			rqround(db, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
 			timer.Reset(100 * time.Millisecond)
+		case <-timerDebug.C:
+			catchFirstReceipt(db, CkReceiptStageNone) // debug printing
+
+			timerDebug.Reset(30 * time.Second)
 		}
 	}
 }
@@ -398,7 +405,10 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 }
 
 func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
-	var key []byte
+	var (
+		key   []byte
+		count int
+	)
 
 	receipt := &CkReceipt{}
 
@@ -410,31 +420,35 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
 		prefix := []byte(receiptqPrefix)
 
 		var data []byte
+
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-			item := it.Item()
-			key = item.Key()
-			err := item.Value(func(v []byte) error {
-				data = append([]byte{}, v...)
+			count++
+			if data == nil {
+				item := it.Item()
+				key = item.Key()
+				err := item.Value(func(v []byte) error {
+					data = append([]byte{}, v...)
 
-				return nil
-			})
-			if err != nil {
-				return err
+					return nil
+				})
+				if err != nil {
+					return err
+				}
+
+				err = json.Unmarshal(data, receipt)
+				if err != nil {
+					return fmt.Errorf("unmarhal: %w", err)
+				}
+
+				if receipt.Stage != stage {
+					key = nil
+					data = nil
+
+					continue
+				}
 			}
 
-			err = json.Unmarshal(data, receipt)
-			if err != nil {
-				return fmt.Errorf("unmarhal: %w", err)
-			}
-
-			if receipt.Stage != stage {
-				key = nil
-				data = nil
-
-				continue
-			}
-
-			break
+			// break
 		}
 
 		return nil
@@ -446,6 +460,8 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, error) {
 	//if key != nil {
 	//	fmt.Fprintf(os.Stderr, "[receipt first] %x %#v\n", key, receipt)
 	//}
+
+	fmt.Fprintf(os.Stderr, ">>> receipt count: %d\n", count)
 
 	return key, receipt, nil
 }
