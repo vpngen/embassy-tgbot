@@ -234,9 +234,14 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 
 			timer.Reset(3 * time.Second)
 		case <-timerDebug.C:
-			_, _, count, err := catchFirstReceipt(db, CkReceiptStageNone) // debug printing
+			_, _, count, err := catchFirstReceipt(db, CkReceiptStageReceived) // debug printing
 			if err == nil {
 				fmt.Fprintf(os.Stderr, "Approved receipt queue size: %d\n", count)
+			}
+
+			_, _, count, err = catchFirstReceipt(db, CkReceiptStageNone) // debug printing
+			if err == nil {
+				fmt.Fprintf(os.Stderr, "New receipt queue size: %d\n", count)
 			}
 
 			timerDebug.Reset(30 * time.Second)
@@ -435,7 +440,8 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 		count int
 	)
 
-	receipt := &CkReceipt{}
+	receipt := CkReceipt{}
+	buf := CkReceipt{}
 
 	err := db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
@@ -447,33 +453,31 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 		var data []byte
 
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-			count++
-			if data == nil {
-				item := it.Item()
-				key = item.Key()
-				err := item.Value(func(v []byte) error {
-					data = append([]byte{}, v...)
+			item := it.Item()
+			key = item.Key()
+			err := item.Value(func(v []byte) error {
+				data = append([]byte{}, v...)
 
-					return nil
-				})
-				if err != nil {
-					return err
-				}
-
-				err = json.Unmarshal(data, receipt)
-				if err != nil {
-					return fmt.Errorf("unmarhal: %w", err)
-				}
-
-				if receipt.Stage != stage {
-					key = nil
-					data = nil
-
-					continue
-				}
+				return nil
+			})
+			if err != nil {
+				return err
 			}
 
-			// break
+			err = json.Unmarshal(data, &buf)
+			if err != nil {
+				return fmt.Errorf("unmarhal: %w", err)
+			}
+
+			if receipt.Stage != stage {
+				continue
+			}
+
+			if receipt.FileID == "" {
+				receipt = buf
+			}
+
+			count++
 		}
 
 		return nil
@@ -486,7 +490,7 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 	//	fmt.Fprintf(os.Stderr, "[receipt first] %x %#v\n", key, receipt)
 	//}
 
-	return key, receipt, count, nil
+	return key, &receipt, count, nil
 }
 
 func downloadPhoto(url string) ([]byte, error) {
