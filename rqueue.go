@@ -205,7 +205,7 @@ func getReceipt(txn *badger.Txn, id []byte) ([]byte, error) {
 func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, sessionSecret []byte, queue2Secret []byte, mnt *Maintenance) {
 	defer waitGroup.Done()
 
-	timer := time.NewTimer(100 * time.Millisecond)
+	timer := time.NewTimer(time.Second)
 	defer timer.Stop()
 
 	timerDebug := time.NewTimer(time.Second)
@@ -232,7 +232,7 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 				continue
 			}*/
 
-			timer.Reset(100 * time.Millisecond)
+			timer.Reset(3 * time.Second)
 		case <-timerDebug.C:
 			_, _, count, err := catchFirstReceipt(db, CkReceiptStageNone) // debug printing
 			if err == nil {
