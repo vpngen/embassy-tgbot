@@ -333,6 +333,7 @@ func SendReceipt2(db *badger.DB, bot2 *tgbotapi.BotAPI, secret []byte, receiptQI
 
 	// Ingmund: 24.02.2024
 	// err = UpdateReceipt2(db, id, CkReceiptStageSend2, false, decisionUnknown)
+	fmt.Fprintf(os.Stderr, "*** UpdateReceipt2: %x\n", id)
 	err = UpdateReceipt2(db, id, CkReceiptStageDecision2, decision, reason, sum[:])
 	if err != nil {
 		return fmt.Errorf("update receipt send2: %w", err)
