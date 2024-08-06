@@ -206,11 +206,7 @@ func qround2(db *badger.DB) {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "*** qround2 rcpt: %x: %x\n", key, receipt.ReceiptQueueID)
-
 	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason, receipt.PhotoSum); err != nil {
-		fmt.Fprintf(os.Stderr, "update receipt2: %s\n", err)
-
 		return
 	}
 

@@ -98,8 +98,6 @@ func queueID() []byte {
 
 // UpdateReceipt - update receipt review status and stage.
 func UpdateReceipt(db *badger.DB, id []byte, stage int, accept bool, reason int, sum []byte) error {
-	fmt.Printf("*** update q1: %x stage=%d\n", id, stage)
-
 	if len(id) == 0 {
 		return nil
 	}
@@ -141,8 +139,6 @@ func UpdateReceipt(db *badger.DB, id []byte, stage int, accept bool, reason int,
 		return nil
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[!] *** Update receipt: %s\n", err)
-
 		return fmt.Errorf("update receipt: %w", err)
 	}
 
@@ -298,13 +294,11 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 
 	if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
 		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: fullMode=%v\n", full != "")
-		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: key=%x\n", key)
-		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: %#v\n", receipt)
+		// fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: key=%x\n", key)
+		// fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: %#v\n", receipt)
 
 		fakeSum := sha256.Sum256([]byte("xxx"))
 		if err := UpdateReceipt(db, key, CkReceiptStageReceived, false, decisionRejectBusy, fakeSum[:]); err != nil {
-			fmt.Fprintf(os.Stderr, "[!] Reject new receipt: update receipt: %s\n", err)
-
 			return false, fmt.Errorf("update receipt: %w", err)
 		}
 
@@ -467,7 +461,6 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 }
 
 func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error) {
-	fmt.Printf("*** get first rcp: stage=%d\n", stage)
 	var (
 		key   []byte
 		count int
@@ -489,7 +482,7 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
-			key = item.Key()
+			k := item.Key()
 			err := item.Value(func(v []byte) error {
 				data = append([]byte{}, v...)
 
@@ -511,8 +504,7 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 			if first {
 				first = false
 				receipt = buf
-
-				fmt.Fprintf(os.Stderr, "[receipt first] %x %d:%d\n", key, receipt.Stage, stage)
+				key = append([]byte{}, k...)
 			}
 
 			count++
