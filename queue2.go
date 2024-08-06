@@ -80,7 +80,11 @@ func PutReceipt2(dbase *badger.DB, secret []byte, receiptQID []byte) ([]byte, er
 
 // UpdateReceipt2 - .
 func UpdateReceipt2(dbase *badger.DB, key []byte, stage int, accept bool, reason int, sum []byte) error {
-	// fmt.Fprintf(os.Stderr, "*** UpdateReceipt2: %s\n", string(key))
+	fmt.Fprintf(os.Stderr, "*** UpdateReceipt2: %s\n", string(key))
+
+	if len(key) == 0 {
+		return nil
+	}
 
 	err := dbase.Update(func(txn *badger.Txn) error {
 		data, err := getReceipt2(txn, key)
