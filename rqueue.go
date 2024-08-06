@@ -467,6 +467,7 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 }
 
 func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error) {
+	fmt.Printf("*** get first rcp: stage=%d\n", stage)
 	var (
 		key   []byte
 		count int
@@ -510,6 +511,8 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 			if first {
 				first = false
 				receipt = buf
+
+				fmt.Fprintf(os.Stderr, "[receipt first] %x %d:%d\n", key, receipt.Stage, stage)
 			}
 
 			count++
