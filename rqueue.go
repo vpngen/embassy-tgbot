@@ -115,8 +115,6 @@ func UpdateReceipt(db *badger.DB, id []byte, stage int, accept bool, reason int,
 			return fmt.Errorf("unmarhal: %w", err)
 		}
 
-		fmt.Fprintf(os.Stderr, "[receipt get] %x %d\n", id, receipt.Stage)
-
 		receipt.Stage = stage
 		receipt.Accepted = accept
 		receipt.Reason = reason
@@ -128,8 +126,6 @@ func UpdateReceipt(db *badger.DB, id []byte, stage int, accept bool, reason int,
 		if err != nil {
 			return fmt.Errorf("marshal: %w", err)
 		}
-
-		fmt.Fprintf(os.Stderr, "[receipt set] %x %d\n", id, len(data))
 
 		e := badger.NewEntry(id, data).WithTTL(receiptTTL)
 		if err := txn.SetEntry(e); err != nil {
@@ -293,12 +289,14 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 	}
 
 	if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
-		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: fullMode=%v\n", full != "")
+		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: %x, full mode: %v\n", key, full != "")
 		// fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: key=%x\n", key)
 		// fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: %#v\n", receipt)
 
 		fakeSum := sha256.Sum256([]byte("xxx"))
 		if err := UpdateReceipt(db, key, CkReceiptStageReceived, false, decisionRejectBusy, fakeSum[:]); err != nil {
+			fmt.Fprintf(os.Stderr, "Reject new receipt: update receipt: %s\n", err)
+
 			return false, fmt.Errorf("update receipt: %w", err)
 		}
 
