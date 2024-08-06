@@ -201,12 +201,18 @@ func ReceiptQueueLoop2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan str
 }
 
 func qround2(db *badger.DB) {
+	fmt.Fprintf(os.Stderr, "*** qround2\n")
+
 	key, receipt, err := catchFirstReceipt2(db, CkReceiptStageDecision2)
 	if err != nil || key == nil {
 		return
 	}
 
+	fmt.Fprintf(os.Stderr, "*** qround2: %s\n", string(key))
+
 	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason, receipt.PhotoSum); err != nil {
+		logs.Errf("update receipt: %s\n", err)
+
 		return
 	}
 
