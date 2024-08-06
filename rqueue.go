@@ -497,7 +497,7 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 
 			fmt.Fprintf(os.Stderr, "[receipt get] %x %d:%d\n", k, buf.Stage, stage)
 
-			if receipt.Stage != stage {
+			if buf.Stage != stage {
 				continue
 			}
 
@@ -507,7 +507,7 @@ func catchFirstReceipt(db *badger.DB, stage int) ([]byte, *CkReceipt, int, error
 				key = make([]byte, len(k))
 				copy(key, k)
 
-				fmt.Fprintf(os.Stderr, "[receipt first] %x %d%d\n", key, buf.Stage, stage)
+				fmt.Fprintf(os.Stderr, "[receipt first] %x %d:%d\n", key, buf.Stage, stage)
 			}
 
 			count++
