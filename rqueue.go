@@ -293,6 +293,8 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 
 		fakeSum := sha256.Sum256([]byte("xxx"))
 		if err := UpdateReceipt(db, key, CkReceiptStageReceived, false, decisionRejectBusy, fakeSum[:]); err != nil {
+			fmt.Fprintf(os.Stderr, "[!] Reject new receipt: update receipt: %s\n", err)
+
 			return false, fmt.Errorf("update receipt: %w", err)
 		}
 
@@ -318,6 +320,8 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 
 	err = UpdateReceipt(db, key, CkReceiptStageSent, false, decisionUnknown, sum[:])
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "[!] Update receipt: %s\n", err)
+
 		return false, fmt.Errorf("receipt sent: %w", err)
 	}
 
