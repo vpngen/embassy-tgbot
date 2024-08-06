@@ -113,6 +113,8 @@ func UpdateReceipt(db *badger.DB, id []byte, stage int, accept bool, reason int,
 			return fmt.Errorf("unmarhal: %w", err)
 		}
 
+		fmt.Fprintf(os.Stderr, "[receipt get] %x %d\n", id, receipt.Stage)
+
 		receipt.Stage = stage
 		receipt.Accepted = accept
 		receipt.Reason = reason
@@ -124,6 +126,8 @@ func UpdateReceipt(db *badger.DB, id []byte, stage int, accept bool, reason int,
 		if err != nil {
 			return fmt.Errorf("marshal: %w", err)
 		}
+
+		fmt.Fprintf(os.Stderr, "[receipt set] %x %d\n", id, len(data))
 
 		e := badger.NewEntry(id, data).WithTTL(receiptTTL)
 		if err := txn.SetEntry(e); err != nil {
