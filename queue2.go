@@ -224,8 +224,6 @@ func qround2(db *badger.DB) {
 }
 
 func catchFirstReceipt2(db *badger.DB, stage int) ([]byte, *CkReceipt2, error) {
-	fmt.Fprintf(os.Stderr, "*** catchFirstReceipt2: %d\n", stage)
-
 	var key []byte
 
 	receipt := &CkReceipt2{}
@@ -254,8 +252,6 @@ func catchFirstReceipt2(db *badger.DB, stage int) ([]byte, *CkReceipt2, error) {
 			if err != nil {
 				return fmt.Errorf("unmarhal: %w", err)
 			}
-
-			fmt.Fprintf(os.Stderr, "*** catchFirstReceipt2 %x: %d:%d\n", key, receipt.Stage, stage)
 
 			if receipt.Stage != stage {
 				key = nil
