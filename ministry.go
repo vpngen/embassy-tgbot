@@ -29,6 +29,7 @@ import (
 	"github.com/vpngen/keydesk/keydesk"
 	"github.com/vpngen/wordsgens/namesgenerator"
 	"github.com/vpngen/wordsgens/seedgenerator"
+	"github.com/vpngen/wordsgens/tgbot/logs"
 	"golang.org/x/crypto/ssh"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
@@ -614,10 +615,11 @@ func GetBrigadier(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, label SessionLabel, 
 
 	wg.Add(1)
 
-	err = SendBrigadierGrants(bot, wg, chatID, ecode, wgconf)
-	if err != nil {
-		return fmt.Errorf("send grants: %w", err)
-	}
+	go func() {
+		if err = SendBrigadierGrants(bot, wg, chatID, ecode, wgconf); err != nil {
+			logs.Errf("send grants: %s", err)
+		}
+	}()
 
 	return nil
 }
