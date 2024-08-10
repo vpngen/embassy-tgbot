@@ -207,6 +207,8 @@ func getReceipt(txn *badger.Txn, id []byte) ([]byte, error) {
 func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, sessionSecret []byte, queue2Secret []byte, mnt *Maintenance) {
 	defer waitGroup.Done()
 
+	wg := &sync.WaitGroup{}
+
 	timer := time.NewTimer(time.Second)
 	defer timer.Stop()
 
@@ -216,9 +218,11 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 	for {
 		select {
 		case <-stop:
+			wg.Wait()
+
 			return
 		case <-timer.C:
-			rqround(db, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
+			rqround(db, wg, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
 
 			/*if full, newreg := mnt.Check(); full != "" || newreg != "" {
 				timer.Reset(3 * time.Minute)
@@ -257,18 +261,18 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 }
 
 // do round.
-func rqround(db *badger.DB, sessionSecret []byte, queue2Secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, mnt *Maintenance) {
-	ok, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID, mnt)
+func rqround(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, queue2Secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, mnt *Maintenance) {
+	ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt)
 	if err != nil {
-		logs.Errf("new receipt: %s\n", err)
+		logs.Errf("reviewed receipt: %s\n", err)
 
 		return
 	}
 
 	if !ok {
-		_, err = catchReviewedReceipt(db, sessionSecret, bot, dept, mnt)
+		_, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID, mnt)
 		if err != nil {
-			logs.Errf("reviewed receipt: %s\n", err)
+			logs.Errf("new receipt: %s\n", err)
 
 			return
 		}
@@ -336,7 +340,7 @@ var (
 )
 
 // catch reviewed receipt
-func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.BotAPI, dept MinistryOpts, mnt *Maintenance) (bool, error) {
+func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, bot *tgbotapi.BotAPI, dept MinistryOpts, mnt *Maintenance) (bool, error) {
 	key, receipt, count, err := catchFirstReceipt(db, CkReceiptStageReceived)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
@@ -393,7 +397,7 @@ func catchReviewedReceipt(db *badger.DB, sessionSecret []byte, bot *tgbotapi.Bot
 			return false, fmt.Errorf("cleanup: %w", err)
 		}
 
-		if err := GetBrigadier(bot, session.Label, receipt.ChatID, ecode, dept, mnt); err != nil {
+		if err := GetBrigadier(bot, wg, session.Label, receipt.ChatID, ecode, dept, mnt); err != nil {
 			setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
 
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, MainTrackFailMessage, ecode); err != nil {
