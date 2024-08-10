@@ -209,8 +209,13 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 
 	wg := &sync.WaitGroup{}
 
-	timer := time.NewTimer(time.Second)
-	defer timer.Stop()
+	OK := false
+
+	timerNew := time.NewTimer(3 * time.Second)
+	defer timerNew.Stop()
+
+	timerReviewed := time.NewTimer(time.Second)
+	defer timerReviewed.Stop()
 
 	timerDebug := time.NewTimer(time.Second)
 	defer timerDebug.Stop()
@@ -221,24 +226,30 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 			wg.Wait()
 
 			return
-		case <-timer.C:
-			rqround(db, wg, sessionSecret, queue2Secret, bot, bot2, ckChatID, dept, mnt)
-
-			/*if full, newreg := mnt.Check(); full != "" || newreg != "" {
-				timer.Reset(3 * time.Minute)
-
-				if full != "" {
-					fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: fullMode=%v\n", full != "")
-
-					continue
+		case <-timerNew.C:
+			if !OK {
+				now := time.Now()
+				_, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID, mnt)
+				if err != nil {
+					logs.Errf("new receipt: %s\n", err)
 				}
 
-				fmt.Fprintf(os.Stderr, "Receipt queue: checkMantenance: newregMode=%v\n", newreg != "")
+				logs.Debugf("New receipt handle time: %s\n", time.Since(now))
+			}
 
-				continue
-			}*/
+			timerNew.Reset(3 * time.Second)
+		case <-timerReviewed.C:
+			now := time.Now()
+			ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt)
+			if err != nil {
+				logs.Errf("reviewed receipt: %s\n", err)
+			}
 
-			timer.Reset(3 * time.Second)
+			logs.Debugf("Reviewed receipt handle time: %s\n", time.Since(now))
+
+			OK = ok
+
+			timerReviewed.Reset(1 * time.Second)
 		case <-timerDebug.C:
 			_, _, countNone, err := catchFirstReceipt(db, CkReceiptStageNone) // debug printing
 			if err == nil {
@@ -261,6 +272,7 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 }
 
 // do round.
+/*
 func rqround(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, queue2Secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, mnt *Maintenance) {
 	ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt)
 	if err != nil {
@@ -278,6 +290,7 @@ func rqround(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, queue2Secr
 		}
 	}
 }
+*/
 
 // catch one new receipt.
 func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, mnt *Maintenance) (bool, error) {
