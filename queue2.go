@@ -330,7 +330,8 @@ func SendReceipt2(db *badger.DB, bot2 *tgbotapi.BotAPI, secret []byte, receiptQI
 	// photo.ProtectContent = true // Oleg Basisty request
 
 	if _, err := bot2.Request(photo); err != nil {
-		return fmt.Errorf("request2: %w", err)
+		// return fmt.Errorf("request2: %w", err)
+		logs.Errf("request2: %s\n", err)
 	}
 
 	// Ingmund: 24.02.2024
