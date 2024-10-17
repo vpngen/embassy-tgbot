@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -28,6 +29,7 @@ import (
 	"github.com/vpngen/keydesk/keydesk"
 	"github.com/vpngen/wordsgens/namesgenerator"
 	"github.com/vpngen/wordsgens/seedgenerator"
+	"github.com/vpngen/wordsgens/tgbot/logs"
 	"golang.org/x/crypto/ssh"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
@@ -60,7 +62,11 @@ const (
 var ErrBrigadeNotFound = errors.New("brigade not found")
 
 // SendBrigadierGrants - send grants messages.
-func SendBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *ministry.Answer) error {
+func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, chatID int64, ecode string, opts *ministry.Answer) error {
+	defer wg.Done()
+
+	time.Sleep(1 * time.Second)
+
 	msg := fmt.Sprintf(MainTrackGrantMessage, opts.Name)
 	_, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode)
 	if err != nil {
@@ -580,7 +586,7 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 }
 
 // GetBrigadier - get brigadier name and config.
-func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode string, dept MinistryOpts, mnt *Maintenance) error {
+func GetBrigadier(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, label SessionLabel, chatID int64, ecode string, dept MinistryOpts, mnt *Maintenance) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
@@ -605,12 +611,15 @@ func GetBrigadier(bot *tgbotapi.BotAPI, label SessionLabel, chatID int64, ecode 
 		}
 	}
 
-	time.Sleep(3 * time.Second)
+	// time.Sleep(3 * time.Second)
 
-	err = SendBrigadierGrants(bot, chatID, ecode, wgconf)
-	if err != nil {
-		return fmt.Errorf("send grants: %w", err)
-	}
+	wg.Add(1)
+
+	go func() {
+		if err = SendBrigadierGrants(bot, wg, chatID, ecode, wgconf); err != nil {
+			logs.Errf("send grants: %s", err)
+		}
+	}()
 
 	return nil
 }
