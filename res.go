@@ -280,7 +280,7 @@ var (
 		decisionRejectTooOld:         "Похоже чек устарел. Пришли пожалуйста тот, что не старше недели. " + extraSupportText,
 		decisionRejectWithCallback:   "Похоже что-то не так с чеком и нам нужно поговорить. Свяжись пожалуйста с [нами](%s).",
 		decisionRejectDoubled:        "Похоже такую картинку нам уже присылали. Пришли пожалуйста другую. " + extraSupportText,
-		decisionRejectBusy:           "Прости нас, очень много работы. Попробуй пожалуйста позже ",
+		decisionRejectBusy:           "Прости нас, очень много работы. Попробуй пожалуйста позже 🙏",
 	}
 )
 
@@ -288,7 +288,8 @@ const newTrack = "Пойду за картинкой"
 
 // SetSupportMessages - set wanna keyboard.
 func SetSupportMessages(url string) {
-	link := tgbotapi.EscapeText(tgbotapi.ModeMarkdown, url)
+	// link := tgbotapi.EscapeText(tgbotapi.ModeMarkdown, url)
+	link := url
 
 	RestoreWordsKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(

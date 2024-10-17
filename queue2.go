@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -79,7 +80,11 @@ func PutReceipt2(dbase *badger.DB, secret []byte, receiptQID []byte) ([]byte, er
 
 // UpdateReceipt2 - .
 func UpdateReceipt2(dbase *badger.DB, key []byte, stage int, accept bool, reason int, sum []byte) error {
-	// fmt.Fprintf(os.Stderr, "*** UpdateReceipt2: %s\n", string(key))
+	fmt.Fprintf(os.Stderr, "*** UpdateReceipt2: %s\n", string(key))
+
+	if len(key) == 0 {
+		return nil
+	}
 
 	err := dbase.Update(func(txn *badger.Txn) error {
 		data, err := getReceipt2(txn, key)
@@ -196,15 +201,19 @@ func ReceiptQueueLoop2(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan str
 }
 
 func qround2(db *badger.DB) {
-	key, receipt, err := catchFirstReceipt2(db, CkReceiptStageDecision2)
+	fmt.Fprintf(os.Stderr, "*** qround2\n")
+
+	key, receipt, count, err := catchFirstReceipt2(db, CkReceiptStageDecision2)
 	if err != nil || key == nil {
 		return
 	}
 
-	// fmt.Fprintf(os.Stderr, "*** qround2 rcpt:%x %v\n", key, receipt)
+	fmt.Fprintf(os.Stderr, "*** qround2: len: %d: %x\n", count, key)
 
 	if err := UpdateReceipt(db, receipt.ReceiptQueueID, CkReceiptStageReceived, receipt.Accept, receipt.Reason, receipt.PhotoSum); err != nil {
-		return
+		logs.Errf("update receipt: %s: %x\n", err, receipt.ReceiptQueueID)
+
+		// return
 	}
 
 	if err := DeleteReceipt2(db, key); err != nil {
@@ -214,10 +223,14 @@ func qround2(db *badger.DB) {
 	}
 }
 
-func catchFirstReceipt2(db *badger.DB, stage int) ([]byte, *CkReceipt2, error) {
-	var key []byte
+func catchFirstReceipt2(db *badger.DB, stage int) ([]byte, *CkReceipt2, int, error) {
+	var (
+		key   []byte
+		count int
+	)
 
-	receipt := &CkReceipt2{}
+	receipt := CkReceipt2{}
+	buf := CkReceipt2{}
 
 	err := db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
@@ -226,10 +239,12 @@ func catchFirstReceipt2(db *badger.DB, stage int) ([]byte, *CkReceipt2, error) {
 
 		prefix := []byte(receiptqPrefix2)
 
+		first := true
+
 		var data []byte
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
-			key = item.Key()
+			k := item.Key()
 			err := item.Value(func(v []byte) error {
 				data = append([]byte{}, v...)
 
@@ -239,35 +254,33 @@ func catchFirstReceipt2(db *badger.DB, stage int) ([]byte, *CkReceipt2, error) {
 				return err
 			}
 
-			// fmt.Fprintf(os.Stderr, "*** catchFirstReceipt2 KEY %s, DATA: %s\n", string(key), string(data))
-
-			err = json.Unmarshal(data, receipt)
+			err = json.Unmarshal(data, &buf)
 			if err != nil {
 				return fmt.Errorf("unmarhal: %w", err)
 			}
 
-			if receipt.Stage != stage {
-				key = nil
-				data = nil
-
+			if buf.Stage != stage {
 				continue
 			}
 
-			break
-		}
+			if first {
+				first = false
+				receipt = buf
+				key = make([]byte, len(k))
 
-		err := json.Unmarshal(data, receipt)
-		if err != nil {
-			return fmt.Errorf("unmarhal: %w", err)
+				copy(key, k)
+			}
+
+			count++
 		}
 
 		return nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("get next: %w", err)
+		return nil, nil, 0, fmt.Errorf("get next: %w", err)
 	}
 
-	return key, receipt, nil
+	return key, &receipt, count, nil
 }
 
 // SendReceipt2 - .
@@ -317,11 +330,13 @@ func SendReceipt2(db *badger.DB, bot2 *tgbotapi.BotAPI, secret []byte, receiptQI
 	// photo.ProtectContent = true // Oleg Basisty request
 
 	if _, err := bot2.Request(photo); err != nil {
-		return fmt.Errorf("request2: %w", err)
+		// return fmt.Errorf("request2: %w", err)
+		logs.Errf("request2: %s\n", err)
 	}
 
 	// Ingmund: 24.02.2024
 	// err = UpdateReceipt2(db, id, CkReceiptStageSend2, false, decisionUnknown)
+	fmt.Fprintf(os.Stderr, "*** UpdateReceipt2: %x\n", id)
 	err = UpdateReceipt2(db, id, CkReceiptStageDecision2, decision, reason, sum[:])
 	if err != nil {
 		return fmt.Errorf("update receipt send2: %w", err)
