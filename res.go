@@ -288,7 +288,8 @@ const newTrack = "Пойду за картинкой"
 
 // SetSupportMessages - set wanna keyboard.
 func SetSupportMessages(url string) {
-	link := tgbotapi.EscapeText(tgbotapi.ModeMarkdown, url)
+	// link := tgbotapi.EscapeText(tgbotapi.ModeMarkdown, url)
+	link := url
 
 	RestoreWordsKeyboard1 = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
