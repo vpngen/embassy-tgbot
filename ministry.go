@@ -22,9 +22,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/btcsuite/btcd/btcutil/base58"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
 	"github.com/vpngen/embassy-tgbot/internal/kdlib"
+	tgbotapi "github.com/vpngen/embassy-tgbot/telegram-bot-api"
 	"github.com/vpngen/keydesk/gen/models"
 	"github.com/vpngen/keydesk/keydesk"
 	"github.com/vpngen/wordsgens/namesgenerator"

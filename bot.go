@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/dgraph-io/badger/v4"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/vpngen/embassy-tgbot/telegram-bot-api"
 
 	"github.com/vpngen/embassy-tgbot/logs"
 )
@@ -53,6 +53,7 @@ func runBot(
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = updateTout
+	u.AllowedUpdates = []string{"message", "callback_query", "message_reaction"}
 
 	updates := bot.GetUpdatesChan(u)
 
@@ -60,6 +61,18 @@ func runBot(
 		select {
 		case update := <-updates:
 			switch {
+			case update.MessageReaction != nil:
+				if update.MessageReaction.User == nil {
+					logs.Debugf("[i] Reactions with annonimous: ChatID: %d MessageID: %d\n", update.MessageReaction.Chat.ID, update.MessageReaction.MessageID)
+
+					break
+				}
+
+				if update.MessageReaction.Chat.Type == "private" {
+					logs.Debugf("[i] Reactions: User: %s ChatID: %d MessageID: %d\n", update.MessageReaction.User.UserName, update.MessageReaction.Chat.ID, update.MessageReaction.MessageID)
+
+					break
+				}
 			case update.Message != nil: // If we got a message
 				if update.Message.Chat.Type == "private" {
 					logs.Debugf("[i] User: %s Message: %s\n", update.Message.From.UserName, update.Message.Text)

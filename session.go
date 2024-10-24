@@ -31,6 +31,17 @@ const (
 	SessionStateBanOnBan // ban on ban
 )
 
+type SessionCaptcha struct {
+	Reaction string `json:"reaction"`
+	Passed   bool   `json:"passed"`
+
+	Attempts  int       `json:"attempts"`
+	SleepTill time.Time `json:"sleep_till,omitempty"`
+	PrevSleep int       `json:"prev_sleep,omitempty"`
+
+	MessageID int `json:"message_id,omitempty"`
+}
+
 // SessionLabel - session label.
 type SessionLabel struct {
 	ID    uuid.UUID `json:"id"`
@@ -40,13 +51,14 @@ type SessionLabel struct {
 
 // Session - session.
 type Session struct {
-	OurMsgID   int          `json:"our_message_id"`
-	Stage      int          `json:"stage"`
-	UpdateTime int64        `json:"updatetime"`
-	State      int          `json:"state"`
-	Label      SessionLabel `json:"label,omitempty"`
-	StartLabel string       `json:"start_label,omitempty"`
-	Payload    []byte       `json:"payload"`
+	OurMsgID   int            `json:"our_message_id"`
+	Stage      int            `json:"stage"`
+	UpdateTime int64          `json:"updatetime"`
+	State      int            `json:"state"`
+	Label      SessionLabel   `json:"label,omitempty"`
+	StartLabel string         `json:"start_label,omitempty"`
+	Payload    []byte         `json:"payload"`
+	Captcha    SessionCaptcha `json:"captcha,omitempty"`
 }
 
 func sessionID(secret []byte, chatID int64) []byte {
@@ -63,7 +75,7 @@ func sessionID(secret []byte, chatID int64) []byte {
 	return id
 }
 
-func setSession(dbase *badger.DB, secret []byte, label SessionLabel, chatID int64, msgID int, update int64, stage int, state int, payload []byte) error {
+func setSession(dbase *badger.DB, secret []byte, label SessionLabel, c *SessionCaptcha, chatID int64, msgID int, update int64, stage int, state int, payload []byte) error {
 	session := &Session{
 		OurMsgID:   msgID,
 		Stage:      stage,
@@ -71,6 +83,10 @@ func setSession(dbase *badger.DB, secret []byte, label SessionLabel, chatID int6
 		UpdateTime: update,
 		Label:      label,
 		Payload:    payload,
+	}
+
+	if c != nil {
+		session.Captcha = *c
 	}
 
 	fmt.Fprintf(os.Stderr, "[session] TIME:  %s LABEL: %s\n", session.Label.Time, session.Label.Label)

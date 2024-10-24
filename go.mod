@@ -6,7 +6,6 @@ require (
 	github.com/alexsergivan/transliterator v1.0.1
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/dgraph-io/badger/v4 v4.3.1
-	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.2-0.20220419141443-537c005643ad
 	github.com/google/uuid v1.6.0
 	github.com/vpngen/keydesk v1.10.9
 	github.com/vpngen/ministry v1.7.0

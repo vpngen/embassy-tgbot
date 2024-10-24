@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/vpngen/embassy-tgbot/telegram-bot-api"
 )
 
 const (
