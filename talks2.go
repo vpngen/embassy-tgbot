@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vpngen/embassy-tgbot/logs"
+	tgbotapi "github.com/vpngen/embassy-tgbot/telegram-bot-api"
 )
 
 // Handling messages (opposed callback).
