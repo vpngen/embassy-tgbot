@@ -228,24 +228,24 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 			return
 		case <-timerNew.C:
 			if !OK {
-				now := time.Now()
+				// now := time.Now()
 				_, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID, mnt)
 				if err != nil {
 					logs.Errf("new receipt: %s\n", err)
 				}
 
-				logs.Debugf("New receipt handle time: %s\n", time.Since(now))
+				// logs.Debugf("New receipt handle time: %s\n", time.Since(now))
 			}
 
 			timerNew.Reset(3 * time.Second)
 		case <-timerReviewed.C:
-			now := time.Now()
+			// now := time.Now()
 			ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt)
 			if err != nil {
 				logs.Errf("reviewed receipt: %s\n", err)
 			}
 
-			logs.Debugf("Reviewed receipt handle time: %s\n", time.Since(now))
+			// logs.Debugf("Reviewed receipt handle time: %s\n", time.Since(now))
 
 			OK = ok
 

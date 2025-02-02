@@ -115,6 +115,9 @@ _Если у тебя появятся вопросы — напиши нам в
 	// MainTrackOutlineAccessMessage - config text template.
 	MainTrackOutlineAccessMessage = "*Шаг 2.* Твой *личный* ключ Outline ниже. Скопируй его, открой Outline и вставь. Затем обязательно нажми кнопку «Подключить»"
 
+	// MainTrackProto0ConfigMessage - config text template.
+	MainTrackProto0ConfigMessage = "На всякий случай твой *личный* ключ Reality ниже. Используй его в случае, если ничего не работает. Скопируй его и добавь в приложение, которое ты выбрал(-а) для работы с Reality"
+
 	// MainTrackIPSecL2TPManualConfigTemplate - config text template.
 	MainTrackIPSecL2TPManualConfigTemplate = "Твоя *личная* конфигурация IPSec/L2TP:\nPreshared Key: `%s`\nUsername: `%s`\nPassword: `%s`\nServer: `%s`"
 

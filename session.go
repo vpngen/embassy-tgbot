@@ -20,7 +20,7 @@ const (
 )
 
 const (
-	SessionCommonTTL = 3 * 24 * time.Hour // 3 days
+	SessionCommonTTL = 30 * 24 * time.Hour // 3 days
 )
 
 const (

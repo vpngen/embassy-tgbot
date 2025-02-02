@@ -71,6 +71,10 @@ func runBot(
 				if update.MessageReaction.Chat.Type == "private" {
 					logs.Debugf("[i] Reactions: User: %s ChatID: %d MessageID: %d\n", update.MessageReaction.User.UserName, update.MessageReaction.Chat.ID, update.MessageReaction.MessageID)
 
+					waitGroup.Add(1)
+
+					go reactionHandler(opts, update)
+
 					break
 				}
 			case update.Message != nil: // If we got a message

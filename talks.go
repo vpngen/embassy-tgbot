@@ -68,6 +68,66 @@ func IsForbiddenError(err error) bool {
 	return false
 }
 
+// Handling reaction (opposed callback).
+func reactionHandler(opts handlerOpts, update tgbotapi.Update) {
+	defer opts.wg.Done()
+
+	ecode := genEcode() // unique e-code
+
+	if update.MessageReaction.Chat.Type != "private" {
+		SendProtectedMessage(opts.bot, update.MessageReaction.Chat.ID, 0, false, InfoForbidForwardsMessage, ecode)
+
+		return
+	}
+
+	// check all dialog conditions.
+	session, ok := auth(opts, update.MessageReaction.Chat.ID, update.MessageReaction.Date, ecode)
+	if !ok {
+		return
+	}
+
+	defer opts.cw.Release(update.MessageReaction.Chat.ID)
+
+	// don't be in a harry.
+	time.Sleep(SlowAnswerTimeout)
+
+	c := session.Captcha
+
+	if !c.Passed && c.MessageID == update.MessageReaction.MessageID {
+		for _, r := range update.MessageReaction.NewReaction {
+			if r.Type == "emoji" && r.Emoji == c.Reaction {
+				c.Passed = true
+
+				if err := sendSuccessLike(opts, session.Label, &c, update.MessageReaction.Chat.ID, session.Stage, session.State); err != nil {
+					stWrong(opts.bot, update.MessageReaction.Chat.ID, ecode, fmt.Errorf("success like: %w", err))
+				}
+
+				break
+			}
+		}
+	}
+}
+
+// Send Success like message.
+func sendSuccessLike(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64, stage, state int) error {
+	msg := tgbotapi.NewMessage(chatID, "Проверка пройдена! Нажми /repeate для продолжения.")
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.DisableWebPagePreview = true
+	msg.ProtectContent = true
+
+	newMsg, err := opts.bot.Send(msg)
+	if err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	err = setSession(opts.db, opts.sessionSecret, label, c, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stage, state, nil)
+	if err != nil {
+		return fmt.Errorf("session: %w", err)
+	}
+
+	return nil
+}
+
 // Handling messages (opposed callback).
 func messageHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) {
 	defer opts.wg.Done()
@@ -836,7 +896,7 @@ func checkCaptcha(opts handlerOpts, c *SessionCaptcha, label SessionLabel, chatI
 		return true
 	}
 
-	if c.Attempts >= 3 {
+	if c.Attempts >= 5 {
 		setSession(opts.db, opts.sessionSecret, label, nil, 0, 0, int64(time.Now().Unix()), stageMainTrackCleanup, SessionStatePayloadBan, nil)
 	}
 
@@ -875,6 +935,7 @@ func checkCaptcha(opts handlerOpts, c *SessionCaptcha, label SessionLabel, chatI
 
 	c.SleepTill = time.Now().Add(CaptchaEscalationTimes[c.PrevSleep])
 	c.PrevSleep++
+	c.Attempts++
 
 	like, captchaText := GetCaptchaText()
 	c.Reaction = like
@@ -894,7 +955,7 @@ func checkCaptcha(opts handlerOpts, c *SessionCaptcha, label SessionLabel, chatI
 
 	// delete our previous message.
 	go func() {
-		<-time.After(60 * time.Second)
+		<-time.After(CaptchaLivetime)
 
 		if newMsg.Chat != nil {
 			if err := RemoveMsg(opts.bot, newMsg.Chat.ID, newMsg.MessageID); err == nil {
@@ -908,7 +969,7 @@ func checkCaptcha(opts handlerOpts, c *SessionCaptcha, label SessionLabel, chatI
 				if !session.Captcha.Passed {
 					wt := time.Until(session.Captcha.SleepTill)
 					if wt <= 0 {
-						return
+						wt = 0
 					}
 
 					txt := fmt.Sprintf("Время истекло. Пожалуйста, повтори попытку через %d минут(ы)", int(math.Ceil(wt.Minutes())))
