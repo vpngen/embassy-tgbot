@@ -59,7 +59,10 @@ const (
 	wgconf   []byte
 }*/
 
-var ErrBrigadeNotFound = errors.New("brigade not found")
+var (
+	ErrBrigadeNotFound = errors.New("brigade not found")
+	ErrRestoreTooEarly = errors.New("restore too early")
+)
 
 // SendBrigadierGrants - send grants messages.
 func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, chatID int64, ecode string, opts *ministry.Answer) error {
@@ -222,6 +225,19 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, chatID int64,
 
 		time.Sleep(2 * time.Second)
 	}
+
+	return nil
+}
+
+// SendRestoreTooEarly - send too early message.
+func SendRestoreTooEarly(bot *tgbotapi.BotAPI, chatID int64, ecode string, lastRestore string) error {
+	msg := fmt.Sprintf("Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s", lastRestore)
+
+	if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
+		return fmt.Errorf("send restore too early message: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
 
 	return nil
 }
@@ -575,6 +591,11 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 		return nil, fmt.Errorf("json unmarshal: %w", err)
 	}
 
+	if wgconf.Code == 425 {
+		_, lastRestore, _ := strings.Cut(wgconf.Desc, ":")
+		return nil, fmt.Errorf("%w:%s", ErrRestoreTooEarly, lastRestore)
+	}
+
 	if wgconf.Configs.WireguardConfig == nil ||
 		wgconf.Configs.WireguardConfig.FileContent == nil ||
 		wgconf.Configs.WireguardConfig.FileName == nil ||
@@ -712,7 +733,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 	switch dept.fake {
 	case false:
 		wgconf, err = callMinistryRestore(dept, mnt, name, words)
-		if err == nil {
+		if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 			break
 		}
 
@@ -721,7 +742,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
 		wgconf, err = callMinistryRestore(dept, mnt, name, words)
-		if err == nil {
+		if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 			break
 		}
 
@@ -730,7 +751,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
 		wgconf, err = callMinistryRestore(dept, mnt, name, words)
-		if err == nil {
+		if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 			break
 		}
 
@@ -738,7 +759,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 			fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
 			wgconf, err = callMinistryRestore(dept, mnt, name, words)
-			if err == nil {
+			if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 				break
 			}
 		}
@@ -754,10 +775,19 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 		}
 	}
 
+	if err != nil && errors.Is(err, ErrRestoreTooEarly) {
+		_, lastRestore, _ := strings.Cut(err.Error(), ":")
+
+		if err = SendRestoreTooEarly(bot, chatID, ecode, lastRestore); err != nil {
+			return fmt.Errorf("send too early: %w", err)
+		}
+
+		return nil
+	}
+
 	time.Sleep(3 * time.Second)
 
-	err = SendRestoredBrigadierGrants(bot, chatID, ecode, wgconf)
-	if err != nil {
+	if err := SendRestoredBrigadierGrants(bot, chatID, ecode, wgconf); err != nil {
 		return fmt.Errorf("send grants: %w", err)
 	}
 
