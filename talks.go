@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"math"
 	"math/rand"
 	"os"
 	"regexp"
@@ -888,115 +887,120 @@ func warnAutodeleteSettings(opts handlerOpts, chatID int64, ecode string) bool {
 
 // check captcha.
 func checkCaptcha(opts handlerOpts, c *SessionCaptcha, label SessionLabel, chatID int64, ecode string, stage, state int, text []byte) bool {
-	if c == nil {
-		c = &SessionCaptcha{}
-	}
+	return true
+	/*
+	   	if c == nil {
+	   		c = &SessionCaptcha{}
+	   	}
 
-	if c.Passed {
-		return true
-	}
+	   	if c.Passed {
+	   		return true
+	   	}
 
-	if c.Attempts >= 5 {
-		setSession(opts.db, opts.sessionSecret, label, nil, 0, 0, int64(time.Now().Unix()), stageMainTrackCleanup, SessionStatePayloadBan, nil)
-	}
+	   	if c.Attempts >= 5 {
+	   		setSession(opts.db, opts.sessionSecret, label, nil, 0, 0, int64(time.Now().Unix()), stageMainTrackCleanup, SessionStatePayloadBan, nil)
+	   	}
 
-	if c.SleepTill.After(time.Now()) {
-		wt := time.Until(c.SleepTill)
-		if wt <= 0 {
-			return false
-		}
+	   	if c.SleepTill.After(time.Now()) {
+	   		wt := time.Until(c.SleepTill)
+	   		if wt <= 0 {
+	   			return false
+	   		}
 
-		txt := fmt.Sprintf("Не так быстро. Пожалуйста, повтори попытку через %d минут(ы)", int(math.Ceil(wt.Minutes())))
-		msg := tgbotapi.NewMessage(chatID, txt)
-		msg.ParseMode = tgbotapi.ModeMarkdown
-		msg.ProtectContent = true
+	   		txt := fmt.Sprintf("Не так быстро. Пожалуйста, повтори попытку через %d минут(ы)", int(math.Ceil(wt.Minutes())))
+	   		msg := tgbotapi.NewMessage(chatID, txt)
+	   		msg.ParseMode = tgbotapi.ModeMarkdown
+	   		msg.ProtectContent = true
 
-		nMsg, err := opts.bot.Send(msg)
-		if err != nil {
-			logs.Errf("[!:%s] send message: %s\n", ecode, err)
+	   		nMsg, err := opts.bot.Send(msg)
+	   		if err != nil {
+	   			logs.Errf("[!:%s] send message: %s\n", ecode, err)
 
-			return false
-		}
+	   			return false
+	   		}
 
-		go func() {
-			<-time.After(wt)
+	   		go func() {
+	   			<-time.After(wt)
 
-			if err := RemoveMsg(opts.bot, nMsg.Chat.ID, nMsg.MessageID); err != nil {
-				logs.Errf("[!:%s] remove message: %s\n", ecode, err)
-			}
-		}()
+	   			if err := RemoveMsg(opts.bot, nMsg.Chat.ID, nMsg.MessageID); err != nil {
+	   				logs.Errf("[!:%s] remove message: %s\n", ecode, err)
+	   			}
+	   		}()
 
-		return false
-	}
+	   		return false
+	   	}
 
-	if c.PrevSleep >= len(CaptchaEscalationTimes) {
-		c.PrevSleep = 0
-	}
+	   	if c.PrevSleep >= len(CaptchaEscalationTimes) {
+	   		c.PrevSleep = 0
+	   	}
 
-	c.SleepTill = time.Now().Add(CaptchaEscalationTimes[c.PrevSleep])
-	c.PrevSleep++
-	c.Attempts++
+	   c.SleepTill = time.Now().Add(CaptchaEscalationTimes[c.PrevSleep])
+	   c.PrevSleep++
+	   c.Attempts++
 
-	like, captchaText := GetCaptchaText()
-	c.Reaction = like
+	   like, captchaText := GetCaptchaText()
+	   c.Reaction = like
 
-	msg := tgbotapi.NewMessage(chatID, captchaText)
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	msg.ProtectContent = true
+	   msg := tgbotapi.NewMessage(chatID, captchaText)
+	   msg.ParseMode = tgbotapi.ModeMarkdown
+	   msg.ProtectContent = true
 
-	newMsg, err := opts.bot.Send(msg)
-	if err != nil {
-		logs.Errf("[!:%s] send message: %s\n", ecode, err)
-	}
+	   newMsg, err := opts.bot.Send(msg)
 
-	c.MessageID = newMsg.MessageID
+	   	if err != nil {
+	   		logs.Errf("[!:%s] send message: %s\n", ecode, err)
+	   	}
 
-	setSession(opts.db, opts.sessionSecret, label, c, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stage, state, text)
+	   c.MessageID = newMsg.MessageID
 
-	// delete our previous message.
-	go func() {
-		<-time.After(CaptchaLivetime)
+	   setSession(opts.db, opts.sessionSecret, label, c, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stage, state, text)
 
-		if newMsg.Chat != nil {
-			if err := RemoveMsg(opts.bot, newMsg.Chat.ID, newMsg.MessageID); err == nil {
-				session, err := checkSession(opts.db, opts.sessionSecret, chatID)
-				if err != nil {
-					logs.Errf("[!:%s] check session: %s\n", ecode, err)
+	   // delete our previous message.
 
-					return
-				}
+	   	go func() {
+	   		<-time.After(CaptchaLivetime)
 
-				if !session.Captcha.Passed {
-					wt := time.Until(session.Captcha.SleepTill)
-					if wt <= 0 {
-						wt = 0
-					}
+	   		if newMsg.Chat != nil {
+	   			if err := RemoveMsg(opts.bot, newMsg.Chat.ID, newMsg.MessageID); err == nil {
+	   				session, err := checkSession(opts.db, opts.sessionSecret, chatID)
+	   				if err != nil {
+	   					logs.Errf("[!:%s] check session: %s\n", ecode, err)
 
-					txt := fmt.Sprintf("Время истекло. Пожалуйста, повтори попытку через %d минут(ы)", int(math.Ceil(wt.Minutes())))
-					msg := tgbotapi.NewMessage(chatID, txt)
-					msg.ParseMode = tgbotapi.ModeMarkdown
-					msg.ProtectContent = true
+	   					return
+	   				}
 
-					nMsg, err := opts.bot.Send(msg)
-					if err != nil {
-						logs.Errf("[!:%s] send message: %s\n", ecode, err)
+	   				if !session.Captcha.Passed {
+	   					wt := time.Until(session.Captcha.SleepTill)
+	   					if wt <= 0 {
+	   						wt = 0
+	   					}
 
-						return
-					}
+	   					txt := fmt.Sprintf("Время истекло. Пожалуйста, повтори попытку через %d минут(ы)", int(math.Ceil(wt.Minutes())))
+	   					msg := tgbotapi.NewMessage(chatID, txt)
+	   					msg.ParseMode = tgbotapi.ModeMarkdown
+	   					msg.ProtectContent = true
 
-					go func() {
-						<-time.After(wt)
+	   					nMsg, err := opts.bot.Send(msg)
+	   					if err != nil {
+	   						logs.Errf("[!:%s] send message: %s\n", ecode, err)
 
-						if err := RemoveMsg(opts.bot, nMsg.Chat.ID, nMsg.MessageID); err != nil {
-							logs.Errf("[!:%s] remove message: %s\n", ecode, err)
-						}
-					}()
-				}
-			}
-		}
-	}()
+	   						return
+	   					}
 
-	return false
+	   					go func() {
+	   						<-time.After(wt)
+
+	   						if err := RemoveMsg(opts.bot, nMsg.Chat.ID, nMsg.MessageID); err != nil {
+	   							logs.Errf("[!:%s] remove message: %s\n", ecode, err)
+	   						}
+	   					}()
+	   				}
+	   			}
+	   		}
+	   	}()
+
+	   return false
+	*/
 }
 
 func getAction() string {
