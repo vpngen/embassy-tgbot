@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
+	tgbotapi "github.com/vpngen/embassy-tgbot/telegram-bot-api"
 
 	"github.com/vpngen/embassy-tgbot/logs"
 )
@@ -228,24 +228,24 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 			return
 		case <-timerNew.C:
 			if !OK {
-				now := time.Now()
+				// now := time.Now()
 				_, err := catchNewReceipt(db, queue2Secret, bot, bot2, ckChatID, mnt)
 				if err != nil {
 					logs.Errf("new receipt: %s\n", err)
 				}
 
-				logs.Debugf("New receipt handle time: %s\n", time.Since(now))
+				// logs.Debugf("New receipt handle time: %s\n", time.Since(now))
 			}
 
 			timerNew.Reset(3 * time.Second)
 		case <-timerReviewed.C:
-			now := time.Now()
+			// now := time.Now()
 			ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt)
 			if err != nil {
 				logs.Errf("reviewed receipt: %s\n", err)
 			}
 
-			logs.Debugf("Reviewed receipt handle time: %s\n", time.Since(now))
+			// logs.Debugf("Reviewed receipt handle time: %s\n", time.Since(now))
 
 			OK = ok
 
@@ -397,7 +397,7 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, desc, ecode); err != nil {
 				if IsForbiddenError(err) {
 					DeleteReceipt(db, key)
-					setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+					setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 					return false, fmt.Errorf("send message: %w", err)
 				}
@@ -411,11 +411,11 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 		}
 
 		if err := GetBrigadier(bot, wg, session.Label, receipt.ChatID, ecode, dept, mnt); err != nil {
-			setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
+			setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
 
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, MainTrackFailMessage, ecode); err != nil {
 				if IsForbiddenError(err) {
-					setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+					setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 					return false, fmt.Errorf("send message: %w", err)
 				}
@@ -432,7 +432,7 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 			}
 		}
 
-		if err := setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStatePayloadSomething, nil); err != nil {
+		if err := setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStatePayloadSomething, nil); err != nil {
 			return false, fmt.Errorf("update session: %w", err)
 		}
 
@@ -448,7 +448,7 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 		if err != nil {
 			if IsForbiddenError(err) {
 				DeleteReceipt(db, key)
-				setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
 				return false, fmt.Errorf("send reject message x: %w", err)
 			}
@@ -458,11 +458,11 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 
 		switch receipt.Reason {
 		case decisionRejectUnacceptable:
-			if err = setSession(db, sessionSecret, session.Label, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStatePayloadBan, nil); err != nil {
+			if err = setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStatePayloadBan, nil); err != nil {
 				return false, fmt.Errorf("update session: %w", err)
 			}
 		default:
-			if err = setSession(db, sessionSecret, session.Label, receipt.ChatID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForBill, SessionStatePayloadSomething, nil); err != nil {
+			if err = setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForBill, SessionStatePayloadSomething, nil); err != nil {
 				return false, fmt.Errorf("update session: %w", err)
 			}
 		}
