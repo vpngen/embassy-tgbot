@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
+	tgbotapi "github.com/vpngen/embassy-tgbot/telegram-bot-api"
 
 	"github.com/vpngen/embassy-tgbot/logs"
 )

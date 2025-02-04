@@ -22,9 +22,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/btcsuite/btcd/btcutil/base58"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
 	"github.com/vpngen/embassy-tgbot/internal/kdlib"
+	tgbotapi "github.com/vpngen/embassy-tgbot/telegram-bot-api"
 	"github.com/vpngen/keydesk/gen/models"
 	"github.com/vpngen/keydesk/keydesk"
 	"github.com/vpngen/wordsgens/namesgenerator"
@@ -59,7 +59,10 @@ const (
 	wgconf   []byte
 }*/
 
-var ErrBrigadeNotFound = errors.New("brigade not found")
+var (
+	ErrBrigadeNotFound = errors.New("brigade not found")
+	ErrRestoreTooEarly = errors.New("restore too early")
+)
 
 // SendBrigadierGrants - send grants messages.
 func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, chatID int64, ecode string, opts *ministry.Answer) error {
@@ -208,6 +211,34 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, chatID int64,
 	//		return fmt.Errorf("send seed message: %w", err)
 	//	}
 
+	if opts.Configs.Proto0Config != nil && opts.Configs.Proto0Config.AccessKey != nil {
+		// time.Sleep(2 * time.Second)
+
+		if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackProto0ConfigMessage, ecode); err != nil {
+			return fmt.Errorf("send proto0 message: %w", err)
+		}
+
+		msg := fmt.Sprintf("`%s`", *opts.Configs.Proto0Config.AccessKey)
+		if _, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
+			return fmt.Errorf("send proto0 key: %w", err)
+		}
+
+		time.Sleep(2 * time.Second)
+	}
+
+	return nil
+}
+
+// SendRestoreTooEarly - send too early message.
+func SendRestoreTooEarly(bot *tgbotapi.BotAPI, chatID int64, ecode string, lastRestore string) error {
+	msg := fmt.Sprintf("Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s", lastRestore)
+
+	if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
+		return fmt.Errorf("send restore too early message: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
+
 	return nil
 }
 
@@ -330,16 +361,33 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 
 	time.Sleep(3 * time.Second)
 
-	if opts.Configs.AmnzOvcConfig != nil &&
-		opts.Configs.AmnzOvcConfig.FileContent != nil &&
-		opts.Configs.AmnzOvcConfig.FileName != nil {
-		doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
-		doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
-		doc.ParseMode = tgbotapi.ModeMarkdown
-		doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
+	/*
+		if opts.Configs.AmnzOvcConfig != nil &&
+			opts.Configs.AmnzOvcConfig.FileContent != nil &&
+			opts.Configs.AmnzOvcConfig.FileName != nil {
+			doc := tgbotapi.NewDocument(chatID, tgbotapi.FileBytes{Name: *opts.Configs.AmnzOvcConfig.FileName, Bytes: []byte(*opts.Configs.AmnzOvcConfig.FileContent)})
+			doc.Caption = MainTrackAmneziaOvcConfigFormatFileCaption
+			doc.ParseMode = tgbotapi.ModeMarkdown
+			doc.ReplyMarkup = amneziaVPNDownloadKeyboardShort
 
-		if _, err := bot.Request(doc); err != nil {
-			return fmt.Errorf("send file config: %w", err)
+			if _, err := bot.Request(doc); err != nil {
+				return fmt.Errorf("send file config: %w", err)
+			}
+
+			time.Sleep(2 * time.Second)
+		}
+	*/
+
+	if opts.Configs.Proto0Config != nil && opts.Configs.Proto0Config.AccessKey != nil {
+		// time.Sleep(2 * time.Second)
+
+		if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackProto0ConfigMessage, ecode); err != nil {
+			return fmt.Errorf("send proto0 message: %w", err)
+		}
+
+		msg := fmt.Sprintf("`%s`", *opts.Configs.Proto0Config.AccessKey)
+		if _, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
+			return fmt.Errorf("send proto0 key: %w", err)
 		}
 
 		time.Sleep(2 * time.Second)
@@ -543,6 +591,11 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 		return nil, fmt.Errorf("json unmarshal: %w", err)
 	}
 
+	if wgconf.Code == 425 {
+		_, lastRestore, _ := strings.Cut(wgconf.Desc, ":")
+		return nil, fmt.Errorf("%w:%s", ErrRestoreTooEarly, lastRestore)
+	}
+
 	if wgconf.Configs.WireguardConfig == nil ||
 		wgconf.Configs.WireguardConfig.FileContent == nil ||
 		wgconf.Configs.WireguardConfig.FileName == nil ||
@@ -680,7 +733,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 	switch dept.fake {
 	case false:
 		wgconf, err = callMinistryRestore(dept, mnt, name, words)
-		if err == nil {
+		if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 			break
 		}
 
@@ -689,7 +742,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
 		wgconf, err = callMinistryRestore(dept, mnt, name, words)
-		if err == nil {
+		if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 			break
 		}
 
@@ -698,7 +751,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
 		wgconf, err = callMinistryRestore(dept, mnt, name, words)
-		if err == nil {
+		if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 			break
 		}
 
@@ -706,7 +759,7 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 			fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
 			wgconf, err = callMinistryRestore(dept, mnt, name, words)
-			if err == nil {
+			if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 				break
 			}
 		}
@@ -722,10 +775,19 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 		}
 	}
 
+	if err != nil && errors.Is(err, ErrRestoreTooEarly) {
+		_, lastRestore, _ := strings.Cut(err.Error(), ":")
+
+		if err = SendRestoreTooEarly(bot, chatID, ecode, lastRestore); err != nil {
+			return fmt.Errorf("send too early: %w", err)
+		}
+
+		return nil
+	}
+
 	time.Sleep(3 * time.Second)
 
-	err = SendRestoredBrigadierGrants(bot, chatID, ecode, wgconf)
-	if err != nil {
+	if err := SendRestoredBrigadierGrants(bot, chatID, ecode, wgconf); err != nil {
 		return fmt.Errorf("send grants: %w", err)
 	}
 
@@ -890,7 +952,7 @@ AllowedIPs = 0.0.0.0/0,::/0
 
 	accessKey := "ss://" + base64.StdEncoding.WithPadding(base64.NoPadding).EncodeToString(
 		fmt.Appendf([]byte{}, "chacha20-ietf-poly1305:%s@%s:%d", outlineSecret, ep, 46789),
-	) + "#" + url.QueryEscape(numbered)
+	) + "#" + strings.ReplaceAll(url.QueryEscape(numbered), "+", "%20")
 	wgconf.Configs.OutlineConfig = &models.NewuserOutlineConfig{
 		AccessKey: &accessKey,
 	}
@@ -951,6 +1013,25 @@ AllowedIPs = 0.0.0.0/0,::/0
 		FileContent: &amneziaConfString,
 		TonnelName:  &numbered,
 		FileName:    &afilename,
+	}
+
+	longID := uuid.New().String()
+	shortID := strings.ReplaceAll(uuid.New().String(), "-", "")[:12]
+
+	proto0AccessKey := "\u0076\u006C\u0065\u0073\u0073\u003A\u002F\u002F" + longID +
+		fmt.Sprintf("@%s:%d?", ep, 443) +
+		"\u0073\u0065\u0063\u0075\u0072\u0069\u0074\u0079\u003D\u0072\u0065\u0061\u006C\u0069\u0074\u0079" +
+		"\u0026\u0065\u006E\u0063\u0072\u0079\u0070\u0074\u0069\u006F\u006E\u003D\u006E\u006F\u006E\u0065" + "\u0026\u0070\u0062\u006B\u003D" +
+		base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(wgpub[:]) +
+		"\u0026\u0068\u0065\u0061\u0064\u0065\u0072\u0054\u0079\u0070\u0065\u003D\u006E\u006F\u006E\u0065" +
+		"\u0026\u0066\u0070\u003D\u0063\u0068\u0072\u006F\u006D\u0065\u0026\u0074\u0079\u0070\u0065\u003D" +
+		"\u0074\u0063\u0070\u0026\u0066\u006C\u006F\u0077\u003D\u0078\u0074\u006C\u0073\u002D\u0072\u0070\u0072\u0078\u002D\u0076\u0069\u0073\u0069\u006F\u006E" +
+		"\u0026\u0073\u006E\u0069\u003D" + "pw.org" +
+		"\u0026\u0073\u0069\u0064\u003D" + shortID +
+		"#" + strings.ReplaceAll(url.QueryEscape(numbered), "+", "%20")
+
+	wgconf.Configs.Proto0Config = &models.NewuserProto0Config{
+		AccessKey: &proto0AccessKey,
 	}
 
 	return wgconf, nil
