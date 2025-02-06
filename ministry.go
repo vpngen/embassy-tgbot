@@ -231,7 +231,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, chatID int64,
 
 // SendRestoreTooEarly - send too early message.
 func SendRestoreTooEarly(bot *tgbotapi.BotAPI, chatID int64, ecode string, lastRestore string) error {
-	msg := fmt.Sprintf("Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s", lastRestore)
+	msg := fmt.Sprintf("Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s\n\nПомни, что восстановление удалённой бригады - не более 1 раза в месяц", lastRestore)
 
 	if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
 		return fmt.Errorf("send restore too early message: %w", err)
