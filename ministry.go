@@ -593,6 +593,9 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 
 	if wgconf.Code == 425 {
 		_, lastRestore, _ := strings.Cut(wgconf.Desc, ":")
+
+		fmt.Fprintf(os.Stderr, "*** Restore too early: %s\n", lastRestore)
+
 		return nil, fmt.Errorf("%w:%s", ErrRestoreTooEarly, lastRestore)
 	}
 
@@ -601,6 +604,10 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 		wgconf.Configs.WireguardConfig.FileName == nil ||
 		wgconf.Configs.WireguardConfig.TonnelName == nil {
 		return nil, fmt.Errorf("wgconf read: %w", err)
+	}
+
+	if wgconf.Code != 200 {
+		fmt.Fprintf(os.Stderr, "*** Payload wgconf: %#v\n", wgconf)
 	}
 
 	/*status, err := r.ReadString('\n')
