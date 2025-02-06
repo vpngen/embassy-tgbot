@@ -606,7 +606,7 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 		return nil, fmt.Errorf("wgconf read: %w", err)
 	}
 
-	if wgconf.Code != 200 {
+	if wgconf.Code != 201 {
 		fmt.Fprintf(os.Stderr, "*** Payload wgconf: %#v\n", wgconf)
 	}
 
@@ -737,12 +737,15 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 		err    error
 	)
 
+S:
 	switch dept.fake {
 	case false:
 		wgconf, err = callMinistryRestore(dept, mnt, name, words)
 		if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 			break
 		}
+
+		fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
 
 		words = strings.Replace(strings.ToLower(words), "ё", "е", -1)
 
@@ -753,6 +756,8 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 			break
 		}
 
+		fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
+
 		name = MyTitle(strings.ToLower(name))
 
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
@@ -762,13 +767,17 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 			break
 		}
 
+		fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
+
 		for _, name := range generateCombinations(name, maxEYoCombinations) {
 			fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
 			wgconf, err = callMinistryRestore(dept, mnt, name, words)
 			if err == nil || errors.Is(err, ErrRestoreTooEarly) {
-				break
+				break S
 			}
+
+			fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
 		}
 
 		if err != nil {
