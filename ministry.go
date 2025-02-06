@@ -592,7 +592,7 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 	}
 
 	if wgconf.Code == 425 {
-		_, lastRestore, _ := strings.Cut(wgconf.Desc, ":")
+		_, lastRestore, _ := strings.Cut(wgconf.Message, ":")
 
 		fmt.Fprintf(os.Stderr, "*** Restore too early: %s\n", lastRestore)
 
