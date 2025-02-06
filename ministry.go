@@ -231,7 +231,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, chatID int64,
 
 // SendRestoreTooEarly - send too early message.
 func SendRestoreTooEarly(bot *tgbotapi.BotAPI, chatID int64, ecode string, lastRestore string) error {
-	msg := fmt.Sprintf("Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s", lastRestore)
+	msg := fmt.Sprintf("Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s\n\nПомни, что восстановление удалённой бригады - не более 1 раза в месяц", lastRestore)
 
 	if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
 		return fmt.Errorf("send restore too early message: %w", err)
@@ -592,7 +592,10 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 	}
 
 	if wgconf.Code == 425 {
-		_, lastRestore, _ := strings.Cut(wgconf.Desc, ":")
+		_, lastRestore, _ := strings.Cut(wgconf.Message, ":")
+
+		fmt.Fprintf(os.Stderr, "*** Restore too early: %s\n", lastRestore)
+
 		return nil, fmt.Errorf("%w:%s", ErrRestoreTooEarly, lastRestore)
 	}
 
@@ -601,6 +604,10 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 		wgconf.Configs.WireguardConfig.FileName == nil ||
 		wgconf.Configs.WireguardConfig.TonnelName == nil {
 		return nil, fmt.Errorf("wgconf read: %w", err)
+	}
+
+	if wgconf.Code != 201 {
+		fmt.Fprintf(os.Stderr, "*** Payload wgconf: %#v\n", wgconf)
 	}
 
 	/*status, err := r.ReadString('\n')
@@ -730,12 +737,15 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 		err    error
 	)
 
+S:
 	switch dept.fake {
 	case false:
 		wgconf, err = callMinistryRestore(dept, mnt, name, words)
 		if err == nil || errors.Is(err, ErrRestoreTooEarly) {
 			break
 		}
+
+		fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
 
 		words = strings.Replace(strings.ToLower(words), "ё", "е", -1)
 
@@ -746,6 +756,8 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 			break
 		}
 
+		fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
+
 		name = MyTitle(strings.ToLower(name))
 
 		fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
@@ -755,13 +767,17 @@ func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept Min
 			break
 		}
 
+		fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
+
 		for _, name := range generateCombinations(name, maxEYoCombinations) {
 			fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
 
 			wgconf, err = callMinistryRestore(dept, mnt, name, words)
 			if err == nil || errors.Is(err, ErrRestoreTooEarly) {
-				break
+				break S
 			}
+
+			fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
 		}
 
 		if err != nil {
