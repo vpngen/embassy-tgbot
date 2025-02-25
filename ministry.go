@@ -355,7 +355,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		time.Sleep(2 * time.Second)
 	}
 
-	if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode); err != nil {
+	if _, err = SendOpenMessage(bot, chatID, 0, false, RestoreTrackConfigsMessage, ecode); err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
