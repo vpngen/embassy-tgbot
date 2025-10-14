@@ -41,6 +41,7 @@ type Config struct {
 	DBDir         string
 	DBKey         []byte
 	SupportURL    string
+	VIPBotURL     string
 	ckChatID      int64
 	Ministry      MinistryOpts
 	Maintenance   *Maintenance
@@ -65,6 +66,7 @@ func configFromEnv() Config {
 	dbDir := os.Getenv("EMBASSY_BADGER_DIR")          // Database dir, default db
 	dbKey := os.Getenv("EMBASSY_BADGER_KEY")
 	supportURL := os.Getenv("SUPPORT_URL")
+	vipBotURL := os.Getenv("VIP_BOT_URL")
 	ckChat := os.Getenv("CHECK_BILL_CHAT")
 	ministryIP := os.Getenv("MINISTRY_IP")
 	ministryToken := os.Getenv("MINISTRY_TOKEN")
@@ -131,6 +133,7 @@ func configFromEnv() Config {
 		DBDir:      dbDir,
 		DBKey:      genKeyFromEnv(dbKey, DefaultIterations, DefaultKeyLen),
 		SupportURL: supportURL,
+		VIPBotURL:  vipBotURL,
 		ckChatID:   ckChatID,
 		Ministry: MinistryOpts{
 			controlIP: ministryIP,

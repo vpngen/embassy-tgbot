@@ -65,12 +65,12 @@ var (
 )
 
 // SendBrigadierGrants - send grants messages.
-func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, chatID int64, ecode string, opts *ministry.Answer) error {
+func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, message string, chatID int64, ecode string, opts *ministry.Answer) error {
 	defer wg.Done()
 
 	time.Sleep(1 * time.Second)
 
-	msg := fmt.Sprintf(MainTrackGrantMessage, opts.Name)
+	msg := fmt.Sprintf(message, opts.Name)
 	_, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send grant message: %w", err)
@@ -231,7 +231,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, chatID int64,
 
 // SendRestoreTooEarly - send too early message.
 func SendRestoreTooEarly(bot *tgbotapi.BotAPI, chatID int64, ecode string, lastRestore string) error {
-	msg := fmt.Sprintf("Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s\n\nПомни, что восстановление удалённой бригады - не более 1 раза в месяц", lastRestore)
+	msg := fmt.Sprintf("Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s\n\nПомни, что восстановление удалённой бригады - не более 3 раз в месяц", lastRestore)
 
 	if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
 		return fmt.Errorf("send restore too early message: %w", err)
@@ -676,7 +676,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, label SessionLabel, 
 	wg.Add(1)
 
 	go func() {
-		if err = SendBrigadierGrants(bot, wg, chatID, ecode, wgconf); err != nil {
+		if err = SendBrigadierGrants(bot, wg, MainTrackGrantMessage, chatID, ecode, wgconf); err != nil {
 			logs.Errf("send grants: %s", err)
 		}
 	}()

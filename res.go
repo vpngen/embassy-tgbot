@@ -8,6 +8,8 @@ import (
 	tgbotapi "github.com/vpngen/embassy-tgbot/telegram-bot-api"
 )
 
+var tgsec int64 = 24534242342353
+
 //go:embed vgbs.png
 var RestoreTrackImgVgbs []byte
 
@@ -58,7 +60,7 @@ const (
 
 ВАЖНО: здесь ты получишь целый сервер. Это ценный и очень ограниченный ресурс, который ты получишь бесплатно. Поэтому тебе придется соответствовать простым требованиям:
 • Начать пользоваться системой управления сервером в течение 24 часов.
-• Начиная со следующего месяца после твоей регистрации иметь не менее пяти активных пользователей в месяц. Т.е. начать распространять VPN в своем окружении.
+• Начиная со следующего месяца после твоей регистрации иметь не менее десяти активных пользователей в месяц. Т.е. начать распространять VPN в своем окружении.
 
 Или мы удалим твою бригаду ` + "\U0001F937" + `.
 
@@ -100,6 +102,12 @@ _Если у тебя появятся вопросы — напиши нам в
 
 	// MainTrackGrantMessage - grant message.
 	MainTrackGrantMessage = "Поздравляю! Ты — бригадир! Вот полная [инструкция пользования](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/) сервисом.\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
+
+	// MainTrackGrantMessageVIP - grant VIP message.
+	MainTrackGrantMessageVIP = "Поздравляем со статусом VIP-бригадира! Теперь вместе с премиум-поддержкой и защитой от удаления жизнь точно заиграет новыми красками! Вот полная [инструкция пользования](https://docs.google.com/document/d/12qFYFk9SQaPrg32bf-2JZYIPSax2453jE3YGOblThHk/) сервисом.\nТвое кодовое имя: `%s`. Оно нужно для обращения в поддержку. Так мы поймем, что ты — это ты, не зная, что это ты \U0000263A."
+
+	// MainTrackGrantSupportMessageVIP - grant VIP support message.
+	MainTrackGrantSupportMessageVIP = "Остались вопросы? Смело пиши в поддержку: [https://t.me/vg_vip_bot](https://t.me/vg_vip_bot) - ты же теперь VIP :)"
 
 	// MainTrackPersonDescriptionMessage - brief on name.
 	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n\U0001F449 [статья на wikipedia](%s)\n\n"

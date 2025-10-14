@@ -83,6 +83,11 @@ func main() {
 	go ReceiptQueueLoop(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID, cfg.Ministry, cfg.sessionSecret, cfg.queue2Secret, cfg.Maintenance)
 	go ReceiptQueueLoop2(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID)
 
+	// run the msg sync
+	waitGroup.Add(1)
+
+	go msgSyncLoop(waitGroup, bot, stop, cfg.Ministry)
+
 	// run the stat sync
 	waitGroup.Add(1)
 
