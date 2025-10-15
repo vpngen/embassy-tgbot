@@ -433,6 +433,13 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) 
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("vip push: %w", err))
 		}
 
+		// delete our previous message.
+		defer func() {
+			if err := RemoveMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID); err != nil {
+				// we don't want to handle this
+				logs.Errf("[!:%s] remove: %s\n", ecode, err)
+			}
+		}()
 	case update.CallbackQuery.Data == "reset":
 		if session.State == SessionStatePayloadSecondary {
 			if _, err := SendProtectedMessage(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, false, MainTrackWarnConversationsFinished, ecode); err != nil {
@@ -602,7 +609,7 @@ func sendVIPMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha, cha
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonURL("Перейти в VIP-бот", VIPBotURL+"?start="+requestID.String()),
-		),
+			tgbotapi.NewInlineKeyboardButtonData("Перкдумал", "reset")),
 	)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
