@@ -305,7 +305,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts)
 }
 
 // Handling callbacks  (opposed messages).
-func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
+func buttonHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) {
 	defer opts.wg.Done()
 
 	ecode := genEcode() // unique error code
@@ -415,6 +415,24 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update) {
 
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("again push: %w", err))
 		}
+	case update.CallbackQuery.Data == "vip":
+		requestID, err := reqBrigade(dept, update.CallbackQuery.Message.Chat.ID, session.Label)
+		if err != nil || requestID == uuid.Nil {
+			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("request brigade failed"))
+
+			return
+		}
+
+		if err := sendVIPMessage(opts, session.Label, &session.Captcha, update.CallbackQuery.Message.Chat.ID, requestID); err != nil {
+			if IsForbiddenError(err) {
+				setSession(opts.db, opts.sessionSecret, session.Label, &session.Captcha, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+
+				return
+			}
+
+			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("vip push: %w", err))
+		}
+
 	case update.CallbackQuery.Data == "reset":
 		if session.State == SessionStatePayloadSecondary {
 			if _, err := SendProtectedMessage(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, false, MainTrackWarnConversationsFinished, ecode); err != nil {
@@ -559,7 +577,7 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 
 // Send Welcome message.
 func sendWelcomeMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64) error {
-	msg := tgbotapi.NewMessage(chatID, MainTrackWelcomeMessage)
+	msg := tgbotapi.NewMessage(chatID, MainTrackWelcomeMessageVIP)
 	msg.ReplyMarkup = WannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
@@ -571,6 +589,31 @@ func sendWelcomeMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha,
 	}
 
 	err = setSession(opts.db, opts.sessionSecret, label, c, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForWanting, SessionStatePayloadSomething, nil)
+	if err != nil {
+		return fmt.Errorf("session: %w", err)
+	}
+
+	return nil
+}
+
+// Send VIP message.
+func sendVIPMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64, requestID uuid.UUID) error {
+	msg := tgbotapi.NewMessage(chatID, VIPMessage)
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("Перейти в VIP-бот", VIPBotURL+"?start="+requestID.String()),
+		),
+	)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.DisableWebPagePreview = true
+	msg.ProtectContent = true
+
+	newMsg, err := opts.bot.Send(msg)
+	if err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	err = setSession(opts.db, opts.sessionSecret, label, c, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackStart, SessionStatePayloadSomething, nil)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -747,7 +790,7 @@ func checkRestoreNameMessageMessage(opts handlerOpts, label SessionLabel, c *Ses
 
 	_, _, ok := strings.Cut(text, " ")
 	if !ok || !utf8.ValidString(text) {
-		msg := tgbotapi.NewMessage(Message.Chat.ID, RestoreTrackInvalidNameMessage)
+		msg := tgbotapi.NewMessage(Message.Chat.ID, RestoreTrackInvalidNameMessageVIP)
 		msg.ReplyMarkup = RestoreNameKeyboard
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.DisableWebPagePreview = true
@@ -775,7 +818,7 @@ func checkRestoreNameMessageMessage(opts handlerOpts, label SessionLabel, c *Ses
 }
 
 func sendWordsFailed(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64, prev int, text []byte) error {
-	msg := tgbotapi.NewMessage(chatID, RestoreTrackBrigadeNotFoundMessage)
+	msg := tgbotapi.NewMessage(chatID, RestoreTrackBrigadeNotFoundMessageVIP)
 	msg.ReplyMarkup = RestoreWordsKeyboard2
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true

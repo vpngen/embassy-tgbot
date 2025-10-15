@@ -104,7 +104,7 @@ func runBot(
 
 				waitGroup.Add(1)
 
-				go buttonHandler(opts, update)
+				go buttonHandler(opts, update, ministry)
 			}
 		case <-stop:
 			logs.Infoln("[-] Run: Stop signal was received")

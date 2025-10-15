@@ -23,6 +23,7 @@ func main() {
 	cfg := configFromEnv()
 
 	SetSupportMessages(cfg.SupportURL) // i dont know howto do this more clearely
+	SetVIPBotURL(cfg.VIPBotURL)
 
 	// set logs
 	logs.SetLogLevel(int32(cfg.DebugLevel))
