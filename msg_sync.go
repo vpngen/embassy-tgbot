@@ -28,6 +28,8 @@ const (
 func msgSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}, opts MinistryOpts) {
 	defer wg.Done()
 
+	fmt.Fprintf(os.Stderr, "msgSyncLoop: start\n")
+
 	tm := time.NewTimer(time.Second)
 
 	defer tm.Stop()
