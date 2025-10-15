@@ -609,7 +609,7 @@ func sendVIPMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha, cha
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonURL("Перейти в VIP-бот", VIPBotURL+"?start="+requestID.String()),
-			tgbotapi.NewInlineKeyboardButtonData("Перкдумал", "reset")),
+			tgbotapi.NewInlineKeyboardButtonData("Передумал", "reset")),
 	)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
