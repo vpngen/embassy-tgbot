@@ -21,6 +21,8 @@ import (
 func reqBrigade(opts MinistryOpts, chatID int64, label SessionLabel) (uuid.UUID, error) {
 	logs.Infof("Request brigade from %s\n", opts.controlIP)
 
+	label = setLabel(label, MarkerEmptyLabel)
+
 	telegramID := chatID ^ telegramIDCover
 
 	cmd := fmt.Sprintf("reqvipid -ch -tgid %d -l %s -lt %d -lu %s %s", telegramID, label.Label, label.Time.Unix(), label.ID.String(), opts.token)

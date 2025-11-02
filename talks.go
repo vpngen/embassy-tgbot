@@ -416,6 +416,8 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) 
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("again push: %w", err))
 		}
 	case update.CallbackQuery.Data == "vip":
+		session.Label = setLabel(session.Label, MarkerEmptyLabel)
+
 		requestID, err := reqBrigade(dept, update.CallbackQuery.Message.Chat.ID, session.Label)
 		if err != nil || requestID == uuid.Nil {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("request brigade failed"))
