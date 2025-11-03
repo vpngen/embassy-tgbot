@@ -416,7 +416,36 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) 
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("again push: %w", err))
 		}
 	case update.CallbackQuery.Data == "vip":
-		session.Label = setLabel(session.Label, MarkerEmptyLabel)
+		label := ""
+		sessionLabel := ""
+
+		x := rand.Intn(len(MainTrackQuizMessage))
+		for prefix := range MainTrackQuizMessage {
+			if x == 0 {
+				label = prefix + label
+				if len(label) > 64 {
+					label = label[:64]
+				}
+
+				sessionLabel = label
+
+				break
+			}
+
+			x--
+		}
+
+		if session.Label.Time.IsZero() || session.Label.ID == uuid.Nil {
+			session.Label = SessionLabel{
+				Label: sessionLabel,
+				Time:  time.Now(),
+				ID:    uuid.New(),
+			}
+		}
+
+		if session.Label.Label == "" {
+			session.Label.Label = sessionLabel
+		}
 
 		requestID, err := reqBrigade(dept, update.CallbackQuery.Message.Chat.ID, session.Label)
 		if err != nil || requestID == uuid.Nil {
