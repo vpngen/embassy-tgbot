@@ -615,7 +615,7 @@ func stWrong(bot *tgbotapi.BotAPI, chatID int64, ecode string, err error) {
 
 // Send Welcome message.
 func sendWelcomeMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64) error {
-	msg := tgbotapi.NewMessage(chatID, MainTrackWelcomeMessageVIP)
+	msg := tgbotapi.NewMessage(chatID, MainTrackWelcomeMessage)
 	msg.ReplyMarkup = WannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
