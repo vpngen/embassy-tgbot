@@ -152,7 +152,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts)
 	time.Sleep(SlowAnswerTimeout)
 
 	if update.Message.IsCommand() {
-		err := handleCommands(opts, update.Message, session, ecode)
+		err := handleCommands(opts, update.Message, session, dept, ecode)
 		if err != nil {
 			if IsForbiddenError(err) {
 				setSession(opts.db, opts.sessionSecret, session.Label, &session.Captcha, update.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
@@ -447,7 +447,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) 
 			session.Label.Label = sessionLabel
 		}
 
-		requestID, err := reqBrigade(dept, update.CallbackQuery.Message.Chat.ID, session.Label)
+		requestID, err := reqBrigade(dept, update.CallbackQuery.Message.Chat.ID, session.Label, "")
 		if err != nil || requestID == uuid.Nil {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("request brigade failed"))
 
@@ -627,6 +627,27 @@ func sendWelcomeMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha,
 	}
 
 	err = setSession(opts.db, opts.sessionSecret, label, c, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackWaitForWanting, SessionStatePayloadSomething, nil)
+	if err != nil {
+		return fmt.Errorf("session: %w", err)
+	}
+
+	return nil
+}
+
+// Send Welcome message.
+func sendVIPMessage2(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64) error {
+	msg := tgbotapi.NewMessage(chatID, MainTrackVIPWelcomeMessage)
+	msg.ReplyMarkup = WannabeKeyboard
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.DisableWebPagePreview = true
+	msg.ProtectContent = true
+
+	newMsg, err := opts.bot.Send(msg)
+	if err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	err = setSession(opts.db, opts.sessionSecret, label, c, newMsg.Chat.ID, newMsg.MessageID, int64(newMsg.Date), stageMainTrackStart, SessionStatePayloadSomething, nil)
 	if err != nil {
 		return fmt.Errorf("session: %w", err)
 	}
@@ -1090,7 +1111,7 @@ func getAction() string {
 	return StandardChatActions[ix]
 }
 
-func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Session, ecode string) error {
+func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Session, dept MinistryOpts, ecode string) error {
 	logs.Debugf("[d:%s] stage:  %d\n", ecode, session.Stage)
 
 	command := Message.Command()
@@ -1109,6 +1130,33 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 	}
 
 	switch command {
+	case "start":
+		s := Message.CommandArguments()
+		if len(s) == 36 {
+			if _, err := uuid.Parse(s); err == nil {
+				requestID, err := reqBrigade(dept, Message.Chat.ID, session.Label, s)
+				if err != nil || requestID == uuid.Nil {
+					stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("request custom brigade failed"))
+
+					return nil
+				}
+
+				if err := sendVIPMessage2(opts, session.Label, &session.Captcha, Message.Chat.ID); err != nil {
+					if IsForbiddenError(err) {
+						setSession(opts.db, opts.sessionSecret, session.Label, &session.Captcha, Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+
+						return nil
+					}
+
+					stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("custom vip push: %w", err))
+				}
+
+				// it's a valid uuid, but we don't want to handle this.
+				return nil
+			}
+		}
+
+		fallthrough
 	case "restore":
 		if checkMaintenanceMode(opts, session.Label, &session.Captcha, Message.Chat.ID, ecode, true) {
 			return nil

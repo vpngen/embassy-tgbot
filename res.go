@@ -101,6 +101,8 @@ const (
 
 Нажми кнопку ниже ↓`
 
+	MainTrackVIPWelcomeMessage = `Ваш VIP статус активирован! Ждите инструкций по получению доступа к VIP бригаде.`
+
 	/*
 			MainTrackWelcomeMessageVIP = `Привет, наш дорогой будущий бригадир!
 
