@@ -637,7 +637,6 @@ func sendWelcomeMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha,
 // Send Welcome message.
 func sendVIPMessage2(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, MainTrackVIPWelcomeMessage)
-	msg.ReplyMarkup = WannabeKeyboard
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
 	msg.ProtectContent = true
