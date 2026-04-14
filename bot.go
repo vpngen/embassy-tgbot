@@ -33,19 +33,25 @@ func runBot(
 	ministry MinistryOpts,
 	maintenance *Maintenance,
 	labelStorage *LabelStorage,
+	supportURL string,
+	flowMainUrl string,
+	flowDecisionsUrl string,
 	sessionSecret []byte,
 	queueSecret []byte,
 ) {
 	defer waitGroup.Done()
 
 	opts := handlerOpts{
-		wg:    waitGroup,
-		db:    dbase,
-		bot:   bot,
-		cw:    NewChatsWins(),
-		debug: debugLevel,
-		ls:    labelStorage,
-		mnt:   maintenance,
+		wg:               waitGroup,
+		db:               dbase,
+		bot:              bot,
+		cw:               NewChatsWins(),
+		debug:            debugLevel,
+		ls:               labelStorage,
+		mnt:              maintenance,
+		supportURL:       supportURL,
+		flowMainUrl:      flowMainUrl,
+		flowDecisionsUrl: flowDecisionsUrl,
 
 		sessionSecret: sessionSecret,
 		queueSecret:   queueSecret,

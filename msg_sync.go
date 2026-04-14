@@ -25,7 +25,7 @@ const (
 	telegramIDCover int64 = 24537551337805
 )
 
-func msgSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}, opts MinistryOpts) {
+func msgSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}, opts MinistryOpts, flowMainUrl string) {
 	defer wg.Done()
 
 	fmt.Fprintf(os.Stderr, "msgSyncLoop: start\n")
@@ -59,7 +59,7 @@ func msgSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{},
 			logs.Warningf("New msg to %s (%d)\n", msg.Name, chatID)
 
 			wg.Add(1)
-			if err := SendBrigadierGrants(bot, wg, MainTrackGrantMessageVIP, chatID, ecode, &msg.Answer); err != nil {
+			if err := SendBrigadierGrants(bot, wg, MainTrackGrantMessageVIP, chatID, ecode, &msg.Answer, langRU, flowMainUrl); err != nil {
 				logs.Errf("send grants: %s", err)
 
 				tm.Reset(MsgReadDuration)

@@ -30,19 +30,21 @@ var amneziaVPNDownloadArray = []string{
 	getAmneziaVPNForLinux,
 }
 
-var amneziaVPNDownloadKeyboard = func() tgbotapi.InlineKeyboardMarkup {
+func buildAmneziaVPNDownloadKeyboard(flowMainUrl string) tgbotapi.InlineKeyboardMarkup {
+	urlMap := ministryDownloadURLs(flowMainUrl, "amnezia", langRU, amneziaVPNDownloadURLMap)
+
 	var rows [][]tgbotapi.InlineKeyboardButton
 
 	for _, title := range amneziaVPNDownloadArray {
 		rows = append(rows,
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonURL(title, amneziaVPNDownloadURLMap[title]),
+				tgbotapi.NewInlineKeyboardButtonURL(title, urlMap[title]),
 			),
 		)
 	}
 
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
-}()
+}
 
 var amneziaVPNDownloadKeyboardShort = func() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
@@ -55,10 +57,10 @@ var amneziaVPNDownloadKeyboardShort = func() tgbotapi.InlineKeyboardMarkup {
 const amneziaVPNDownloadMessage = `Для использования AmneziaVPN скачай и установи приложение для своей платформы
 ` + "\u2139\ufe0f" + ` [@vpngen](http://t.me/vpngen)`
 
-// SendDownloadAmmneziaVPNMessage - send message with download links for Outline.
-func sendDownloadAmneziaVPNMessage(bot *tgbotapi.BotAPI, chatID int64) error {
+// SendDownloadAmneziaVPNMessage - send message with download links for Outline.
+func sendDownloadAmneziaVPNMessage(bot *tgbotapi.BotAPI, chatID int64, flowMainUrl string) error {
 	msg := tgbotapi.NewMessage(chatID, amneziaVPNDownloadMessage)
-	msg.ReplyMarkup = amneziaVPNDownloadKeyboard
+	msg.ReplyMarkup = buildAmneziaVPNDownloadKeyboard(flowMainUrl)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
 	msg.ProtectContent = false

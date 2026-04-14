@@ -42,14 +42,16 @@ type CkReceipt struct {
 	Accepted bool   `json:"accepted"`  // status
 	Reason   int    `json:"reason"`    // rejection reason
 	PhotoSum []byte `json:"photo_sum"` // photo checksum
+	Lang     string `json:"lang"`      // user language
 }
 
 // PutReceipt - put receipt in the queue.
-func PutReceipt(dbase *badger.DB, secret []byte, chatID int64, fileID string) error {
+func PutReceipt(dbase *badger.DB, secret []byte, chatID int64, fileID string, lang string) error {
 	receipt := &CkReceipt{
 		ChatID: chatID,
 		FileID: fileID,
 		Stage:  CkReceiptStageNone,
+		Lang:   lang,
 	}
 
 	data, err := json.Marshal(receipt)
@@ -204,7 +206,7 @@ func getReceipt(txn *badger.Txn, id []byte) ([]byte, error) {
 }
 
 // ReceiptQueueLoop - recept queue loop.
-func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, sessionSecret []byte, queue2Secret []byte, mnt *Maintenance) {
+func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, sessionSecret []byte, queue2Secret []byte, mnt *Maintenance, flowMainUrl string) {
 	defer waitGroup.Done()
 
 	wg := &sync.WaitGroup{}
@@ -240,7 +242,7 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 			timerNew.Reset(3 * time.Second)
 		case <-timerReviewed.C:
 			// now := time.Now()
-			ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt)
+			ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt, flowMainUrl)
 			if err != nil {
 				logs.Errf("reviewed receipt: %s\n", err)
 			}
@@ -273,7 +275,7 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 
 // do round.
 /*
-func rqround(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, queue2Secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, mnt *Maintenance) {
+func rqround(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, queue2Secret []byte, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, mnt *Maintenance, flowMainUrl string) {
 	ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt)
 	if err != nil {
 		logs.Errf("reviewed receipt: %s\n", err)
@@ -353,7 +355,7 @@ var (
 )
 
 // catch reviewed receipt
-func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, bot *tgbotapi.BotAPI, dept MinistryOpts, mnt *Maintenance) (bool, error) {
+func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, bot *tgbotapi.BotAPI, dept MinistryOpts, mnt *Maintenance, flowMainUrl string) (bool, error) {
 	key, receipt, count, err := catchFirstReceipt(db, CkReceiptStageReceived)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
@@ -393,7 +395,7 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 
 		sum := receipt.PhotoSum
 
-		if desc, ok := DecisionComments[receipt.Reason]; ok && desc != "" {
+		if desc, ok := GetDecisionComment(receipt.Reason, receipt.Lang); ok && desc != "" {
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, desc, ecode); err != nil {
 				if IsForbiddenError(err) {
 					DeleteReceipt(db, key)
@@ -410,7 +412,7 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 			return false, fmt.Errorf("cleanup: %w", err)
 		}
 
-		if err := GetBrigadier(bot, wg, session.Label, receipt.ChatID, ecode, dept, mnt); err != nil {
+		if err := GetBrigadier(bot, wg, session.Label, receipt.ChatID, ecode, dept, mnt, receipt.Lang, flowMainUrl); err != nil {
 			setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
 
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, MainTrackFailMessage, ecode); err != nil {
@@ -437,7 +439,7 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 		}
 
 	case false:
-		desc, ok := DecisionComments[receipt.Reason]
+		desc, ok := GetDecisionComment(receipt.Reason, receipt.Lang)
 		if !ok || desc == "" {
 			desc = RejectMessage
 		}

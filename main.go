@@ -22,8 +22,17 @@ const (
 func main() {
 	cfg := configFromEnv()
 
+	adminAPIKey = cfg.AdminAPIKey // set package-level key for admin-panel requests
+
 	SetSupportMessages(cfg.SupportURL) // i dont know howto do this more clearely
 	SetVIPBotURL(cfg.VIPBotURL)
+
+	// Override decision comments from admin-panel JSON for all languages.
+	for _, lang := range []string{langRU, langEN} {
+		if dc := flowDecisionComments(cfg.FlowDecisionsUrl, cfg.SupportURL, lang); dc != nil {
+			LocalizedDecisionComments[lang] = dc
+		}
+	}
 
 	// set logs
 	logs.SetLogLevel(int32(cfg.DebugLevel))
@@ -71,7 +80,8 @@ func main() {
 	// run the bot
 	waitGroup.Add(1)
 
-	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Ministry, cfg.Maintenance, cfg.LabelStorage, cfg.sessionSecret, cfg.queueSecret)
+	// OLD: go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Ministry, cfg.Maintenance, cfg.LabelStorage, cfg.sessionSecret, cfg.queueSecret)
+	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Ministry, cfg.Maintenance, cfg.LabelStorage, cfg.SupportURL, cfg.FlowMainUrl, cfg.FlowDecisionsUrl, cfg.sessionSecret, cfg.queueSecret)
 
 	// run the bot2
 	waitGroup.Add(1)
@@ -81,13 +91,13 @@ func main() {
 	// run the QRun(2)
 	waitGroup.Add(2)
 
-	go ReceiptQueueLoop(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID, cfg.Ministry, cfg.sessionSecret, cfg.queue2Secret, cfg.Maintenance)
+	go ReceiptQueueLoop(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID, cfg.Ministry, cfg.sessionSecret, cfg.queue2Secret, cfg.Maintenance, cfg.FlowMainUrl)
 	go ReceiptQueueLoop2(waitGroup, dbase, stop, bot, bot2, cfg.ckChatID)
 
 	// run the msg sync
 	waitGroup.Add(1)
 
-	go msgSyncLoop(waitGroup, bot, stop, cfg.Ministry)
+	go msgSyncLoop(waitGroup, bot, stop, cfg.Ministry, cfg.FlowMainUrl)
 
 	// run the stat sync
 	waitGroup.Add(1)

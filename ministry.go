@@ -65,7 +65,7 @@ var (
 )
 
 // SendBrigadierGrants - send grants messages.
-func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, message string, chatID int64, ecode string, opts *ministry.Answer) error {
+func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, message string, chatID int64, ecode string, opts *ministry.Answer, lang, flowMainUrl string) error {
 	defer wg.Done()
 
 	time.Sleep(1 * time.Second)
@@ -78,7 +78,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, message strin
 
 	time.Sleep(2 * time.Second)
 
-	msg = fmt.Sprintf(MainTrackPersonDescriptionMessage,
+	msg = fmt.Sprintf(ministryMessage(flowMainUrl, "person_description", MainTrackPersonDescriptionMessage, lang),
 		strings.Trim(opts.Person.Name, " \r\n\t"),
 		strings.Trim(string(opts.Person.Desc), " \r\n\t"),
 		tgbotapi.EscapeText(tgbotapi.ModeMarkdown, strings.Trim(string(opts.Person.URL), " \r\n\t")),
@@ -90,14 +90,14 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, message strin
 
 	time.Sleep(2 * time.Second)
 
-	_, err = SendOpenMessage(bot, chatID, 0, false, MainTrackSeedDescMessage, ecode)
+	_, err = SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "seed_desc", MainTrackSeedDescMessage, lang), ecode)
 	if err != nil {
 		return fmt.Errorf("send seed message: %w", err)
 	}
 
 	time.Sleep(2 * time.Second)
 
-	msg = fmt.Sprintf(MainTrackWordsMessage, strings.Trim(opts.Mnemo, " \r\n\t"))
+	msg = fmt.Sprintf(ministryMessage(flowMainUrl, "words_message", MainTrackWordsMessage, lang), strings.Trim(opts.Mnemo, " \r\n\t"))
 	_, err = SendOpenMessage(bot, chatID, 0, false, msg, ecode)
 	if err != nil {
 		return fmt.Errorf("send words message: %w", err)
@@ -125,13 +125,13 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, message strin
 	} */
 
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
-		if err = sendDownloadOutlineMessageShort(bot, chatID); err != nil {
+		if err = sendDownloadOutlineMessageShort(bot, chatID, lang, flowMainUrl); err != nil {
 			return fmt.Errorf("send outline download message: %w", err)
 		}
 
 		time.Sleep(2 * time.Second)
 
-		if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackOutlineAccessMessage, ecode); err != nil {
+		if _, err = SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "outline_access", MainTrackOutlineAccessMessage, lang), ecode); err != nil {
 			return fmt.Errorf("send outline message: %w", err)
 		}
 
@@ -183,7 +183,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, message strin
 	}
 	*/
 
-	if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackConfigsMessage, ecode); err != nil {
+	if _, err = SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "configs_message", MainTrackConfigsMessage, lang), ecode); err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
@@ -214,7 +214,7 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, message strin
 	if opts.Configs.Proto0Config != nil && opts.Configs.Proto0Config.AccessKey != nil {
 		// time.Sleep(2 * time.Second)
 
-		if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackProto0ConfigMessage, ecode); err != nil {
+		if _, err = SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "proto0_config", MainTrackProto0ConfigMessage, lang), ecode); err != nil {
 			return fmt.Errorf("send proto0 message: %w", err)
 		}
 
@@ -229,9 +229,11 @@ func SendBrigadierGrants(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, message strin
 	return nil
 }
 
+const RestoreTooEarlyFallback = "Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s\n\nПомни, что восстановление удалённой бригады - не более 3 раз в месяц"
+
 // SendRestoreTooEarly - send too early message.
-func SendRestoreTooEarly(bot *tgbotapi.BotAPI, chatID int64, ecode string, lastRestore string) error {
-	msg := fmt.Sprintf("Слишком рано для восстановления. Попробуйте позже. Последнее восстановление: %s\n\nПомни, что восстановление удалённой бригады - не более 3 раз в месяц", lastRestore)
+func SendRestoreTooEarly(bot *tgbotapi.BotAPI, chatID int64, ecode string, lastRestore string, lang, flowMainUrl string) error {
+	msg := fmt.Sprintf(ministryMessage(flowMainUrl, "restore_too_early", RestoreTooEarlyFallback, lang), lastRestore)
 
 	if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
 		return fmt.Errorf("send restore too early message: %w", err)
@@ -243,8 +245,8 @@ func SendRestoreTooEarly(bot *tgbotapi.BotAPI, chatID int64, ecode string, lastR
 }
 
 // SendRestoredBrigadierGrants - send grants messages.
-func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *ministry.Answer) error {
-	_, err := SendOpenMessage(bot, chatID, 0, false, RestoreTrackGrantMessage, ecode)
+func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *ministry.Answer, lang, flowMainUrl string) error {
+	_, err := SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "restore_grant", RestoreTrackGrantMessage, lang), ecode)
 	if err != nil {
 		return fmt.Errorf("send restore grant message: %w", err)
 	}
@@ -337,13 +339,13 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 	} */
 
 	if opts.Configs.OutlineConfig != nil && opts.Configs.OutlineConfig.AccessKey != nil {
-		if err = sendDownloadOutlineMessageShort(bot, chatID); err != nil {
+		if err = sendDownloadOutlineMessageShort(bot, chatID, lang, flowMainUrl); err != nil {
 			return fmt.Errorf("send outline download short message: %w", err)
 		}
 
 		time.Sleep(2 * time.Second)
 
-		if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackOutlineAccessMessage, ecode); err != nil {
+		if _, err = SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "outline_access", MainTrackOutlineAccessMessage, lang), ecode); err != nil {
 			return fmt.Errorf("send outline message: %w", err)
 		}
 
@@ -355,7 +357,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 		time.Sleep(2 * time.Second)
 	}
 
-	if _, err = SendOpenMessage(bot, chatID, 0, false, RestoreTrackConfigsMessage, ecode); err != nil {
+	if _, err = SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "restore_configs", RestoreTrackConfigsMessage, lang), ecode); err != nil {
 		return fmt.Errorf("send keydesk message: %w", err)
 	}
 
@@ -381,7 +383,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 	if opts.Configs.Proto0Config != nil && opts.Configs.Proto0Config.AccessKey != nil {
 		// time.Sleep(2 * time.Second)
 
-		if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackProto0ConfigMessage, ecode); err != nil {
+		if _, err = SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "proto0_config", MainTrackProto0ConfigMessage, lang), ecode); err != nil {
 			return fmt.Errorf("send proto0 message: %w", err)
 		}
 
@@ -646,7 +648,7 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 }
 
 // GetBrigadier - get brigadier name and config.
-func GetBrigadier(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, label SessionLabel, chatID int64, ecode string, dept MinistryOpts, mnt *Maintenance) error {
+func GetBrigadier(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, label SessionLabel, chatID int64, ecode string, dept MinistryOpts, mnt *Maintenance, lang, flowMainUrl string) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
@@ -676,7 +678,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, label SessionLabel, 
 	wg.Add(1)
 
 	go func() {
-		if err = SendBrigadierGrants(bot, wg, MainTrackGrantMessage, chatID, ecode, wgconf); err != nil {
+		if err = SendBrigadierGrants(bot, wg, ministryMessage(flowMainUrl, "grant_message", MainTrackGrantMessage, lang), chatID, ecode, wgconf, lang, flowMainUrl); err != nil {
 			logs.Errf("send grants: %s", err)
 		}
 	}()
@@ -731,7 +733,7 @@ func replaceRuneAt(s string, index, size int, replacement string) string {
 }
 
 // RestoreBrigadier - restore brigadier  config.
-func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept MinistryOpts, mnt *Maintenance, name, words string) error {
+func RestoreBrigadier(bot *tgbotapi.BotAPI, chatID int64, ecode string, dept MinistryOpts, mnt *Maintenance, name, words string, lang, flowMainUrl string) error {
 	var (
 		wgconf *ministry.Answer
 		err    error
@@ -794,7 +796,7 @@ S:
 	if err != nil && errors.Is(err, ErrRestoreTooEarly) {
 		_, lastRestore, _ := strings.Cut(err.Error(), ":")
 
-		if err = SendRestoreTooEarly(bot, chatID, ecode, lastRestore); err != nil {
+		if err = SendRestoreTooEarly(bot, chatID, ecode, lastRestore, lang, flowMainUrl); err != nil {
 			return fmt.Errorf("send too early: %w", err)
 		}
 
@@ -803,7 +805,7 @@ S:
 
 	time.Sleep(3 * time.Second)
 
-	if err := SendRestoredBrigadierGrants(bot, chatID, ecode, wgconf); err != nil {
+	if err := SendRestoredBrigadierGrants(bot, chatID, ecode, wgconf, lang, flowMainUrl); err != nil {
 		return fmt.Errorf("send grants: %w", err)
 	}
 

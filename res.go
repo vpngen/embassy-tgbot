@@ -342,7 +342,7 @@ var (
 	// RejectMessage - we are shame you.
 	RejectMessage string
 
-	// DecisionComments - descriptive text on check decidion.
+	// DecisionComments - descriptive text on check decidion (Russian, default).
 	DecisionComments = map[int]string{
 		decisionUnknown:              "",
 		decisionAcceptGeneral:        "",
@@ -359,6 +359,12 @@ var (
 		decisionRejectDoubled:        "",
 		decisionRejectBusy:           "",
 	}
+
+	// LocalizedDecisionComments - per-language decision comments.
+	// Key is language code ("ru", "en", etc.), value is map[int]string.
+	// "ru" is always populated from DecisionComments after SetSupportMessages().
+	// Other languages are populated from admin-panel JSON files.
+	LocalizedDecisionComments = map[string]map[int]string{}
 
 	// decisionCommentsTemplate - descriptive text on check decidion.
 	decisionCommentsTemplate = map[int]string{
@@ -462,4 +468,20 @@ func SetSupportMessages(url string) {
 	DecisionComments[decisionRejectTooOld] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectTooOld], link)
 	DecisionComments[decisionRejectWithCallback] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectWithCallback], link)
 	DecisionComments[decisionRejectDoubled] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectDoubled], link)
+
+	// Seed the localized map with Russian defaults.
+	LocalizedDecisionComments[langRU] = DecisionComments
+}
+
+// GetDecisionComment returns the decision comment for the given reason code
+// in the requested language, falling back to Russian if not available.
+func GetDecisionComment(reason int, lang string) (string, bool) {
+	if m, ok := LocalizedDecisionComments[lang]; ok {
+		if desc, ok := m[reason]; ok && desc != "" {
+			return desc, true
+		}
+	}
+	// Fall back to Russian (default).
+	desc, ok := DecisionComments[reason]
+	return desc, ok
 }

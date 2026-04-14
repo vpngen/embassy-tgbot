@@ -33,22 +33,26 @@ type MinistryOpts struct {
 
 // Config - config.
 type Config struct {
-	Token         string
-	Token2        string
-	UpdateTout    int
-	DebugLevel    int
-	BotDebug      bool
-	DBDir         string
-	DBKey         []byte
-	SupportURL    string
-	VIPBotURL     string
-	ckChatID      int64
-	Ministry      MinistryOpts
-	Maintenance   *Maintenance
-	LabelStorage  *LabelStorage
-	sessionSecret []byte
-	queueSecret   []byte
-	queue2Secret  []byte
+	Token              string
+	Token2             string
+	UpdateTout         int
+	DebugLevel         int
+	BotDebug           bool
+	DBDir              string
+	DBKey              []byte
+	SupportURL         string
+	VIPBotURL          string
+	BotAdminServiceUrl string
+	AdminAPIKey        string
+	FlowMainUrl        string
+	FlowDecisionsUrl   string
+	ckChatID           int64
+	Ministry           MinistryOpts
+	Maintenance        *Maintenance
+	LabelStorage       *LabelStorage
+	sessionSecret      []byte
+	queueSecret        []byte
+	queue2Secret       []byte
 }
 
 // configFromEnv - fill config from environment vars.
@@ -67,6 +71,10 @@ func configFromEnv() Config {
 	dbKey := os.Getenv("EMBASSY_BADGER_KEY")
 	supportURL := os.Getenv("SUPPORT_URL")
 	vipBotURL := os.Getenv("VIP_BOT_URL")
+	botAdminServiceUrl := os.Getenv("BOT_ADMIN_SERVICE_URL")
+	adminApiKey := os.Getenv("ADMIN_API_KEY")
+	flowMainUrlSuffix := os.Getenv("FLOW_MAIN_URL")
+	flowDecisionsUrlSuffix := os.Getenv("FLOW_DECISIONS_URL")
 	ckChat := os.Getenv("CHECK_BILL_CHAT")
 	ministryIP := os.Getenv("MINISTRY_IP")
 	ministryToken := os.Getenv("MINISTRY_TOKEN")
@@ -103,6 +111,21 @@ func configFromEnv() Config {
 		supportURL = DefaultSupportURLText
 	}
 
+	if botAdminServiceUrl == "" {
+		botAdminServiceUrl = "http://localhost:8080"
+	}
+
+	if flowMainUrlSuffix == "" {
+		flowMainUrlSuffix = "/api/flows/main"
+	}
+
+	if flowDecisionsUrlSuffix == "" {
+		flowDecisionsUrlSuffix = "/api/decisions"
+	}
+
+	flowMainUrl := botAdminServiceUrl + flowMainUrlSuffix
+	flowDecisionsUrl := botAdminServiceUrl + flowDecisionsUrlSuffix
+
 	tout, _ := strconv.Atoi(updateTout)
 	if tout <= 0 {
 		tout = DefaultUpdateTimeout
@@ -125,16 +148,20 @@ func configFromEnv() Config {
 	}
 
 	return Config{
-		Token:      token,
-		Token2:     token2,
-		UpdateTout: tout,
-		DebugLevel: dbg,
-		BotDebug:   debug,
-		DBDir:      dbDir,
-		DBKey:      genKeyFromEnv(dbKey, DefaultIterations, DefaultKeyLen),
-		SupportURL: supportURL,
-		VIPBotURL:  vipBotURL,
-		ckChatID:   ckChatID,
+		Token:              token,
+		Token2:             token2,
+		UpdateTout:         tout,
+		DebugLevel:         dbg,
+		BotDebug:           debug,
+		DBDir:              dbDir,
+		DBKey:              genKeyFromEnv(dbKey, DefaultIterations, DefaultKeyLen),
+		SupportURL:         supportURL,
+		VIPBotURL:          vipBotURL,
+		BotAdminServiceUrl: botAdminServiceUrl,
+		AdminAPIKey:        adminApiKey,
+		FlowMainUrl:        flowMainUrl,
+		FlowDecisionsUrl:   flowDecisionsUrl,
+		ckChatID:           ckChatID,
 		Ministry: MinistryOpts{
 			controlIP: ministryIP,
 			sshConfig: sshconf,

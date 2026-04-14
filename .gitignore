@@ -9,3 +9,5 @@
 *.sh
 db/
 keys/
+.env
+Dockerfile
