@@ -206,7 +206,7 @@ func getReceipt(txn *badger.Txn, id []byte) ([]byte, error) {
 }
 
 // ReceiptQueueLoop - recept queue loop.
-func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, sessionSecret []byte, queue2Secret []byte, mnt *Maintenance, flowMainUrl string) {
+func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan struct{}, bot, bot2 *tgbotapi.BotAPI, ckChatID int64, dept MinistryOpts, sessionSecret []byte, queue2Secret []byte, mnt *Maintenance, flowMainUrl string, flowDecisionsUrl string) {
 	defer waitGroup.Done()
 
 	wg := &sync.WaitGroup{}
@@ -242,7 +242,7 @@ func ReceiptQueueLoop(waitGroup *sync.WaitGroup, db *badger.DB, stop <-chan stru
 			timerNew.Reset(3 * time.Second)
 		case <-timerReviewed.C:
 			// now := time.Now()
-			ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt, flowMainUrl)
+			ok, err := catchReviewedReceipt(db, wg, sessionSecret, bot, dept, mnt, flowMainUrl, flowDecisionsUrl)
 			if err != nil {
 				logs.Errf("reviewed receipt: %s\n", err)
 			}
@@ -355,7 +355,7 @@ var (
 )
 
 // catch reviewed receipt
-func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, bot *tgbotapi.BotAPI, dept MinistryOpts, mnt *Maintenance, flowMainUrl string) (bool, error) {
+func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byte, bot *tgbotapi.BotAPI, dept MinistryOpts, mnt *Maintenance, flowMainUrl string, flowDecisionsUrl string) (bool, error) {
 	key, receipt, count, err := catchFirstReceipt(db, CkReceiptStageReceived)
 	if err != nil {
 		return false, fmt.Errorf("get next: %w", err)
@@ -441,7 +441,7 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 	case false:
 		desc, ok := GetDecisionComment(receipt.Reason, receipt.Lang)
 		if !ok || desc == "" {
-			desc = RejectMessage
+			desc = flowMessage(flowDecisionsUrl, "reject_doubled", RejectMessage, receipt.Lang)
 		}
 
 		// fmt.Fprintf(os.Stderr, "[receipt reject] %d %s %#v\n", receipt.Reason, desc, receipt)
