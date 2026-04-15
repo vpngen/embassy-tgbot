@@ -29,10 +29,16 @@ func main() {
 	SetSupportMessages(cfg.SupportURL) // i dont know howto do this more clearely
 	SetVIPBotURL(cfg.VIPBotURL)
 
-	// Override decision comments from admin-panel JSON for all languages.
+	// Load decision comments from admin-panel JSON for all languages.
 	for _, lang := range []string{langRU, langEN} {
 		if dc := flowDecisionComments(cfg.FlowDecisionsUrl, cfg.SupportURL, lang); dc != nil {
 			LocalizedDecisionComments[lang] = dc
+			if lang == langRU {
+				// Also use as the legacy DecisionComments fallback map.
+				for k, v := range dc {
+					DecisionComments[k] = v
+				}
+			}
 		}
 	}
 

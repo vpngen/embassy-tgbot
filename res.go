@@ -284,26 +284,8 @@ var (
 
 	// LocalizedDecisionComments - per-language decision comments.
 	// Key is language code ("ru", "en", etc.), value is map[int]string.
-	// "ru" is always populated from DecisionComments after SetSupportMessages().
-	// Other languages are populated from admin-panel JSON files.
+	// Populated from admin-panel decisions JSON files at startup.
 	LocalizedDecisionComments = map[string]map[int]string{}
-
-	// decisionCommentsTemplate - descriptive text on check decidion.
-	decisionCommentsTemplate = map[int]string{
-		decisionUnknown:              "Что-то пошло не так... " + extraSupportText,
-		decisionAcceptCats:           "Котики - это святое! \U0001f63b",
-		decisionRejectUnacceptable:   "Похоже, ты прислал(-а) что-то очень нехорошее. Тебя забанили в сервисе на веки \U0001f937 . " + extraSupportText,
-		decisionRejectUnreadable:     "Пожалуйста, пришли читаемый чек! " + extraSupportText,
-		decisionRejectBankCard:       "Похоже, ты оплатил(-а) картой. Пожалуйста принеси чек, оплаченный наличкой. " + extraSupportText,
-		decisionRejectElectronic:     "Пожалуйста, пришли сам чек, а не результат его расшифровки! " + extraSupportText,
-		decisionRejectIncomplete:     "Пожалуйста, пришли чек целиком! " + extraSupportText,
-		decisionRejectUnverifiable:   "Чек не бьется с налоговой, пришли пожалуйста другой чек! " + extraSupportText,
-		decisionRejectAmountMismatch: "Похоже что-то серьезно не так с суммой чека. Пришли пожалуйста другой! " + extraSupportText,
-		decisionRejectTooOld:         "Похоже чек устарел. Пришли пожалуйста тот, что не старше недели. " + extraSupportText,
-		decisionRejectWithCallback:   "Похоже что-то не так с чеком и нам нужно поговорить. Свяжись пожалуйста с [нами](%s).",
-		decisionRejectDoubled:        "Похоже такую картинку нам уже присылали. Пришли пожалуйста другую. " + extraSupportText,
-		decisionRejectBusy:           "Прости нас, очень много работы. Попробуй пожалуйста позже 🙏",
-	}
 )
 
 func SetVIPBotURL(url string) {
@@ -377,22 +359,6 @@ func SetSupportMessages(url string) {
 	MainTrackWarnConversationsFinished = fmt.Sprintf(mainTrackWarnConversationsFinished, link)
 	RepeatTrackWarnConversationsFinished = fmt.Sprintf(repeatTrackWarnConversationsFinished, link)
 	MainTrackAmneziaOvcConfigFormatFileCaption = fmt.Sprintf(mainTrackAmneziaOvcConfigFormatFileCaption, link)
-
-	DecisionComments[decisionUnknown] = fmt.Sprintf(decisionCommentsTemplate[decisionUnknown], link)
-	DecisionComments[decisionAcceptCats] = decisionCommentsTemplate[decisionAcceptCats]
-	DecisionComments[decisionRejectUnacceptable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnacceptable], link)
-	DecisionComments[decisionRejectUnreadable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnreadable], link)
-	DecisionComments[decisionRejectBankCard] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectBankCard], link)
-	DecisionComments[decisionRejectElectronic] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectElectronic], link)
-	DecisionComments[decisionRejectIncomplete] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectIncomplete], link)
-	DecisionComments[decisionRejectUnverifiable] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectUnverifiable], link)
-	DecisionComments[decisionRejectAmountMismatch] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectAmountMismatch], link)
-	DecisionComments[decisionRejectTooOld] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectTooOld], link)
-	DecisionComments[decisionRejectWithCallback] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectWithCallback], link)
-	DecisionComments[decisionRejectDoubled] = fmt.Sprintf(decisionCommentsTemplate[decisionRejectDoubled], link)
-
-	// Seed the localized map with Russian defaults.
-	LocalizedDecisionComments[langRU] = DecisionComments
 }
 
 // GetDecisionComment returns the decision comment for the given reason code
