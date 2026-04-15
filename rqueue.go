@@ -442,6 +442,7 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 		desc, ok := GetDecisionComment(receipt.Reason, receipt.Lang)
 		if !ok || desc == "" {
 			desc = flowMessage(flowDecisionsUrl, "reject_doubled", RejectMessage, receipt.Lang)
+			logs.Debugf("Unknown receipt rejection reason: %d, lang: %s\n, %s", receipt.Reason, receipt.Lang, desc)
 		}
 
 		// fmt.Fprintf(os.Stderr, "[receipt reject] %d %s %#v\n", receipt.Reason, desc, receipt)
