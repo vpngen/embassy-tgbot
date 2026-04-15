@@ -242,7 +242,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts)
 				return
 			}
 
-			if err := RemoveKeyboardMsg(opts.bot, update.Message.Chat.ID, session.OurMsgID, RestoreTrackNameMessage); err != nil {
+			if err := RemoveKeyboardMsg(opts.bot, update.Message.Chat.ID, session.OurMsgID, flowMessage(opts.flowMainUrl, "restore_name", RestoreTrackNameMessage, lang)); err != nil {
 				// we don't want to handle this
 				logs.Errf("[!:%s] remove keyboard: %s\n", ecode, err)
 			}
@@ -268,7 +268,7 @@ func messageHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts)
 				return
 			}
 
-			if err := RemoveKeyboardMsg(opts.bot, update.Message.Chat.ID, session.OurMsgID, RestoreTrackWordsMessage); err != nil {
+			if err := RemoveKeyboardMsg(opts.bot, update.Message.Chat.ID, session.OurMsgID, flowMessage(opts.flowMainUrl, "restore_words", RestoreTrackWordsMessage, lang)); err != nil {
 				// we don't want to handle this
 				logs.Errf("[!:%s] remove keyboard: %s\n", ecode, err)
 			}
@@ -404,13 +404,13 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) 
 		}
 
 		defer func() {
-			text := RestoreTrackWordsMessage
+			text := flowMessage(opts.flowMainUrl, "restore_words", RestoreTrackWordsMessage, lang)
 
 			switch update.CallbackQuery.Data {
 			case "again":
-				text = RestoreTrackBrigadeNotFoundMessage
+				text = flowMessage(opts.flowMainUrl, "restore_words_fail", RestoreTrackBrigadeNotFoundMessage, lang)
 			case "retrun":
-				text = RestoreTrackWordsMessage
+				text = flowMessage(opts.flowMainUrl, "restore_words", RestoreTrackWordsMessage, lang)
 			}
 			if err := RemoveKeyboardMsg(opts.bot, update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, text); err != nil {
 				// we don't want to handle this
@@ -903,7 +903,11 @@ func checkRestoreNameMessageMessage(opts handlerOpts, label SessionLabel, c *Ses
 	_, _, ok := strings.Cut(text, " ")
 	if !ok || !utf8.ValidString(text) {
 		msg := tgbotapi.NewMessage(Message.Chat.ID, flowMessage(opts.flowMainUrl, "restore_name_fail", RestoreTrackInvalidNameMessageVIP, lang))
-		msg.ReplyMarkup = RestoreNameKeyboard
+		if kb, ok := flowKeyboard(opts.flowMainUrl, "restore_name_fail", opts.supportURL, lang); ok {
+			msg.ReplyMarkup = *kb
+		} else {
+			msg.ReplyMarkup = RestoreNameKeyboard
+		}
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.DisableWebPagePreview = true
 		msg.ProtectContent = true
@@ -931,7 +935,11 @@ func checkRestoreNameMessageMessage(opts handlerOpts, label SessionLabel, c *Ses
 
 func sendWordsFailed(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64, prev int, text []byte, lang string) error {
 	msg := tgbotapi.NewMessage(chatID, flowMessage(opts.flowMainUrl, "restore_words_fail", RestoreTrackBrigadeNotFoundMessageVIP, lang))
-	msg.ReplyMarkup = RestoreWordsKeyboard2
+	if kb, ok := flowKeyboard(opts.flowMainUrl, "restore_words_fail", opts.supportURL, lang); ok {
+		msg.ReplyMarkup = *kb
+	} else {
+		msg.ReplyMarkup = RestoreWordsKeyboard2
+	}
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
 	msg.ProtectContent = true
