@@ -461,7 +461,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) 
 			return
 		}
 
-		if err := sendVIPMessage(opts, session.Label, &session.Captcha, update.CallbackQuery.Message.Chat.ID, requestID); err != nil {
+		if err := sendVIPMessage(opts, session.Label, &session.Captcha, update.CallbackQuery.Message.Chat.ID, requestID, lang); err != nil {
 			if IsForbiddenError(err) {
 				setSession(opts.db, opts.sessionSecret, session.Label, &session.Captcha, update.CallbackQuery.Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 
@@ -649,8 +649,8 @@ func sendWelcomeMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha,
 }
 
 // Send Welcome message.
-func sendVIPMessage2(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64) error {
-	msg := tgbotapi.NewMessage(chatID, MainTrackVIPWelcomeMessage)
+func sendVIPMessage2(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64, lang string) error {
+	msg := tgbotapi.NewMessage(chatID, flowMessage(opts.flowMainUrl, "vip_welcome", MainTrackVIPWelcomeMessage, lang))
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
 	msg.ProtectContent = true
@@ -669,13 +669,19 @@ func sendVIPMessage2(opts handlerOpts, label SessionLabel, c *SessionCaptcha, ch
 }
 
 // Send VIP message.
-func sendVIPMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64, requestID uuid.UUID) error {
-	msg := tgbotapi.NewMessage(chatID, VIPMessage)
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("Перейти в VIP-бот", VIPBotURL+"?start="+requestID.String()),
-			tgbotapi.NewInlineKeyboardButtonData("Передумал", "reset")),
-	)
+func sendVIPMessage(opts handlerOpts, label SessionLabel, c *SessionCaptcha, chatID int64, requestID uuid.UUID, lang string) error {
+	msg := tgbotapi.NewMessage(chatID, flowMessage(opts.flowMainUrl, "vip", VIPMessage, lang))
+
+	vipURL := VIPBotURL + "?start=" + requestID.String()
+	if kb, ok := flowKeyboard(opts.flowMainUrl, "vip", opts.supportURL, lang, map[string]string{"vip_bot_url": vipURL}); ok {
+		msg.ReplyMarkup = *kb
+	} else {
+		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("Перейти в VIP-бот", vipURL),
+				tgbotapi.NewInlineKeyboardButtonData("Передумал", "reset")),
+		)
+	}
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
 	msg.ProtectContent = true
@@ -1183,7 +1189,7 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 					return nil
 				}
 
-				if err := sendVIPMessage2(opts, session.Label, &session.Captcha, Message.Chat.ID); err != nil {
+				if err := sendVIPMessage2(opts, session.Label, &session.Captcha, Message.Chat.ID, lang); err != nil {
 					if IsForbiddenError(err) {
 						setSession(opts.db, opts.sessionSecret, session.Label, &session.Captcha, Message.Chat.ID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 

@@ -178,7 +178,7 @@ func ministryMessage(flowURL, key, fallback, lang string) string {
 	return fallback
 }
 
-func flowKeyboard(flowURL, stageID, supportURL, lang string) (*tgbotapi.InlineKeyboardMarkup, bool) {
+func flowKeyboard(flowURL, stageID, supportURL, lang string, extraVars ...map[string]string) (*tgbotapi.InlineKeyboardMarkup, bool) {
 	flow, err := fetchFlowRuntime(flowURL, lang)
 	if err != nil {
 		return nil, false
@@ -195,11 +195,22 @@ func flowKeyboard(flowURL, stageID, supportURL, lang string) (*tgbotapi.InlineKe
 		return nil, false
 	}
 
+	// applyVars replaces {{support_url}} and any extra vars in s.
+	applyVars := func(s string) string {
+		s = strings.ReplaceAll(s, "{{support_url}}", supportURL)
+		for _, vars := range extraVars {
+			for k, v := range vars {
+				s = strings.ReplaceAll(s, "{{"+k+"}}", v)
+			}
+		}
+		return s
+	}
+
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0, len(stage.Buttons))
 	for _, b := range stage.Buttons {
 		switch b.Action {
 		case "url":
-			url := strings.ReplaceAll(b.Target, "{{support_url}}", supportURL)
+			url := applyVars(b.Target)
 			rows = append(rows, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonURL(b.Label, url)))
 		case "goto", "call":
 			cb, ok := flowTargetToCallback(b.Action, b.Target)
