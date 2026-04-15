@@ -23,6 +23,12 @@ var httpClient = &http.Client{Timeout: 5 * time.Second}
 // adminAPIKey is set at startup from config; sent as X-API-Key header to admin-panel.
 var adminAPIKey string
 
+// supportURLGlobal is set at startup; used for {{support_url}} replacement in flow messages.
+var supportURLGlobal string
+
+// flowMainURLGlobal is set at startup; used by stWrong and other helpers that lack opts.
+var flowMainURLGlobal string
+
 // userLang returns "en" only for English users, "ru" for everyone else.
 func userLang(tgLangCode string) string {
 	if strings.HasPrefix(strings.ToLower(tgLangCode), "en") {
@@ -112,7 +118,7 @@ func flowMessage(flowURL, stageID, fallback, lang string) string {
 
 	for _, s := range flow.Stages {
 		if s.ID == stageID && s.Message != "" {
-			return s.Message
+			return strings.ReplaceAll(s.Message, "{{support_url}}", supportURLGlobal)
 		}
 	}
 

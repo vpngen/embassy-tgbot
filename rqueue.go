@@ -415,7 +415,7 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 		if err := GetBrigadier(bot, wg, session.Label, receipt.ChatID, ecode, dept, mnt, receipt.Lang, flowMainUrl); err != nil {
 			setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
 
-			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, MainTrackFailMessage, ecode); err != nil {
+			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, flowMessage(flowMainUrl, "fail_message", MainTrackFailMessage, receipt.Lang), ecode); err != nil {
 				if IsForbiddenError(err) {
 					setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
 

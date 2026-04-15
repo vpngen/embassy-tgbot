@@ -17,6 +17,8 @@ func messageHandler2(opts handlerOpts, update tgbotapi.Update) {
 
 	ecode := genEcode() // unique e-code
 
+	lang := userLang(update.Message.From.LanguageCode)
+
 	// delete our previous message.
 	defer func() {
 		if err := RemoveMsg(opts.bot, update.Message.Chat.ID, update.Message.MessageID); err != nil {
@@ -27,7 +29,7 @@ func messageHandler2(opts handlerOpts, update tgbotapi.Update) {
 
 	if update.Message.ForwardFrom != nil ||
 		update.Message.ForwardFromChat != nil {
-		SendProtectedMessage(opts.bot, update.Message.Chat.ID, 0, false, InfoForbidForwardsMessage, ecode)
+		SendProtectedMessage(opts.bot, update.Message.Chat.ID, 0, false, flowMessage(opts.flowMainUrl, "forbid_forwards", InfoForbidForwardsMessage, lang), ecode)
 
 		return
 	}

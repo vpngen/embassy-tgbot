@@ -23,6 +23,8 @@ func main() {
 	cfg := configFromEnv()
 
 	adminAPIKey = cfg.AdminAPIKey // set package-level key for admin-panel requests
+	supportURLGlobal = cfg.SupportURL
+	flowMainURLGlobal = cfg.FlowMainUrl
 
 	SetSupportMessages(cfg.SupportURL) // i dont know howto do this more clearely
 	SetVIPBotURL(cfg.VIPBotURL)
