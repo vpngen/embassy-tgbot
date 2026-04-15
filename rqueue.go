@@ -441,7 +441,17 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 	case false:
 		desc, ok := GetDecisionComment(receipt.Reason, receipt.Lang)
 		if !ok || desc == "" {
-			desc = flowMessage(flowDecisionsUrl, "reject_doubled", RejectMessage, receipt.Lang)
+			// Decision comments may not have been loaded at startup (admin-panel not ready).
+			// Try to re-fetch them dynamically.
+			if dc := flowDecisionComments(flowDecisionsUrl, supportURLGlobal, receipt.Lang); dc != nil {
+				LocalizedDecisionComments[receipt.Lang] = dc
+				if d, ok2 := dc[receipt.Reason]; ok2 && d != "" {
+					desc = d
+				}
+			}
+		}
+		if desc == "" {
+			desc = flowMessage(flowMainUrl, "reject_fallback", RejectMessage, receipt.Lang)
 			logs.Debugf("Unknown receipt rejection reason: %d, lang: %s\n, %s", receipt.Reason, receipt.Lang, desc)
 		}
 

@@ -33,12 +33,15 @@ func main() {
 	for _, lang := range []string{langRU, langEN} {
 		if dc := flowDecisionComments(cfg.FlowDecisionsUrl, cfg.SupportURL, lang); dc != nil {
 			LocalizedDecisionComments[lang] = dc
+			fmt.Fprintf(os.Stderr, "[startup] Loaded %d decision comments for lang=%s\n", len(dc), lang)
 			if lang == langRU {
 				// Also use as the legacy DecisionComments fallback map.
 				for k, v := range dc {
 					DecisionComments[k] = v
 				}
 			}
+		} else {
+			fmt.Fprintf(os.Stderr, "[startup] WARNING: failed to load decision comments for lang=%s\n", lang)
 		}
 	}
 
