@@ -52,6 +52,8 @@ type handlerOpts struct {
 	supportURL       string
 	flowMainUrl      string
 	flowDecisionsUrl string
+	flowVipUrl       string
+	ministryAPIURL   string
 
 	sessionSecret []byte
 	queueSecret   []byte

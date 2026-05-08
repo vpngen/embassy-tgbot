@@ -46,6 +46,8 @@ type Config struct {
 	AdminAPIKey        string
 	FlowMainUrl        string
 	FlowDecisionsUrl   string
+	FlowVipUrl         string
+	MinistryAPIURL     string
 	ckChatID           int64
 	Ministry           MinistryOpts
 	Maintenance        *Maintenance
@@ -75,6 +77,8 @@ func configFromEnv() Config {
 	adminApiKey := os.Getenv("ADMIN_API_KEY")
 	flowMainUrlSuffix := os.Getenv("FLOW_MAIN_URL")
 	flowDecisionsUrlSuffix := os.Getenv("FLOW_DECISIONS_URL")
+	flowVipUrlSuffix := os.Getenv("FLOW_VIP_URL")
+	ministryAPIURL := os.Getenv("MINISTRY_API_URL")
 	ckChat := os.Getenv("CHECK_BILL_CHAT")
 	ministryIP := os.Getenv("MINISTRY_IP")
 	ministryToken := os.Getenv("MINISTRY_TOKEN")
@@ -91,6 +95,10 @@ func configFromEnv() Config {
 
 	if queueSecret == "" {
 		log.Fatal("NO QUEUE SECRET")
+	}
+
+	if ministryAPIURL == "" {
+		log.Fatal("NO MINISTRY_API_URL")
 	}
 
 	if dbKey == "" {
@@ -123,8 +131,13 @@ func configFromEnv() Config {
 		flowDecisionsUrlSuffix = "/api/decisions"
 	}
 
+	if flowVipUrlSuffix == "" {
+		flowVipUrlSuffix = "/api/flows/vip"
+	}
+
 	flowMainUrl := botAdminServiceUrl + flowMainUrlSuffix
 	flowDecisionsUrl := botAdminServiceUrl + flowDecisionsUrlSuffix
+	flowVipUrl := botAdminServiceUrl + flowVipUrlSuffix
 
 	tout, _ := strconv.Atoi(updateTout)
 	if tout <= 0 {
@@ -161,6 +174,8 @@ func configFromEnv() Config {
 		AdminAPIKey:        adminApiKey,
 		FlowMainUrl:        flowMainUrl,
 		FlowDecisionsUrl:   flowDecisionsUrl,
+		FlowVipUrl:         flowVipUrl,
+		MinistryAPIURL:     ministryAPIURL,
 		ckChatID:           ckChatID,
 		Ministry: MinistryOpts{
 			controlIP: ministryIP,
