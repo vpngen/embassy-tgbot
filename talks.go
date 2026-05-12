@@ -1221,8 +1221,11 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 				return nil
 			}
 		}
+		if err := sendWelcomeMessage(opts, session.Label, &session.Captcha, Message.Chat.ID, lang); err != nil {
+			return fmt.Errorf("welcome msg: %w", err)
+		}
 
-		fallthrough
+		return nil
 	case "restore":
 		logs.Debugf("[d:%s] command: restore\n", ecode)
 
