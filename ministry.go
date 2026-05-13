@@ -410,6 +410,9 @@ func callMinistry(dept MinistryOpts, label SessionLabel, mnt *Maintenance) (*min
 	}
 
 	cmd += fmt.Sprintf(" -l %s -lt %d -lu %s", label.Label, label.Time.Unix(), label.ID.String())
+	if os.Getenv("MOCK") == "true" {
+		cmd += " -mock"
+	}
 
 	cmd += fmt.Sprintf(" %s", dept.token)
 
@@ -544,6 +547,9 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 	base64words := base64.StdEncoding.EncodeToString([]byte(words))
 
 	cmd := fmt.Sprintf("restorebrigadier -ch -j %s %s", base64name, base64words)
+	if os.Getenv("MOCK") == "true" {
+		cmd += " -mock"
+	}
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
 
