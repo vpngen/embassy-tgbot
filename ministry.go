@@ -464,11 +464,13 @@ func callMinistry(dept MinistryOpts, label SessionLabel, mnt *Maintenance) (*min
 		return nil, fmt.Errorf("json unmarshal: %w", err)
 	}
 
-	if wgconf.Configs.WireguardConfig == nil ||
-		wgconf.Configs.WireguardConfig.FileContent == nil ||
-		wgconf.Configs.WireguardConfig.FileName == nil ||
-		wgconf.Configs.WireguardConfig.TonnelName == nil {
-		return nil, fmt.Errorf("wgconf read: %w", err)
+	if os.Getenv("MOCK") != "true" {
+		if wgconf.Configs.WireguardConfig == nil ||
+			wgconf.Configs.WireguardConfig.FileContent == nil ||
+			wgconf.Configs.WireguardConfig.FileName == nil ||
+			wgconf.Configs.WireguardConfig.TonnelName == nil {
+			return nil, fmt.Errorf("wgconf read: incomplete wireguard config")
+		}
 	}
 
 	/*fullname, err := r.ReadString('\n')
@@ -607,11 +609,13 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 		return nil, fmt.Errorf("%w:%s", ErrRestoreTooEarly, lastRestore)
 	}
 
-	if wgconf.Configs.WireguardConfig == nil ||
-		wgconf.Configs.WireguardConfig.FileContent == nil ||
-		wgconf.Configs.WireguardConfig.FileName == nil ||
-		wgconf.Configs.WireguardConfig.TonnelName == nil {
-		return nil, fmt.Errorf("wgconf read: %w", err)
+	if os.Getenv("MOCK") != "true" {
+		if wgconf.Configs.WireguardConfig == nil ||
+			wgconf.Configs.WireguardConfig.FileContent == nil ||
+			wgconf.Configs.WireguardConfig.FileName == nil ||
+			wgconf.Configs.WireguardConfig.TonnelName == nil {
+			return nil, fmt.Errorf("wgconf read: incomplete wireguard config")
+		}
 	}
 
 	if wgconf.Code != 201 {
