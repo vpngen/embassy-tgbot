@@ -84,7 +84,7 @@ func sendBuyVIPMessage(ctx *StepContext) error {
 		return nil
 	}
 
-	if err := reserveVIPWithMinistry(ctx.Opts.ministryAPIURL, ctx.Dept.token, brigadeUUID, ctx.ChatID); err != nil {
+	if err := reserveVIPWithMinistry(ctx.Dept, brigadeUUID, ctx.ChatID); err != nil {
 		return fmt.Errorf("ministry reserve: %w", err)
 	}
 

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"net/http/httputil"
 	"os"
 	"strconv"
@@ -18,55 +17,75 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// https://t.me/vipgenbot?start=
-
-type ministryReserveRequest struct {
-	BrigadeID    uuid.UUID `json:"brigade_id"`
-	UserIdentity string    `json:"user_identity"`
-}
-
-type ministryReserveResponse struct {
+type reserveVIPResponse struct {
 	OK bool `json:"ok"`
 }
 
-// reserveVIPWithMinistry links the brigade UUID to the Telegram user via the ministry-api /reserve endpoint.
-func reserveVIPWithMinistry(apiURL, token string, brigadeUUID uuid.UUID, chatID int64) error {
+// reserveVIPWithMinistry links the brigade UUID to the Telegram user via the
+// ministry reservebrigade SSH command.
+func reserveVIPWithMinistry(opts MinistryOpts, brigadeUUID uuid.UUID, chatID int64) error {
 	if brigadeUUID == uuid.Nil {
-		return nil // fake/test mode
+		return nil
 	}
 
-	body, err := json.Marshal(ministryReserveRequest{
-		BrigadeID:    brigadeUUID,
-		UserIdentity: strconv.FormatInt(chatID, 10),
-	})
+	userIdentity := strconv.FormatInt(chatID, 10)
+	cmd := fmt.Sprintf("reservebrigade -ch -j %s %s %s", opts.token, brigadeUUID.String(), userIdentity)
+
+	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, opts.controlIP, cmd)
+
+	if opts.fake {
+		logs.Debugf("fake reserve vip\n")
+		return nil
+	}
+
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", opts.controlIP), opts.sshConfig)
 	if err != nil {
-		return fmt.Errorf("marshal: %w", err)
+		return fmt.Errorf("ssh dial: %w", err)
 	}
+	defer client.Close()
 
-	req, err := http.NewRequest(http.MethodPost, apiURL+"/reserve", bytes.NewReader(body))
+	session, err := client.NewSession()
 	if err != nil {
-		return fmt.Errorf("request: %w", err)
+		return fmt.Errorf("ssh session: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	defer session.Close()
 
-	resp, err := httpClient.Do(req)
+	var b, e bytes.Buffer
+
+	session.Stdout = &b
+	session.Stderr = &e
+
+	const logTag = "tgembass-reservevip"
+	defer func() {
+		switch errstr := e.String(); errstr {
+		case "":
+			fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr: empty\n", logTag)
+		default:
+			fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr:\n", logTag)
+			for _, line := range strings.Split(errstr, "\n") {
+				fmt.Fprintf(os.Stderr, "%s: | %s\n", logTag, line)
+			}
+		}
+	}()
+
+	if err := session.Run(cmd); err != nil {
+		return fmt.Errorf("run: %w", err)
+	}
+
+	r := bufio.NewReader(httputil.NewChunkedReader(&b))
+
+	payload, err := io.ReadAll(r)
 	if err != nil {
-		return fmt.Errorf("post: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ministry api status %d", resp.StatusCode)
+		return fmt.Errorf("chunk read: %w", err)
 	}
 
-	var res ministryReserveResponse
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return fmt.Errorf("decode response: %w", err)
+	var res reserveVIPResponse
+	if err := json.Unmarshal(payload, &res); err != nil {
+		return fmt.Errorf("json unmarshal: %w", err)
 	}
 
 	if !res.OK {
-		return fmt.Errorf("ministry api: reserve not ok")
+		return fmt.Errorf("reserve: not ok")
 	}
 
 	return nil

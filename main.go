@@ -91,7 +91,7 @@ func main() {
 	// run the bot
 	waitGroup.Add(1)
 
-	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Ministry, cfg.Maintenance, cfg.LabelStorage, cfg.SupportURL, cfg.FlowMainUrl, cfg.FlowDecisionsUrl, cfg.FlowVipUrl, cfg.MinistryAPIURL, cfg.sessionSecret, cfg.queueSecret, cfg.BetaChatIDs)
+	go runBot(waitGroup, stop, dbase, bot, cfg.UpdateTout, cfg.DebugLevel, cfg.Ministry, cfg.Maintenance, cfg.LabelStorage, cfg.SupportURL, cfg.FlowMainUrl, cfg.FlowDecisionsUrl, cfg.FlowVipUrl, cfg.sessionSecret, cfg.queueSecret, cfg.BetaChatIDs)
 
 	// run the bot2
 	waitGroup.Add(1)

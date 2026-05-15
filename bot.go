@@ -37,7 +37,6 @@ func runBot(
 	flowMainUrl string,
 	flowDecisionsUrl string,
 	flowVipUrl string,
-	ministryAPIURL string,
 	sessionSecret []byte,
 	queueSecret []byte,
 	betaChatIDs map[int64]bool,
@@ -55,8 +54,7 @@ func runBot(
 		supportURL:       supportURL,
 		flowMainUrl:      flowMainUrl,
 		flowDecisionsUrl: flowDecisionsUrl,
-		flowVipUrl:       flowVipUrl,
-		ministryAPIURL:   ministryAPIURL,
+		flowVipUrl:    flowVipUrl,
 
 		sessionSecret: sessionSecret,
 		queueSecret:   queueSecret,

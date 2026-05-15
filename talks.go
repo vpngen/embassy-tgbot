@@ -53,7 +53,6 @@ type handlerOpts struct {
 	flowMainUrl      string
 	flowDecisionsUrl string
 	flowVipUrl       string
-	ministryAPIURL   string
 
 	sessionSecret []byte
 	queueSecret   []byte
