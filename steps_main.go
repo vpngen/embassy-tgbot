@@ -306,8 +306,8 @@ func stepVIPCallback(ctx *StepContext) error {
 	}
 
 	vipURL := VIPBotURL + "?start=" + requestID.String()
-	text := ctx.FlowMessage("vip", VIPMessage)
-	kb := ctx.FlowKeyboard("vip", nil, map[string]string{"vip_bot_url": vipURL})
+	text := ctx.FlowVipMessage("vip_redirect", VIPMessage)
+	kb := ctx.FlowVipKeyboard("vip_redirect", nil, map[string]string{"vip_bot_url": vipURL})
 
 	// Fallback keyboard if flow doesn't have one.
 	if len(kb.InlineKeyboard) == 0 {
