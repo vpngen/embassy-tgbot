@@ -548,7 +548,7 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 	base64name := base64.StdEncoding.EncodeToString([]byte(name))
 	base64words := base64.StdEncoding.EncodeToString([]byte(words))
 
-	cmd := "restorebrigade -ch -j"
+	cmd := "restorebrigadier -ch -j"
 	if os.Getenv("MOCK") == "true" {
 		cmd += " -mock"
 	}
