@@ -55,6 +55,7 @@ type Config struct {
 	sessionSecret      []byte
 	queueSecret        []byte
 	queue2Secret       []byte
+	BetaChatIDs        map[int64]bool
 }
 
 // configFromEnv - fill config from environment vars.
@@ -88,6 +89,7 @@ func configFromEnv() Config {
 
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	queueSecret := os.Getenv("QUEUE_SECRET")
+	betaChatIDsRaw := os.Getenv("BETA_CHAT_IDS")
 
 	if sessionSecret == "" {
 		log.Fatal("NO SESSION SECRET")
@@ -155,6 +157,16 @@ func configFromEnv() Config {
 
 	ckChatID, _ := strconv.ParseInt(ckChat, 10, 64)
 
+	var betaChatIDs map[int64]bool
+	if betaChatIDsRaw != "" {
+		betaChatIDs = make(map[int64]bool)
+		for _, part := range strings.Split(betaChatIDsRaw, ",") {
+			if id, err := strconv.ParseInt(strings.TrimSpace(part), 10, 64); err == nil {
+				betaChatIDs[id] = true
+			}
+		}
+	}
+
 	ls, err = NewLabelStorage(labelFilename)
 	if err != nil {
 		log.Panic(err)
@@ -189,6 +201,7 @@ func configFromEnv() Config {
 
 		sessionSecret: genKeyFromEnv(sessionSecret, DefaultIterations, DefaultKeyLen),
 		queueSecret:   genKeyFromEnv(queueSecret, DefaultIterations, DefaultKeyLen),
+		BetaChatIDs:   betaChatIDs,
 	}
 }
 

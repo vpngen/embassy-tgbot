@@ -40,6 +40,7 @@ func runBot(
 	ministryAPIURL string,
 	sessionSecret []byte,
 	queueSecret []byte,
+	betaChatIDs map[int64]bool,
 ) {
 	defer waitGroup.Done()
 
@@ -59,6 +60,7 @@ func runBot(
 
 		sessionSecret: sessionSecret,
 		queueSecret:   queueSecret,
+		betaChatIDs:   betaChatIDs,
 	}
 
 	u := tgbotapi.NewUpdate(0)

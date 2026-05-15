@@ -548,10 +548,12 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 	base64name := base64.StdEncoding.EncodeToString([]byte(name))
 	base64words := base64.StdEncoding.EncodeToString([]byte(words))
 
-	cmd := fmt.Sprintf("restorebrigadier -ch -j %s %s", base64name, base64words)
+	cmd := "restorebrigade -ch -j"
 	if os.Getenv("MOCK") == "true" {
 		cmd += " -mock"
 	}
+
+	cmd += fmt.Sprintf(" %s %s", base64name, base64words)
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
 

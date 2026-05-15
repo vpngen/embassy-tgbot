@@ -113,6 +113,9 @@ func stepWelcomeOnCallback(ctx *StepContext, data string) error {
 		return stepVIPCallback(ctx)
 
 	case "vip_get_urls":
+		if ctx.Opts.betaChatIDs != nil && !ctx.Opts.betaChatIDs[ctx.ChatID] {
+			return stepVIPCallback(ctx)
+		}
 		return sendBuyVIPMessage(ctx)
 
 	case "restore":

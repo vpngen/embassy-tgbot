@@ -57,6 +57,7 @@ type handlerOpts struct {
 
 	sessionSecret []byte
 	queueSecret   []byte
+	betaChatIDs   map[int64]bool
 }
 
 var onlyBase64Symbols = regexp.MustCompile(`[^A-Za-z0-9\-_]`)
