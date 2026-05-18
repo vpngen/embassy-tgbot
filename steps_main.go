@@ -57,6 +57,12 @@ func init() {
 		OnMessage:       stepCleanupOnMessage,
 		OnCallback:      stepCleanupOnCallback,
 	})
+
+	RegisterStep(&Step{
+		ID:      "question_item",
+		Input:   InputNone,
+		OnEnter: stepQuestionItemEnter,
+	})
 }
 
 // --- main_start ---
@@ -141,6 +147,21 @@ func stepWelcomeOnCallback(ctx *StepContext, data string) error {
 		logs.Debugf("[!:%s] unknown callback %q in welcome step\n", ctx.Ecode, data)
 		return nil
 	}
+}
+
+// stepQuestionItemEnter renders whichever flow stage is stored in the session payload.
+func stepQuestionItemEnter(ctx *StepContext) error {
+	stageID := string(ctx.Session.Payload)
+	if stageID == "" {
+		stageID = "questions"
+	}
+	text := ctx.FlowMessage(stageID, "")
+	kb := ctx.FlowKeyboard(stageID, nil)
+	newMsg, err := ctx.Send(text, &kb)
+	if err != nil {
+		return err
+	}
+	return ctx.SaveSession(newMsg, stageQuestionsTrack, SessionStatePayloadSomething, ctx.Session.Payload)
 }
 
 func stepQuizEnter(ctx *StepContext) error {

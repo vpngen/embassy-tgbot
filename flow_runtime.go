@@ -247,6 +247,9 @@ func flowTargetToCallback(action, target string) (string, bool) {
 		case "welcome":
 			return "reset", true
 		default:
+			if target != "" {
+				return "q:" + target, true
+			}
 			return "", false
 		}
 	case "call":

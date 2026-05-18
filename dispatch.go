@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -86,6 +87,7 @@ var LegacyStageToStepID = map[int]StepID{
 	stageRestoreTrackSendName:        "restore_name",
 	stageRestoreTrackSendWords:       "restore_words",
 	stageRestoreTrackCleanup:         "restore_cleanup",
+	stageQuestionsTrack: "question_item",
 }
 
 // StepIDToLegacyStage is the reverse mapping (new step → old int stage).
@@ -392,6 +394,19 @@ func DispatchCallback(opts handlerOpts, update tgbotapi.Update, dept MinistryOpt
 			ctx.Wrong(fmt.Errorf("reset: %w", err))
 		}
 		return
+	default:
+		if target, ok := strings.CutPrefix(cbData, "q:"); ok {
+			if err := ctx.Transition("question_item", SessionStatePayloadSomething, []byte(target)); err != nil {
+				if IsForbiddenError(err) {
+					ctx.Ban()
+				} else {
+					ctx.Wrong(fmt.Errorf("question nav: %w", err))
+				}
+				return
+			}
+			ctx.RemoveMessage(cbMsgID)
+			return
+		}
 	}
 
 	// Resolve current step.
