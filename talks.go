@@ -35,6 +35,7 @@ const (
 	stageRestoreTrackSendName  // user send brigadier name
 	stageRestoreTrackSendWords // user send seed words
 	stageRestoreTrackCleanup   // user received config
+	stageQuestionsTrack        // any question page (stage ID stored in payload)
 )
 
 // SlowAnswerTimeout - timeout befor each our answer.
@@ -52,9 +53,11 @@ type handlerOpts struct {
 	supportURL       string
 	flowMainUrl      string
 	flowDecisionsUrl string
+	flowVipUrl       string
 
 	sessionSecret []byte
 	queueSecret   []byte
+	betaChatIDs   map[int64]bool
 }
 
 var onlyBase64Symbols = regexp.MustCompile(`[^A-Za-z0-9\-_]`)

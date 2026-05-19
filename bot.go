@@ -36,8 +36,10 @@ func runBot(
 	supportURL string,
 	flowMainUrl string,
 	flowDecisionsUrl string,
+	flowVipUrl string,
 	sessionSecret []byte,
 	queueSecret []byte,
+	betaChatIDs map[int64]bool,
 ) {
 	defer waitGroup.Done()
 
@@ -52,9 +54,11 @@ func runBot(
 		supportURL:       supportURL,
 		flowMainUrl:      flowMainUrl,
 		flowDecisionsUrl: flowDecisionsUrl,
+		flowVipUrl:    flowVipUrl,
 
 		sessionSecret: sessionSecret,
 		queueSecret:   queueSecret,
+		betaChatIDs:   betaChatIDs,
 	}
 
 	u := tgbotapi.NewUpdate(0)
@@ -79,7 +83,7 @@ func runBot(
 
 					waitGroup.Add(1)
 
-					go reactionHandler(opts, update)
+					go DispatchReaction(opts, update)
 
 					break
 				}
@@ -89,7 +93,7 @@ func runBot(
 
 					waitGroup.Add(1)
 
-					go messageHandler(opts, update, ministry)
+					go DispatchMessage(opts, update, ministry)
 
 					break
 				}
@@ -110,7 +114,7 @@ func runBot(
 
 				waitGroup.Add(1)
 
-				go buttonHandler(opts, update, ministry)
+				go DispatchCallback(opts, update, ministry)
 			}
 		case <-stop:
 			logs.Infoln("[-] Run: Stop signal was received")

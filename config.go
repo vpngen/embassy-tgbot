@@ -46,6 +46,7 @@ type Config struct {
 	AdminAPIKey        string
 	FlowMainUrl        string
 	FlowDecisionsUrl   string
+	FlowVipUrl         string
 	ckChatID           int64
 	Ministry           MinistryOpts
 	Maintenance        *Maintenance
@@ -53,6 +54,7 @@ type Config struct {
 	sessionSecret      []byte
 	queueSecret        []byte
 	queue2Secret       []byte
+	BetaChatIDs        map[int64]bool
 }
 
 // configFromEnv - fill config from environment vars.
@@ -75,6 +77,7 @@ func configFromEnv() Config {
 	adminApiKey := os.Getenv("ADMIN_API_KEY")
 	flowMainUrlSuffix := os.Getenv("FLOW_MAIN_URL")
 	flowDecisionsUrlSuffix := os.Getenv("FLOW_DECISIONS_URL")
+	flowVipUrlSuffix := os.Getenv("FLOW_VIP_URL")
 	ckChat := os.Getenv("CHECK_BILL_CHAT")
 	ministryIP := os.Getenv("MINISTRY_IP")
 	ministryToken := os.Getenv("MINISTRY_TOKEN")
@@ -84,6 +87,7 @@ func configFromEnv() Config {
 
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	queueSecret := os.Getenv("QUEUE_SECRET")
+	betaChatIDsRaw := os.Getenv("BETA_CHAT_IDS")
 
 	if sessionSecret == "" {
 		log.Fatal("NO SESSION SECRET")
@@ -123,8 +127,13 @@ func configFromEnv() Config {
 		flowDecisionsUrlSuffix = "/api/decisions"
 	}
 
+	if flowVipUrlSuffix == "" {
+		flowVipUrlSuffix = "/api/flows/vip"
+	}
+
 	flowMainUrl := botAdminServiceUrl + flowMainUrlSuffix
 	flowDecisionsUrl := botAdminServiceUrl + flowDecisionsUrlSuffix
+	flowVipUrl := botAdminServiceUrl + flowVipUrlSuffix
 
 	tout, _ := strconv.Atoi(updateTout)
 	if tout <= 0 {
@@ -141,6 +150,16 @@ func configFromEnv() Config {
 	}
 
 	ckChatID, _ := strconv.ParseInt(ckChat, 10, 64)
+
+	var betaChatIDs map[int64]bool
+	if betaChatIDsRaw != "" {
+		betaChatIDs = make(map[int64]bool)
+		for _, part := range strings.Split(betaChatIDsRaw, ",") {
+			if id, err := strconv.ParseInt(strings.TrimSpace(part), 10, 64); err == nil {
+				betaChatIDs[id] = true
+			}
+		}
+	}
 
 	ls, err = NewLabelStorage(labelFilename)
 	if err != nil {
@@ -161,6 +180,7 @@ func configFromEnv() Config {
 		AdminAPIKey:        adminApiKey,
 		FlowMainUrl:        flowMainUrl,
 		FlowDecisionsUrl:   flowDecisionsUrl,
+		FlowVipUrl:         flowVipUrl,
 		ckChatID:           ckChatID,
 		Ministry: MinistryOpts{
 			controlIP: ministryIP,
@@ -174,6 +194,7 @@ func configFromEnv() Config {
 
 		sessionSecret: genKeyFromEnv(sessionSecret, DefaultIterations, DefaultKeyLen),
 		queueSecret:   genKeyFromEnv(queueSecret, DefaultIterations, DefaultKeyLen),
+		BetaChatIDs:   betaChatIDs,
 	}
 }
 
