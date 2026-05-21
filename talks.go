@@ -35,7 +35,7 @@ const (
 	stageRestoreTrackSendName  // user send brigadier name
 	stageRestoreTrackSendWords // user send seed words
 	stageRestoreTrackCleanup   // user received config
-	stageQuestionsTrack        // any question page (stage ID stored in payload)
+	stageFAQTrack              // any FAQ page (stage ID stored in payload)
 )
 
 // SlowAnswerTimeout - timeout befor each our answer.

@@ -59,9 +59,9 @@ func init() {
 	})
 
 	RegisterStep(&Step{
-		ID:      "question_item",
+		ID:      "faq_item",
 		Input:   InputNone,
-		OnEnter: stepQuestionItemEnter,
+		OnEnter: stepFAQItemEnter,
 	})
 }
 
@@ -149,11 +149,11 @@ func stepWelcomeOnCallback(ctx *StepContext, data string) error {
 	}
 }
 
-// stepQuestionItemEnter renders whichever flow stage is stored in the session payload.
-func stepQuestionItemEnter(ctx *StepContext) error {
+// stepFAQItemEnter renders whichever flow stage is stored in the session payload.
+func stepFAQItemEnter(ctx *StepContext) error {
 	stageID := string(ctx.Session.Payload)
 	if stageID == "" {
-		stageID = "questions"
+		stageID = "FAQ"
 	}
 	text := ctx.FlowMessage(stageID, "")
 	kb := ctx.FlowKeyboard(stageID, nil)
@@ -161,7 +161,7 @@ func stepQuestionItemEnter(ctx *StepContext) error {
 	if err != nil {
 		return err
 	}
-	return ctx.SaveSession(newMsg, stageQuestionsTrack, SessionStatePayloadSomething, ctx.Session.Payload)
+	return ctx.SaveSession(newMsg, stageFAQTrack, SessionStatePayloadSomething, ctx.Session.Payload)
 }
 
 func stepQuizEnter(ctx *StepContext) error {
