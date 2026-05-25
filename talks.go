@@ -462,7 +462,7 @@ func buttonHandler(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) 
 			session.Label.Label = sessionLabel
 		}
 
-		requestID, err := reqBrigade(dept, update.CallbackQuery.Message.Chat.ID, session.Label, "")
+		requestID, err := reqBrigade(dept, update.CallbackQuery.Message.Chat.ID, session.Label, "", lang)
 		if err != nil || requestID == uuid.Nil {
 			stWrong(opts.bot, update.CallbackQuery.Message.Chat.ID, ecode, fmt.Errorf("request brigade failed"), lang)
 
@@ -1203,7 +1203,7 @@ func handleCommands(opts handlerOpts, Message *tgbotapi.Message, session *Sessio
 		logs.Debugf("[d:%s] start args: %q\n, %d", ecode, s, len(s))
 		if len(s) == 36 {
 			if _, err := uuid.Parse(s); err == nil {
-				requestID, err := reqBrigade(dept, Message.Chat.ID, session.Label, s)
+				requestID, err := reqBrigade(dept, Message.Chat.ID, session.Label, s, lang)
 				if err != nil || requestID == uuid.Nil {
 					stWrong(opts.bot, Message.Chat.ID, ecode, fmt.Errorf("request custom brigade failed"), lang)
 

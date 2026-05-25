@@ -91,7 +91,7 @@ func reserveVIPWithMinistry(opts MinistryOpts, brigadeUUID uuid.UUID, chatID int
 	return nil
 }
 
-func reqBrigade(opts MinistryOpts, chatID int64, label SessionLabel, bid string) (uuid.UUID, error) {
+func reqBrigade(opts MinistryOpts, chatID int64, label SessionLabel, bid, lang string) (uuid.UUID, error) {
 	logs.Infof("Request brigade from %s\n", opts.controlIP)
 
 	label = setLabel(label, MarkerEmptyLabel)
@@ -102,7 +102,11 @@ func reqBrigade(opts MinistryOpts, chatID int64, label SessionLabel, bid string)
 		bid = fmt.Sprintf("-bid %s", bid)
 	}
 
-	cmd := fmt.Sprintf("reqvipid -ch -tgid %d -l %s -lt %d -lu %s %s %s", telegramID, label.Label, label.Time.Unix(), label.ID.String(), bid, opts.token)
+	if lang == "" {
+		lang = "ru"
+	}
+
+	cmd := fmt.Sprintf("reqvipid -ch -tgid %d -l %s -lt %d -lu %s -lang %s %s %s", telegramID, label.Label, label.Time.Unix(), label.ID.String(), lang, bid, opts.token)
 
 	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, opts.controlIP, cmd)
 

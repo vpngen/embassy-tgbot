@@ -320,7 +320,7 @@ func stepVIPCallback(ctx *StepContext) error {
 		ctx.Session.Label.Label = sessionLabel
 	}
 
-	requestID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, "")
+	requestID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, "", ctx.Lang)
 	if err != nil || requestID == uuid.Nil {
 		ctx.Wrong(fmt.Errorf("request brigade failed"))
 		return nil

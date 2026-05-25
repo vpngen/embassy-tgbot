@@ -533,7 +533,7 @@ func cmdStart(ctx *StepContext, msg *tgbotapi.Message) error {
 	// Check if it's a UUID for custom VIP brigade.
 	if len(s) == 36 {
 		if _, err := uuid.Parse(s); err == nil {
-			requestID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, s)
+			requestID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, s, ctx.Lang)
 			if err != nil || requestID == uuid.Nil {
 				ctx.Wrong(fmt.Errorf("request custom brigade failed"))
 				return nil

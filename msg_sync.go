@@ -59,7 +59,7 @@ func msgSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{},
 			logs.Warningf("New msg to %s (%d)\n", msg.Name, chatID)
 
 			wg.Add(1)
-			if err := SendBrigadierGrants(bot, wg, MainTrackGrantMessageVIP, chatID, ecode, &msg.Answer, langRU, flowMainUrl); err != nil {
+			if err := SendBrigadierGrants(bot, wg, MainTrackGrantMessageVIP, chatID, ecode, &msg.Answer, msg.Lang, flowMainUrl); err != nil {
 				logs.Errf("send grants: %s", err)
 
 				tm.Reset(MsgReadDuration)
