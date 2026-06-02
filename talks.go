@@ -77,6 +77,8 @@ func IsForbiddenError(err error) bool {
 func reactionHandler(opts handlerOpts, update tgbotapi.Update) {
 	defer opts.wg.Done()
 
+	clearBlocked(opts.db, update.MessageReaction.Chat.ID)
+
 	ecode := genEcode() // unique e-code
 
 	lang := langRU

@@ -266,6 +266,8 @@ func (c *StepContext) CheckMaintenance(whenfull bool) bool {
 func DispatchMessage(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) {
 	defer opts.wg.Done()
 
+	clearBlocked(opts.db, update.Message.Chat.ID)
+
 	ecode := genEcode()
 	lang := userLang(update.Message.From.LanguageCode)
 
@@ -338,6 +340,8 @@ func DispatchMessage(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts
 // DispatchCallback is the new entrypoint for handling button callbacks.
 func DispatchCallback(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) {
 	defer opts.wg.Done()
+
+	clearBlocked(opts.db, update.CallbackQuery.Message.Chat.ID)
 
 	ecode := genEcode()
 	lang := userLang(update.CallbackQuery.From.LanguageCode)
