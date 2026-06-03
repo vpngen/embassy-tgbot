@@ -119,7 +119,7 @@ func pushSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}
 				continue
 			}
 
-			msg := ministryMessage(flowMainUrl, pushFlowKey(push.EventType), "", push.Lang)
+			msg := ministryMessage(flowMainUrl, pushFlowKey(push.EventType), "test", push.Lang)
 			if msg == "" {
 				logs.Errf("push send: empty message for event %s\n", push.EventType)
 
