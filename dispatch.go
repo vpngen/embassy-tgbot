@@ -87,7 +87,7 @@ var LegacyStageToStepID = map[int]StepID{
 	stageRestoreTrackSendName:        "restore_name",
 	stageRestoreTrackSendWords:       "restore_words",
 	stageRestoreTrackCleanup:         "restore_cleanup",
-	stageQuestionsTrack: "question_item",
+	stageFAQTrack:                    "faq_item",
 }
 
 // StepIDToLegacyStage is the reverse mapping (new step → old int stage).
@@ -266,6 +266,8 @@ func (c *StepContext) CheckMaintenance(whenfull bool) bool {
 func DispatchMessage(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) {
 	defer opts.wg.Done()
 
+	clearBlocked(opts.db, update.Message.Chat.ID)
+
 	ecode := genEcode()
 	lang := userLang(update.Message.From.LanguageCode)
 
@@ -339,6 +341,8 @@ func DispatchMessage(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts
 func DispatchCallback(opts handlerOpts, update tgbotapi.Update, dept MinistryOpts) {
 	defer opts.wg.Done()
 
+	clearBlocked(opts.db, update.CallbackQuery.Message.Chat.ID)
+
 	ecode := genEcode()
 	lang := userLang(update.CallbackQuery.From.LanguageCode)
 
@@ -396,11 +400,11 @@ func DispatchCallback(opts handlerOpts, update tgbotapi.Update, dept MinistryOpt
 		return
 	default:
 		if target, ok := strings.CutPrefix(cbData, "q:"); ok {
-			if err := ctx.Transition("question_item", SessionStatePayloadSomething, []byte(target)); err != nil {
+			if err := ctx.Transition("faq_item", SessionStatePayloadSomething, []byte(target)); err != nil {
 				if IsForbiddenError(err) {
 					ctx.Ban()
 				} else {
-					ctx.Wrong(fmt.Errorf("question nav: %w", err))
+					ctx.Wrong(fmt.Errorf("FAQ nav: %w", err))
 				}
 				return
 			}
@@ -533,7 +537,7 @@ func cmdStart(ctx *StepContext, msg *tgbotapi.Message) error {
 	// Check if it's a UUID for custom VIP brigade.
 	if len(s) == 36 {
 		if _, err := uuid.Parse(s); err == nil {
-			requestID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, s)
+			requestID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, s, ctx.Lang)
 			if err != nil || requestID == uuid.Nil {
 				ctx.Wrong(fmt.Errorf("request custom brigade failed"))
 				return nil
@@ -546,6 +550,10 @@ func cmdStart(ctx *StepContext, msg *tgbotapi.Message) error {
 			}
 			return ctx.SaveSession(newMsg, stageMainTrackStart, SessionStatePayloadSomething, nil)
 		}
+	}
+
+	if s == "vip" {
+		return sendBuyVIPMessage(ctx)
 	}
 
 	return cmdStartWelcome(ctx, msg)

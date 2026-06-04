@@ -400,7 +400,7 @@ func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode strin
 
 const LabdelUnknown = "1_DaChtoJeEtoTakoe"
 
-func callMinistry(dept MinistryOpts, label SessionLabel, mnt *Maintenance) (*ministry.Answer, error) {
+func callMinistry(dept MinistryOpts, label SessionLabel, mnt *Maintenance, chatID int64, lang string) (*ministry.Answer, error) {
 	// opts := &grantPkg{}
 
 	cmd := "createbrigade -ch -j"
@@ -412,6 +412,10 @@ func callMinistry(dept MinistryOpts, label SessionLabel, mnt *Maintenance) (*min
 	cmd += fmt.Sprintf(" -l %s -lt %d -lu %s", label.Label, label.Time.Unix(), label.ID.String())
 	if os.Getenv("MOCK") == "true" {
 		cmd += " -mock"
+	}
+
+	if chatID != 0 {
+		cmd += fmt.Sprintf(" -tgid %d -lang %s", chatID^telegramIDCover, lang)
 	}
 
 	cmd += fmt.Sprintf(" %s", dept.token)
@@ -672,7 +676,7 @@ func GetBrigadier(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, label SessionLabel, 
 
 	switch dept.fake {
 	case false:
-		wgconf, err = callMinistry(dept, label, mnt)
+		wgconf, err = callMinistry(dept, label, mnt, chatID, lang)
 		if err != nil {
 			return fmt.Errorf("call ministry: %w", err)
 		}

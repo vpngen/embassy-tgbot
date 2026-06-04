@@ -109,6 +109,11 @@ func main() {
 
 	go msgSyncLoop(waitGroup, bot, stop, cfg.Ministry, cfg.FlowMainUrl)
 
+	// run the push sync
+	waitGroup.Add(1)
+
+	go pushSyncLoop(waitGroup, bot, stop, dbase, cfg.Ministry, cfg.FlowMainUrl)
+
 	// run the stat sync
 	waitGroup.Add(1)
 

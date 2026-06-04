@@ -78,7 +78,7 @@ func sendBuyVIPMessage(ctx *StepContext) error {
 	}
 
 	// Reserve a brigade in ministry.
-	brigadeUUID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, "")
+	brigadeUUID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, "", ctx.Lang)
 	if err != nil || brigadeUUID == uuid.Nil {
 		ctx.Wrong(fmt.Errorf("reserve brigade failed"))
 		return nil

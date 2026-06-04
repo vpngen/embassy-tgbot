@@ -10,7 +10,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.5.1
 	github.com/google/uuid v1.6.0
 	github.com/vpngen/keydesk v1.15.17
-	github.com/vpngen/ministry v1.9.3
+	github.com/vpngen/ministry v1.9.8
 	github.com/vpngen/wordsgens v1.0.5
 	golang.org/x/crypto v0.43.0
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20241231184526-a9ab2273dd10
