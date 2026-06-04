@@ -552,6 +552,10 @@ func cmdStart(ctx *StepContext, msg *tgbotapi.Message) error {
 		}
 	}
 
+	if s == "vip" {
+		return sendBuyVIPMessage(ctx)
+	}
+
 	return cmdStartWelcome(ctx, msg)
 }
 
