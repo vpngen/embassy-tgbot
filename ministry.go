@@ -465,7 +465,7 @@ func callMinistry(dept MinistryOpts, label SessionLabel, mnt *Maintenance, chatI
 
 	wgconf := &ministry.Answer{}
 	if err := json.Unmarshal(payload, &wgconf); err != nil {
-		return nil, fmt.Errorf("json unmarshal: %w", err)
+		return nil, fmt.Errorf("create brigade ministry json unmarshal: %w", err)
 	}
 
 	if os.Getenv("MOCK") != "true" {
@@ -604,7 +604,7 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 
 	wgconf := &ministry.Answer{}
 	if err := json.Unmarshal(payload, &wgconf); err != nil {
-		return nil, fmt.Errorf("json unmarshal: %w", err)
+		return nil, fmt.Errorf("restore brigade ministry json unmarshal: %w", err)
 	}
 
 	if wgconf.Code == 425 {
