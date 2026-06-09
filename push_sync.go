@@ -242,7 +242,7 @@ func readPush(opts MinistryOpts) (*PushAnswer, error) {
 
 	var push *PushAnswer
 	if err := json.Unmarshal(payload, &push); err != nil {
-		return nil, fmt.Errorf("json unmarshal: %w", err)
+		return nil, fmt.Errorf("push payload json unmarshal: %w", err)
 	}
 
 	return push, nil

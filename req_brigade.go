@@ -81,7 +81,7 @@ func reserveVIPWithMinistry(opts MinistryOpts, brigadeUUID uuid.UUID, chatID int
 
 	var res reserveVIPResponse
 	if err := json.Unmarshal(payload, &res); err != nil {
-		return fmt.Errorf("json unmarshal: %w", err)
+		return fmt.Errorf("reserve vip json unmarshal: %w", err)
 	}
 
 	if !res.OK {
@@ -160,7 +160,7 @@ func reqBrigade(opts MinistryOpts, chatID int64, label SessionLabel, bid, lang s
 
 	req := ministry.VIPReserve{}
 	if err := json.Unmarshal(payload, &req); err != nil {
-		return uuid.Nil, fmt.Errorf("json unmarshal: %w", err)
+		return uuid.Nil, fmt.Errorf("req brigade json unmarshal: %w", err)
 	}
 
 	return req.RequestID, nil

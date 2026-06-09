@@ -144,7 +144,7 @@ func readMsg(opts MinistryOpts) (*ministry.VIPAnswer, error) {
 
 	wgconf := &ministry.VIPAnswer{}
 	if err := json.Unmarshal(payload, &wgconf); err != nil {
-		return nil, fmt.Errorf("json unmarshal: %w", err)
+		return nil, fmt.Errorf("msgs sync json unmarshal: %w", err)
 	}
 
 	return wgconf, nil
