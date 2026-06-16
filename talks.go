@@ -73,6 +73,20 @@ func IsForbiddenError(err error) bool {
 	return false
 }
 
+func IsRateLimitedError(err error) (bool, time.Duration) {
+	tgErr := &tgbotapi.Error{}
+	if errors.As(err, &tgErr) && tgErr.Code == 429 {
+		wait := time.Duration(tgErr.RetryAfter+1) * time.Second
+		if wait < time.Second {
+			wait = time.Second
+		}
+
+		return true, wait
+	}
+
+	return false, 0
+}
+
 // Handling reaction (opposed callback).
 func reactionHandler(opts handlerOpts, update tgbotapi.Update) {
 	defer opts.wg.Done()

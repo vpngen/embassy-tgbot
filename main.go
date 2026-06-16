@@ -114,6 +114,11 @@ func main() {
 
 	go pushSyncLoop(waitGroup, bot, stop, dbase, cfg.Ministry, cfg.FlowMainUrl)
 
+	// run the vip push sync
+	waitGroup.Add(1)
+
+	go pushVipSyncLoop(waitGroup, bot, stop, dbase, cfg.Ministry, cfg.FlowMainUrl)
+
 	// run the stat sync
 	waitGroup.Add(1)
 
