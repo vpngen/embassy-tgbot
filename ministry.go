@@ -709,7 +709,7 @@ func MyTitle(s string) string {
 	prev := ' '
 	return strings.Map(
 		func(r rune) rune {
-			if r != ' ' && prev == ' ' || prev == '-' || prev == '_' || prev == '.' {
+			if r != ' ' && prev == ' ' || prev == '-' || prev == '_' || prev == '.' || prev == '\'' {
 				prev = r
 				return unicode.ToTitle(r)
 			}
