@@ -604,6 +604,7 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 
 	wgconf := &ministry.Answer{}
 	if err := json.Unmarshal(payload, &wgconf); err != nil {
+		fmt.Fprintf(os.Stderr, "*** Restore payload raw: %q\n", payload)
 		return nil, fmt.Errorf("restore brigade ministry json unmarshal: %w", err)
 	}
 
@@ -709,7 +710,7 @@ func MyTitle(s string) string {
 	prev := ' '
 	return strings.Map(
 		func(r rune) rune {
-			if r != ' ' && prev == ' ' || prev == '-' || prev == '_' || prev == '.' || prev == '\'' {
+			if r != ' ' && prev == ' ' || prev == '-' || prev == '_' || prev == '.' || prev == '\'' || prev == '’' {
 				prev = r
 				return unicode.ToTitle(r)
 			}
@@ -789,6 +790,31 @@ S:
 
 		for _, name := range generateCombinations(name, maxEYoCombinations) {
 			fmt.Fprintf(os.Stderr, "Try name/words: %s %s\n", name, words)
+
+			wgconf, err = callMinistryRestore(dept, mnt, name, words)
+			if err == nil || errors.Is(err, ErrRestoreTooEarly) {
+				break S
+			}
+
+			fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
+		}
+
+		// Names in the database may contain U+2019 (curly apostrophe) from namesgenerator
+		// data files, while users always type U+0027 (straight apostrophe) on their keyboard.
+		// Retry the whole sequence with the apostrophe normalized to U+2019.
+		name = MyTitle(strings.ToLower(strings.ReplaceAll(name, "'", "’")))
+
+		fmt.Fprintf(os.Stderr, "Try name/words (curly apostrophe): %s %s\n", name, words)
+
+		wgconf, err = callMinistryRestore(dept, mnt, name, words)
+		if err == nil || errors.Is(err, ErrRestoreTooEarly) {
+			break
+		}
+
+		fmt.Fprintf(os.Stderr, "Call ministry error: %s\n", err)
+
+		for _, name := range generateCombinations(name, maxEYoCombinations) {
+			fmt.Fprintf(os.Stderr, "Try name/words (curly apostrophe): %s %s\n", name, words)
 
 			wgconf, err = callMinistryRestore(dept, mnt, name, words)
 			if err == nil || errors.Is(err, ErrRestoreTooEarly) {
