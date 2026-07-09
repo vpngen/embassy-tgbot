@@ -664,6 +664,95 @@ func callMinistryRestore(dept MinistryOpts, _ *Maintenance, name, words string) 
 	return wgconf, nil
 }
 
+type checkBrigadierAnswer struct {
+	Code      int    `json:"code"`
+	Status    string `json:"status"`
+	Message   string `json:"message,omitempty"`
+	BrigadeID string `json:"brigade_id,omitempty"`
+	Deleted   bool   `json:"deleted,omitempty"`
+}
+
+// CheckBrigadierID resolves the brigade_id for a name+6-words pair without
+// generating or touching any credentials - a pure identity lookup, used to
+// let a user prove they own an existing (free) brigade before it gets
+// upgraded to VIP in place.
+func CheckBrigadierID(dept MinistryOpts, name, words string) (uuid.UUID, error) {
+	if dept.fake {
+		fmt.Fprintf(os.Stderr, "FAKE check brigadier: %s\n", name)
+
+		return uuid.Nil, ErrBrigadeNotFound
+	}
+
+	base64name := base64.StdEncoding.EncodeToString([]byte(name))
+	base64words := base64.StdEncoding.EncodeToString([]byte(words))
+
+	cmd := fmt.Sprintf("checkbrigadier -ch -j %s %s", base64name, base64words)
+
+	fmt.Fprintf(os.Stderr, "%s#%s:22 -> %s\n", sshkeyRemoteUsername, dept.controlIP, cmd)
+
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", dept.controlIP), dept.sshConfig)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("ssh dial: %w", err)
+	}
+	defer client.Close()
+
+	session, err := client.NewSession()
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("ssh session: %w", err)
+	}
+	defer session.Close()
+
+	var b, e bytes.Buffer
+
+	session.Stdout = &b
+	session.Stderr = &e
+
+	const logTag = "tgembass-checkbrigadier"
+	defer func() {
+		switch errstr := e.String(); errstr {
+		case "":
+			fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr: empty\n", logTag)
+		default:
+			fmt.Fprintf(os.Stderr, "%s: SSH Session StdErr:\n", logTag)
+			for _, line := range strings.Split(errstr, "\n") {
+				fmt.Fprintf(os.Stderr, "%s: | %s\n", logTag, line)
+			}
+		}
+	}()
+
+	if err := session.Run(cmd); err != nil {
+		return uuid.Nil, fmt.Errorf("ssh run: %w", err)
+	}
+
+	r := bufio.NewReader(httputil.NewChunkedReader(&b))
+
+	payload, err := io.ReadAll(r)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("chunk read: %w", err)
+	}
+
+	answ := &checkBrigadierAnswer{}
+	if err := json.Unmarshal(payload, answ); err != nil {
+		fmt.Fprintf(os.Stderr, "*** Check brigadier payload raw: %q\n", payload)
+		return uuid.Nil, fmt.Errorf("check brigadier json unmarshal: %w", err)
+	}
+
+	if answ.Code == 404 {
+		return uuid.Nil, ErrBrigadeNotFound
+	}
+
+	if answ.Code != 200 || answ.BrigadeID == "" {
+		return uuid.Nil, fmt.Errorf("check brigadier: %s", answ.Message)
+	}
+
+	id, err := uuid.Parse(answ.BrigadeID)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("parse brigade id: %w", err)
+	}
+
+	return id, nil
+}
+
 // GetBrigadier - get brigadier name and config.
 func GetBrigadier(bot *tgbotapi.BotAPI, wg *sync.WaitGroup, label SessionLabel, chatID int64, ecode string, dept MinistryOpts, mnt *Maintenance, lang, flowMainUrl string) error {
 	var (

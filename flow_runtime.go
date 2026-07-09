@@ -246,6 +246,8 @@ func flowTargetToCallback(action, target string) (string, bool) {
 			return "restore", true
 		case "welcome":
 			return "reset", true
+		case "vip_quiz", "vip_brigade_exists", "vip_get_urls", "vip_name", "vip_keydesk":
+			return target, true
 		default:
 			if target != "" {
 				return "q:" + target, true

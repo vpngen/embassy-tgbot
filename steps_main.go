@@ -118,11 +118,15 @@ func stepWelcomeOnCallback(ctx *StepContext, data string) error {
 	case "vip":
 		return stepVIPCallback(ctx)
 
-	case "vip_get_urls":
+	case "vip_quiz":
 		if ctx.Opts.betaChatIDs != nil && !ctx.Opts.betaChatIDs[ctx.ChatID] {
 			return stepVIPCallback(ctx)
 		}
-		return sendBuyVIPMessage(ctx)
+		if err := ctx.Transition("vip_quiz", SessionStatePayloadSomething, nil); err != nil {
+			return err
+		}
+		defer ctx.RemoveMessage(ctx.Session.OurMsgID)
+		return nil
 
 	case "restore":
 		if ctx.CheckMaintenance(true) {
