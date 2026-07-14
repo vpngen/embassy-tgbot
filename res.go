@@ -117,6 +117,15 @@ const (
 	// MainTrackGrantSupportMessageVIP - grant VIP support message.
 	MainTrackGrantSupportMessageVIP = "Остались вопросы? Смело пиши в поддержку: [https://t.me/vg_vip_bot](https://t.me/vg_vip_bot) - ты же теперь VIP :)"
 
+	// VIPUpgradeNotifyMessage1 - an existing free brigade was upgraded to VIP in place, part 1/3.
+	VIPUpgradeNotifyMessage1 = "Поздравляем со статусом VIP-бригадира! Теперь вместе с премиум-поддержкой и защитой от удаления жизнь точно заиграет новыми красками!  На всякий случай, напоминаем про инструкцию использования сервисом (и верим, что ты все и так уже знаешь)"
+
+	// VIPUpgradeNotifyMessage2 - same name+words still work, part 2/3.
+	VIPUpgradeNotifyMessage2 = "Учти, что вход в VIP-ключницу будет осуществляться по уже ранее выданным имени бригадира и 6 словам – ничего нового получать не нужно."
+
+	// VIPUpgradeNotifyMessage3 - VIP key info, part 3/3.
+	VIPUpgradeNotifyMessage3 = "И напоследок — VIP-ключ для твоей бригады. Без ограничений по скорости и трафику: подойдет для видео в 4K, стриминга, игр и работы.\n\nКлюч появится и в этом боте, и внутри ключницы — можешь использовать его сам или передать пользователю бригады.\n\nЕсли пользователей станет больше, можно докупить дополнительные VIP-ключи прозапас."
+
 	// MainTrackPersonDescriptionMessage - brief on name.
 	MainTrackPersonDescriptionMessage = "*Справка*\n\nЛауреат нобелевской премии по физике: *%s*\n_%s_\n\U0001F449 [статья на wikipedia](%s)\n\n"
 

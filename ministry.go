@@ -244,6 +244,29 @@ func SendRestoreTooEarly(bot *tgbotapi.BotAPI, chatID int64, ecode string, lastR
 	return nil
 }
 
+// SendVIPUpgradeNotify sends the 3-message "your existing brigade is now VIP"
+// sequence. Unlike SendBrigadierGrants, no new vpnconfig/mnemonics are sent -
+// the brigade was upgraded in place, so the existing name+6-words still work.
+func SendVIPUpgradeNotify(bot *tgbotapi.BotAPI, chatID int64, ecode, lang, flowMainUrl string) error {
+	if _, err := SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "vip_upgrade_notify_1", VIPUpgradeNotifyMessage1, lang), ecode); err != nil {
+		return fmt.Errorf("send vip upgrade notify 1: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	if _, err := SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "vip_upgrade_notify_2", VIPUpgradeNotifyMessage2, lang), ecode); err != nil {
+		return fmt.Errorf("send vip upgrade notify 2: %w", err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	if _, err := SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "vip_upgrade_notify_3", VIPUpgradeNotifyMessage3, lang), ecode); err != nil {
+		return fmt.Errorf("send vip upgrade notify 3: %w", err)
+	}
+
+	return nil
+}
+
 // SendRestoredBrigadierGrants - send grants messages.
 func SendRestoredBrigadierGrants(bot *tgbotapi.BotAPI, chatID int64, ecode string, opts *ministry.Answer, lang, flowMainUrl string) error {
 	_, err := SendOpenMessage(bot, chatID, 0, false, ministryMessage(flowMainUrl, "restore_grant", RestoreTrackGrantMessage, lang), ecode)
