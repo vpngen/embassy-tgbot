@@ -113,7 +113,7 @@ func reqBrigade(opts MinistryOpts, chatID int64, label SessionLabel, bid, lang s
 	if opts.fake {
 		logs.Debugf("fake msg tread\n")
 
-		return uuid.Nil, nil
+		return uuid.New(), nil
 	}
 
 	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", opts.controlIP), opts.sshConfig)

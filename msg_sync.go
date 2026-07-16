@@ -52,24 +52,36 @@ func msgSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{},
 
 			chatID := msg.TelegramID ^ telegramIDCover
 
-			wg := &sync.WaitGroup{}
-
 			ecode := genEcode()
 
 			logs.Warningf("New msg to %s (%d)\n", msg.Name, chatID)
 
-			wg.Add(1)
-			if err := SendBrigadierGrants(bot, wg, MainTrackGrantMessageVIP, chatID, ecode, &msg.Answer, msg.Lang, flowMainUrl); err != nil {
-				logs.Errf("send grants: %s", err)
+			if msg.VIPUpgradeNotify {
+				// Existing brigade upgraded to VIP in place - no new vpnconfig,
+				// just the short "you're VIP now" notice.
+				if err := SendVIPUpgradeNotify(bot, chatID, ecode, msg.Lang, flowMainUrl); err != nil {
+					logs.Errf("send vip upgrade notify: %s", err)
 
-				tm.Reset(MsgReadDuration)
+					tm.Reset(MsgReadDuration)
 
-				continue
-			}
-			wg.Wait()
+					continue
+				}
+			} else {
+				wg := &sync.WaitGroup{}
 
-			if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackGrantSupportMessageVIP, ecode); err != nil {
-				logs.Errf("logs send: %s\n", err)
+				wg.Add(1)
+				if err := SendBrigadierGrants(bot, wg, MainTrackGrantMessageVIP, chatID, ecode, &msg.Answer, msg.Lang, flowMainUrl); err != nil {
+					logs.Errf("send grants: %s", err)
+
+					tm.Reset(MsgReadDuration)
+
+					continue
+				}
+				wg.Wait()
+
+				if _, err = SendOpenMessage(bot, chatID, 0, false, MainTrackGrantSupportMessageVIP, ecode); err != nil {
+					logs.Errf("logs send: %s\n", err)
+				}
 			}
 
 			if err := doneMsg(opts, msg.RequestID); err != nil {

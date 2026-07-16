@@ -141,7 +141,10 @@ func (c *StepContext) Send(text string, kb *tgbotapi.InlineKeyboardMarkup) (*tgb
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
 	msg.ProtectContent = true
-	if kb != nil {
+	// A zero-value InlineKeyboardMarkup (returned by Flow*Keyboard for a
+	// stage with no buttons) has a nil InlineKeyboard slice, which marshals
+	// to `"inline_keyboard":null` - Telegram rejects that as not an array.
+	if kb != nil && len(kb.InlineKeyboard) > 0 {
 		msg.ReplyMarkup = *kb
 	}
 
@@ -553,7 +556,7 @@ func cmdStart(ctx *StepContext, msg *tgbotapi.Message) error {
 	}
 
 	if s == "vip" {
-		return sendBuyVIPMessage(ctx)
+		return sendBuyVIPMessage(ctx, uuid.Nil)
 	}
 
 	return cmdStartWelcome(ctx, msg)

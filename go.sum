@@ -186,6 +186,8 @@ github.com/vpngen/keydesk-snap v0.0.20 h1:E1dXUKEaUmr5mI+g9zLAUaq0Hr4KE5pRQgc+sq
 github.com/vpngen/keydesk-snap v0.0.20/go.mod h1:lT9Do8sdZTEsburnOeywmd4ZJYjamnGbFaMbf02t8g4=
 github.com/vpngen/ministry v1.9.8 h1:TViyD9dPlieAGIju328ORg54cD3tmhFTvTQ7oVLRu90=
 github.com/vpngen/ministry v1.9.8/go.mod h1:nIoC9vCrpijPPOXucfck7Es9BWrFmolNlWGFIZBLe+A=
+github.com/vpngen/ministry v1.9.21 h1:rjXi9SFjX4teUBfouZeGqSw0J5kvDmLFEKn+8D/pTrI=
+github.com/vpngen/ministry v1.9.21/go.mod h1:nIoC9vCrpijPPOXucfck7Es9BWrFmolNlWGFIZBLe+A=
 github.com/vpngen/vpngine v0.1.2-0.20240528050541-356825e04e77 h1:8HBZWvVWyBqo1BiN/lvtJXDRKrGWq2BrTVPOURtr1CM=
 github.com/vpngen/vpngine v0.1.2-0.20240528050541-356825e04e77/go.mod h1:366xwHKgAA77Ii1LmM9U4Q1nzXFSqb0NvieSTdGiXx8=
 github.com/vpngen/wordsgens v1.0.5 h1:60S1QErJaw3mWLuDJpYcka4MzLMPlknVI+fWR+u0MX8=
