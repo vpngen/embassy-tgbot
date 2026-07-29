@@ -258,41 +258,41 @@ func pushVipSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struc
 				continue
 			}
 
-			logs.Infof("Send push message: %s to %d", msg, chatID)
+			// logs.Infof("Send push message: %s to %d", msg, chatID)
 
-			// ecode := genEcode()
+			ecode := genEcode()
 
-			// if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
-			// 	if IsForbiddenError(err) {
-			// 		logs.Warningf("vip push send: chat %d blocked bot (403), recording\n", chatID)
+			if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
+				if IsForbiddenError(err) {
+					logs.Warningf("vip push send: chat %d blocked bot (403), recording\n", chatID)
 
-			// 		if dbErr := setBlocked(db, chatID); dbErr != nil {
-			// 			logs.Errf("setBlocked %d: %s\n", chatID, dbErr)
-			// 		}
+					if dbErr := setBlocked(db, chatID); dbErr != nil {
+						logs.Errf("setBlocked %d: %s\n", chatID, dbErr)
+					}
 
-			// 		if err := donePushVIP(opts, push.RequestID, push.EventType); err != nil {
-			// 			logs.Errf("vip push done (403): %s\n", err)
-			// 		}
+					if err := donePushVIP(opts, push.RequestID, push.EventType); err != nil {
+						logs.Errf("vip push done (403): %s\n", err)
+					}
 
-			// 		tm.Reset(PushReadDuration)
+					tm.Reset(PushReadDuration)
 
-			// 		continue
-			// 	}
+					continue
+				}
 
-			// 	if ok, wait := IsRateLimitedError(err); ok {
-			// 		logs.Warningf("vip push send: rate limited by telegram, retrying after %s\n", wait)
+				if ok, wait := IsRateLimitedError(err); ok {
+					logs.Warningf("vip push send: rate limited by telegram, retrying after %s\n", wait)
 
-			// 		tm.Reset(wait)
+					tm.Reset(wait)
 
-			// 		continue
-			// 	}
+					continue
+				}
 
-			// 	logs.Errf("vip push send: %s\n", err)
+				logs.Errf("vip push send: %s\n", err)
 
-			// 	tm.Reset(PushReadDuration)
+				tm.Reset(PushReadDuration)
 
-			// 	continue
-			// }
+				continue
+			}
 
 			if err := donePushVIP(opts, push.RequestID, push.EventType); err != nil {
 				logs.Errf("vip push done: %s\n", err)
