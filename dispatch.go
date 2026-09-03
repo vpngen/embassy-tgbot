@@ -537,21 +537,23 @@ func cmdStart(ctx *StepContext, msg *tgbotapi.Message) error {
 	s := msg.CommandArguments()
 	logs.Debugf("[d:%s] start args: %q, %d\n", ctx.Ecode, s, len(s))
 
-	// Check if it's a UUID for custom VIP brigade.
 	if len(s) == 36 {
-		if _, err := uuid.Parse(s); err == nil {
-			requestID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, s, ctx.Lang)
-			if err != nil || requestID == uuid.Nil {
-				ctx.Wrong(fmt.Errorf("request custom brigade failed"))
-				return nil
-			}
+		// if _, err := uuid.Parse(s); err == nil {
+		// 	requestID, err := reqBrigade(ctx.Dept, ctx.ChatID, ctx.Session.Label, s, ctx.Lang)
+		// 	if err != nil || requestID == uuid.Nil {
+		// 		ctx.Wrong(fmt.Errorf("request custom brigade failed"))
+		// 		return nil
+		// 	}
 
-			text := ctx.FlowMessage("vip_welcome", MainTrackVIPWelcomeMessage)
-			newMsg, err := ctx.SendPlain(text)
-			if err != nil {
-				return fmt.Errorf("custom vip: %w", err)
-			}
-			return ctx.SaveSession(newMsg, stageMainTrackStart, SessionStatePayloadSomething, nil)
+		// 	text := ctx.FlowMessage("vip_welcome", MainTrackVIPWelcomeMessage)
+		// 	newMsg, err := ctx.SendPlain(text)
+		// 	if err != nil {
+		// 		return fmt.Errorf("custom vip: %w", err)
+		// 	}
+		// 	return ctx.SaveSession(newMsg, stageMainTrackStart, SessionStatePayloadSomething, nil)
+		// }
+		if brigadeID, err := uuid.Parse(s); err == nil {
+			return sendBuyVIPMessage(ctx, brigadeID)
 		}
 	}
 
