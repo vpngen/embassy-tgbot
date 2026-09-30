@@ -51,6 +51,20 @@ const (
 	pushKeyVIPExpired       = "push_vip_expired"
 )
 
+// Campaign pushes: queued by hand in the ministry (one INSERT into
+// head.push_messages per brigade), rendered from a same-named stage in the
+// VIP flow JSON so they can carry real inline buttons.
+const (
+	pushKeyVIPDiscountLastDay = "push_vip_discount_last_day"
+)
+
+// pushSources holds the admin-panel endpoints the push loops render from.
+type pushSources struct {
+	flowMainUrl string // ministry messages are derived from it, see deriveMinistryURL
+	flowVipUrl  string // campaign pushes are stages of the VIP flow
+	supportURL  string
+}
+
 func blockedKey(chatID int64) []byte {
 	var b [8]byte
 	binary.BigEndian.PutUint64(b[:], uint64(chatID))
@@ -86,7 +100,7 @@ func clearBlocked(db *badger.DB, chatID int64) {
 	}
 }
 
-func pushSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}, db *badger.DB, opts MinistryOpts, flowMainUrl string) {
+func pushSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}, db *badger.DB, opts MinistryOpts, src pushSources) {
 	defer wg.Done()
 
 	fmt.Fprintf(os.Stderr, "pushSyncLoop: start\n")
@@ -126,7 +140,7 @@ func pushSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}
 				continue
 			}
 
-			msg := ministryMessage(flowMainUrl, pushFlowKey(push.EventType), "", push.Lang)
+			msg, kb := pushContent(src, push)
 			if msg == "" {
 				logs.Errf("push send: empty message for event %s\n", push.EventType)
 
@@ -137,7 +151,7 @@ func pushSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}
 
 			ecode := genEcode()
 
-			if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
+			if _, err := sendPush(bot, chatID, msg, kb, ecode); err != nil {
 				if IsForbiddenError(err) {
 					logs.Warningf("push send: chat %d blocked bot (403), recording\n", chatID)
 
@@ -204,12 +218,70 @@ func pushFlowKey(eventType string) string {
 		return pushKeyVIPLastChance
 	case "vip.subscription_expired":
 		return pushKeyVIPExpired
-	default:
+	case "free.vip_discount_last_day":
+		return pushKeyVIPDiscountLastDay
+	case "":
 		return ""
+	default:
+		// An event this build does not know: derive the key from the event
+		// name ("free.some_promo" -> "push_free_some_promo"), so a future
+		// campaign needs only the ministry INSERT and the admin-panel stage.
+		return "push_" + strings.NewReplacer(".", "_", "-", "_").Replace(eventType)
 	}
 }
 
-func pushVipSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}, db *badger.DB, opts MinistryOpts, flowMainUrl string) {
+// pushContent renders a push: text plus an optional inline keyboard.
+//
+// Resolution order, both keyed by pushFlowKey(event):
+//  1. a stage with that id in the VIP flow JSON: message plus buttons. This is
+//     how campaign pushes with real buttons are defined, admin-panel only;
+//  2. the flat ministry messages map: the lifecycle pushes.
+//
+// {{brigade_ref}} in a button target expands to the push's request id, the
+// obfuscated brigade id that cmdStart already accepts as a /start deep-link
+// parameter (the keydesk VIP redirect sends the same form). A URL button like
+// https://t.me/<bot>?start={{brigade_ref}} therefore lands the user straight
+// in the in-place VIP upgrade of their own brigade.
+func pushContent(src pushSources, push *PushAnswer) (string, *tgbotapi.InlineKeyboardMarkup) {
+	key := pushFlowKey(push.EventType)
+	if key == "" {
+		return "", nil
+	}
+
+	if text := flowMessage(src.flowVipUrl, key, "", push.Lang); text != "" {
+		vars := map[string]string{"brigade_ref": push.RequestID.String()}
+		kb, _ := flowKeyboard(src.flowVipUrl, key, src.supportURL, push.Lang, vars)
+
+		return text, kb
+	}
+
+	return ministryMessage(src.flowMainUrl, key, "", push.Lang), nil
+}
+
+// sendPush sends a push message, with an inline keyboard when kb has buttons.
+func sendPush(bot *tgbotapi.BotAPI, chatID int64, text string, kb *tgbotapi.InlineKeyboardMarkup, ecode string) (*tgbotapi.Message, error) {
+	if kb == nil || len(kb.InlineKeyboard) == 0 {
+		return SendOpenMessage(bot, chatID, 0, false, text, ecode)
+	}
+
+	logs.Debugf("[!:%s] send push with keyboard\n", ecode)
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.DisableWebPagePreview = true
+	msg.ReplyMarkup = *kb
+
+	newMsg, err := bot.Send(msg)
+	if err != nil {
+		logs.Errf("[!:%s] send push: %s\n", ecode, err)
+
+		return nil, err
+	}
+
+	return &newMsg, nil
+}
+
+func pushVipSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}, db *badger.DB, opts MinistryOpts, src pushSources) {
 	defer wg.Done()
 
 	fmt.Fprintf(os.Stderr, "pushVipSyncLoop: start\n")
@@ -249,7 +321,7 @@ func pushVipSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struc
 				continue
 			}
 
-			msg := ministryMessage(flowMainUrl, pushFlowKey(push.EventType), "", push.Lang)
+			msg, kb := pushContent(src, push)
 			if msg == "" {
 				logs.Errf("vip push send: empty message for event %s\n", push.EventType)
 
@@ -262,7 +334,7 @@ func pushVipSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struc
 
 			ecode := genEcode()
 
-			if _, err := SendOpenMessage(bot, chatID, 0, false, msg, ecode); err != nil {
+			if _, err := sendPush(bot, chatID, msg, kb, ecode); err != nil {
 				if IsForbiddenError(err) {
 					logs.Warningf("vip push send: chat %d blocked bot (403), recording\n", chatID)
 

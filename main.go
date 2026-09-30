@@ -25,6 +25,7 @@ func main() {
 	adminAPIKey = cfg.AdminAPIKey // set package-level key for admin-panel requests
 	supportURLGlobal = cfg.SupportURL
 	flowMainURLGlobal = cfg.FlowMainUrl
+	telegramIDCover = cfg.TelegramIDCover
 
 	SetSupportMessages(cfg.SupportURL) // i dont know howto do this more clearely
 	SetVIPBotURL(cfg.VIPBotURL)
@@ -110,14 +111,20 @@ func main() {
 	go msgSyncLoop(waitGroup, bot, stop, cfg.Ministry, cfg.FlowMainUrl)
 
 	// run the push sync
+	pushSrc := pushSources{
+		flowMainUrl: cfg.FlowMainUrl,
+		flowVipUrl:  cfg.FlowVipUrl,
+		supportURL:  cfg.SupportURL,
+	}
+
 	waitGroup.Add(1)
 
-	go pushSyncLoop(waitGroup, bot, stop, dbase, cfg.Ministry, cfg.FlowMainUrl)
+	go pushSyncLoop(waitGroup, bot, stop, dbase, cfg.Ministry, pushSrc)
 
 	// run the vip push sync
 	waitGroup.Add(1)
 
-	go pushVipSyncLoop(waitGroup, bot, stop, dbase, cfg.Ministry, cfg.FlowMainUrl)
+	go pushVipSyncLoop(waitGroup, bot, stop, dbase, cfg.Ministry, pushSrc)
 
 	// run the stat sync
 	waitGroup.Add(1)
