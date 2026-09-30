@@ -575,6 +575,10 @@ func cmdStart(ctx *StepContext, msg *tgbotapi.Message) error {
 		return sendBuyVIPMessage(ctx, uuid.Nil)
 	}
 
+	if s == "vip_quiz" {
+		return ctx.Transition("vip_quiz", SessionStatePayloadSomething, nil)
+	}
+
 	return cmdStartWelcome(ctx, msg)
 }
 
