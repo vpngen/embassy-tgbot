@@ -20,10 +20,11 @@ import (
 )
 
 const (
-	MsgSyncDuration       = time.Minute
-	MsgReadDuration       = time.Second
-	telegramIDCover int64 = 24537551337805
+	MsgSyncDuration = time.Minute
+	MsgReadDuration = time.Second
 )
+
+var telegramIDCover int64
 
 func msgSyncLoop(wg *sync.WaitGroup, bot *tgbotapi.BotAPI, stop <-chan struct{}, opts MinistryOpts, flowMainUrl string) {
 	defer wg.Done()

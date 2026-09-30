@@ -55,6 +55,7 @@ type Config struct {
 	queueSecret        []byte
 	queue2Secret       []byte
 	BetaChatIDs        map[int64]bool
+	TelegramIDCover    int64
 }
 
 // configFromEnv - fill config from environment vars.
@@ -88,9 +89,21 @@ func configFromEnv() Config {
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	queueSecret := os.Getenv("QUEUE_SECRET")
 	betaChatIDsRaw := os.Getenv("BETA_CHAT_IDS")
+	telegramIDCoverRaw := os.Getenv("TELEGRAM_ID_COVER") // int64 XOR mask for chat ids sent to the ministry
 
 	if sessionSecret == "" {
 		log.Fatal("NO SESSION SECRET")
+	}
+
+	// No default on purpose: a wrong or zero cover would not fail loudly, it
+	// would deliver every ministry push and VIP message to the wrong chat.
+	if telegramIDCoverRaw == "" {
+		log.Fatal("NO TELEGRAM ID COVER")
+	}
+
+	telegramIDCoverValue, err := strconv.ParseInt(strings.TrimSpace(telegramIDCoverRaw), 10, 64)
+	if err != nil || telegramIDCoverValue == 0 {
+		log.Fatalf("BAD TELEGRAM ID COVER: %q\n", telegramIDCoverRaw)
 	}
 
 	if queueSecret == "" {
@@ -192,9 +205,10 @@ func configFromEnv() Config {
 
 		Maintenance: NewMantenance(maintenanceStateFilesDir),
 
-		sessionSecret: genKeyFromEnv(sessionSecret, DefaultIterations, DefaultKeyLen),
-		queueSecret:   genKeyFromEnv(queueSecret, DefaultIterations, DefaultKeyLen),
-		BetaChatIDs:   betaChatIDs,
+		sessionSecret:   genKeyFromEnv(sessionSecret, DefaultIterations, DefaultKeyLen),
+		queueSecret:     genKeyFromEnv(queueSecret, DefaultIterations, DefaultKeyLen),
+		BetaChatIDs:     betaChatIDs,
+		TelegramIDCover: telegramIDCoverValue,
 	}
 }
 

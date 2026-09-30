@@ -346,6 +346,20 @@ func DispatchCallback(opts handlerOpts, update tgbotapi.Update, dept MinistryOpt
 
 	clearBlocked(opts.db, update.CallbackQuery.Message.Chat.ID)
 
+	// "close" only deletes the message it was pressed on (push campaign
+	// messages carry it as a `call close` button). It runs before auth on
+	// purpose: pushes are sent outside the session, so auth's stale-message
+	// check would swallow the tap as soon as the user has a newer session
+	// message.
+	if update.CallbackQuery.Data == "close" {
+		chatID, msgID := update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID
+		if err := RemoveMsg(opts.bot, chatID, msgID); err != nil {
+			logs.Errf("[!] close: remove %d: %s\n", msgID, err)
+		}
+
+		return
+	}
+
 	ecode := genEcode()
 	lang := userLang(update.CallbackQuery.From.LanguageCode)
 
