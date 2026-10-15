@@ -169,6 +169,12 @@ func stepFAQItemEnter(ctx *StepContext) error {
 }
 
 func stepQuizEnter(ctx *StepContext) error {
+	// Covers the welcome "I want a brigade" button, the Go fallback keyboard
+	// and /repeat: nobody enters the receipt step while creation is closed.
+	if ctx.CheckFreeClosed() {
+		return nil
+	}
+
 	num, _, _ := strings.Cut(ctx.Session.Label.Label, "_")
 
 	text := MainTrackQuizMessage[num+"_"]
@@ -191,6 +197,11 @@ func stepQuizEnter(ctx *StepContext) error {
 
 func stepBillOnMessage(ctx *StepContext, msg *tgbotapi.Message) error {
 	if ctx.CheckMaintenance(false) {
+		return nil
+	}
+
+	// Users already waiting in wait_for_bill when the switch was flipped.
+	if ctx.CheckFreeClosed() {
 		return nil
 	}
 

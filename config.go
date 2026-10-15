@@ -55,6 +55,9 @@ type Config struct {
 	queueSecret        []byte
 	queue2Secret       []byte
 	BetaChatIDs        map[int64]bool
+	// FreeBrigadesClosed - FREE_BRIGADES_CLOSED=true: no new free brigades
+	// (quiz, receipts, createbrigade). Restore and VIP are unaffected.
+	FreeBrigadesClosed bool
 	TelegramIDCover    int64
 }
 
@@ -89,7 +92,8 @@ func configFromEnv() Config {
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	queueSecret := os.Getenv("QUEUE_SECRET")
 	betaChatIDsRaw := os.Getenv("BETA_CHAT_IDS")
-	telegramIDCoverRaw := os.Getenv("TELEGRAM_ID_COVER") // int64 XOR mask for chat ids sent to the ministry
+	telegramIDCoverRaw := os.Getenv("TELEGRAM_ID_COVER")       // int64 XOR mask for chat ids sent to the ministry
+	freeBrigadesClosedRaw := os.Getenv("FREE_BRIGADES_CLOSED") // "true" closes free brigade creation
 
 	if sessionSecret == "" {
 		log.Fatal("NO SESSION SECRET")
@@ -209,6 +213,8 @@ func configFromEnv() Config {
 		queueSecret:     genKeyFromEnv(queueSecret, DefaultIterations, DefaultKeyLen),
 		BetaChatIDs:     betaChatIDs,
 		TelegramIDCover: telegramIDCoverValue,
+
+		FreeBrigadesClosed: strings.TrimSpace(freeBrigadesClosedRaw) == "true",
 	}
 }
 

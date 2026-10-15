@@ -307,8 +307,8 @@ func catchNewReceipt(db *badger.DB, secret []byte, bot, bot2 *tgbotapi.BotAPI, c
 		return false, nil
 	}
 
-	if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
-		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: %x, full mode: %v\n", key, full != "")
+	if full, newreg := mnt.Check(); freeBrigadesClosed || full != "" || (newreg != "" && count >= 20) {
+		fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: %x, full mode: %v, free closed: %v\n", key, full != "", freeBrigadesClosed)
 		// fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: key=%x\n", key)
 		// fmt.Fprintf(os.Stderr, "Reject new receipt: checkMantenance: %#v\n", receipt)
 
@@ -377,6 +377,24 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 
 	switch receipt.Accepted {
 	case true:
+		// Accepted before the switch was flipped: drop it and tell the user
+		// why, instead of silently creating a brigade behind the switch.
+		if freeBrigadesClosed {
+			if err := DeleteReceipt(db, key); err != nil {
+				return false, fmt.Errorf("cleanup: %w", err)
+			}
+
+			if err := sendFreeClosedNotice(bot, flowMainUrl, mnt, receipt.ChatID, receipt.Lang, ecode); err != nil {
+				if IsForbiddenError(err) {
+					setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				}
+
+				logs.Errf("[!:%s] free closed notice: %s\n", ecode, err)
+			}
+
+			return false, fmt.Errorf("%w: %d", ErrFreeBrigadesClosed, count)
+		}
+
 		if full, newreg := mnt.Check(); full != "" || (newreg != "" && count >= 20) {
 			if err := DeleteReceipt(db, key); err != nil {
 				return false, fmt.Errorf("cleanup: %w", err)
@@ -414,6 +432,16 @@ func catchReviewedReceipt(db *badger.DB, wg *sync.WaitGroup, sessionSecret []byt
 
 		if err := GetBrigadier(bot, wg, session.Label, receipt.ChatID, ecode, dept, mnt, receipt.Lang, flowMainUrl); err != nil {
 			setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackWaitForBill, SessionStatePayloadSomething, nil)
+
+			// The ministry's own switch (FREE_REGS_CLOSED) refused: say
+			// "closed" rather than "something went wrong".
+			if errors.Is(err, ErrFreeBrigadesClosed) {
+				if serr := sendFreeClosedNotice(bot, flowMainUrl, mnt, receipt.ChatID, receipt.Lang, ecode); serr != nil && IsForbiddenError(serr) {
+					setSession(db, sessionSecret, session.Label, &session.Captcha, receipt.ChatID, 0, 0, stageMainTrackCleanup, SessionStateBanOnBan, nil)
+				}
+
+				return false, fmt.Errorf("creation: %w", err)
+			}
 
 			if _, err := SendProtectedMessage(bot, receipt.ChatID, 0, false, flowMessage(flowMainUrl, "fail_message", MainTrackFailMessage, receipt.Lang), ecode); err != nil {
 				if IsForbiddenError(err) {

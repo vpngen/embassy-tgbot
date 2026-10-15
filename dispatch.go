@@ -263,6 +263,78 @@ func (c *StepContext) CheckMaintenance(whenfull bool) bool {
 	return checkMaintenanceMode(c.Opts, c.Session.Label, &c.Session.Captcha, c.ChatID, c.Ecode, whenfull)
 }
 
+// freeBrigadesClosed mirrors Config.FreeBrigadesClosed (FREE_BRIGADES_CLOSED).
+// Set once in main; read by the free-creation gates and the receipt queue.
+var freeBrigadesClosed bool
+
+// flowStageFreeClosed is the admin-panel stage shown instead of the free
+// brigade flow while the switch is on. Its text and buttons are edited in
+// main.json / main_en.json like any other stage; nothing is hardcoded here.
+const flowStageFreeClosed = "free_closed"
+
+// freeClosedText returns the free_closed stage text, falling back to the
+// maintenance "new registrations" text if operators set one. Empty means
+// nothing is configured.
+func freeClosedText(flowMainUrl string, mnt *Maintenance, lang string) string {
+	if text := flowMessage(flowMainUrl, flowStageFreeClosed, "", lang); text != "" {
+		return text
+	}
+
+	_, newreg := mnt.Check()
+
+	return newreg
+}
+
+// sendFreeClosedNotice sends the free_closed stage (text + keyboard) outside
+// a StepContext, e.g. from the receipt queue.
+func sendFreeClosedNotice(bot *tgbotapi.BotAPI, flowMainUrl string, mnt *Maintenance, chatID int64, lang, ecode string) error {
+	text := freeClosedText(flowMainUrl, mnt, lang)
+	if text == "" {
+		return fmt.Errorf("stage %q has no text", flowStageFreeClosed)
+	}
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.DisableWebPagePreview = true
+	msg.ProtectContent = true
+
+	if kb, ok := flowKeyboard(flowMainUrl, flowStageFreeClosed, supportURLGlobal, lang); ok {
+		msg.ReplyMarkup = *kb
+	}
+
+	if _, err := bot.Send(msg); err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	logs.Infof("[%s] free brigades closed: notified %d\n", ecode, chatID)
+
+	return nil
+}
+
+// CheckFreeClosed sends the free_closed stage when free brigade creation is
+// switched off. Returns true if the caller must stop. Restore and the VIP
+// flow never call it.
+func (c *StepContext) CheckFreeClosed() bool {
+	if !freeBrigadesClosed {
+		return false
+	}
+
+	text := freeClosedText(c.Opts.flowMainUrl, c.Opts.mnt, c.Lang)
+	if text == "" {
+		logs.Errf("[!:%s] free brigades closed but stage %q has no text\n", c.Ecode, flowStageFreeClosed)
+		c.Wrong(ErrFreeBrigadesClosed)
+
+		return true
+	}
+
+	kb := c.FlowKeyboard(flowStageFreeClosed, nil)
+	if _, err := c.Send(text, &kb); err != nil {
+		logs.Errf("[!:%s] send free_closed: %s\n", c.Ecode, err)
+	}
+
+	return true
+}
+
 // --- Dispatcher ---
 
 // DispatchMessage is the new entrypoint for handling messages.
