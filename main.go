@@ -26,6 +26,7 @@ func main() {
 	supportURLGlobal = cfg.SupportURL
 	flowMainURLGlobal = cfg.FlowMainUrl
 	telegramIDCover = cfg.TelegramIDCover
+	freeBrigadesClosed = cfg.FreeBrigadesClosed
 
 	SetSupportMessages(cfg.SupportURL) // i dont know howto do this more clearely
 	SetVIPBotURL(cfg.VIPBotURL)

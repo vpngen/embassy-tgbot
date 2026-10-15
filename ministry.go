@@ -62,6 +62,9 @@ const (
 var (
 	ErrBrigadeNotFound = errors.New("brigade not found")
 	ErrRestoreTooEarly = errors.New("restore too early")
+	// ErrFreeBrigadesClosed - free brigade creation is switched off, either
+	// here (FREE_BRIGADES_CLOSED) or by the ministry (FREE_REGS_CLOSED, code 423).
+	ErrFreeBrigadesClosed = errors.New("free brigades closed")
 )
 
 // SendBrigadierGrants - send grants messages.
@@ -489,6 +492,15 @@ func callMinistry(dept MinistryOpts, label SessionLabel, mnt *Maintenance, chatI
 	wgconf := &ministry.Answer{}
 	if err := json.Unmarshal(payload, &wgconf); err != nil {
 		return nil, fmt.Errorf("create brigade ministry json unmarshal: %w", err)
+	}
+
+	// 423 Locked: the ministry's own FREE_REGS_CLOSED switch refused the
+	// request. Must come before the config checks below, which would
+	// otherwise report an "incomplete" config.
+	if wgconf.Code == 423 {
+		fmt.Fprintf(os.Stderr, "*** Free registration closed by ministry: %s\n", wgconf.Message)
+
+		return nil, fmt.Errorf("%w: %s", ErrFreeBrigadesClosed, wgconf.Message)
 	}
 
 	if os.Getenv("MOCK") != "true" {
